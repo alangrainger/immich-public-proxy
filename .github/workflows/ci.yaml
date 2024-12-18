@@ -52,7 +52,7 @@ jobs:
           build-args: |
             PACKAGE_VERSION=${{ env.PACKAGE_VERSION }}
           tags: |
-            ${{ github.repository }}:${{ env.PACKAGE_VERSION }}
-            ${{ github.repository }}:latest
+            # ${{ github.repository }}:${{ env.PACKAGE_VERSION }}
+            # ${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ env.PACKAGE_VERSION }}
             ghcr.io/${{ github.repository }}:latest
