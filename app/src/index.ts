@@ -148,7 +148,7 @@ app.get('*', (req, res) => {
 })
 
 // Start the ExpressJS server
-const port = process.env.IPP_PORT || 3000;
+const port = process.env.IPP_PORT || 3000
 app.listen(port, () => {
   console.log(dayjs().format() + ' Server started on port ' + port)
 })
