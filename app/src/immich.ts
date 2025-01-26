@@ -148,6 +148,13 @@ class Immich {
               asset.key = key
               asset.password = password
             })
+            // Sort album if there is a sort order specified
+            const sortOrder = link.album?.order
+            if (sortOrder === 'asc') {
+              link.assets.sort((a, b) => a.fileCreatedAt.localeCompare(b.fileCreatedAt))
+            } else if (sortOrder === 'desc') {
+              link.assets.sort((a, b) => b.fileCreatedAt.localeCompare(a.fileCreatedAt))
+            }
             return {
               valid: true,
               link

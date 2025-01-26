@@ -8,6 +8,7 @@ export interface Asset {
   key: string;
   originalFileName?: string;
   password?: string;
+  fileCreatedAt: string;
   type: AssetType;
   isTrashed: boolean;
 }
@@ -21,6 +22,7 @@ export interface SharedLink {
   album?: {
     id: string;
     albumName?: string;
+    order?: string;
   }
   expiresAt: string | null;
 }

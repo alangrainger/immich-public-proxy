@@ -58,14 +58,16 @@
         const passwordQuery = Object.entries(password).length ? '?' + (new URLSearchParams(password)).toString() : ''
     %>
     <div id="download-all">
-        <a href="<%- path %>/download<%- passwordQuery %>" title="Download all"><img src="/images/download-all.svg"
+        <a href="<%- path %>/download<%- passwordQuery %>" title="Download all"><img src="/share/static/images/download-all.svg"
                                                                                      height="24"
                                                                                      width="24" alt="Download all"></a>
     </div>
     <% } %>
 </div>
 <div id="lightgallery">
-    <% items.forEach(item => {
+    <%
+    // Load the first 50 thumbnails, then load more as the user scrolls. See web.js
+    items.slice(0, 50).forEach(item => {
     if (item.video) { %>
         <a data-video='<%- item.video %>' class="lg-item grid-item"
         <% if (item.downloadUrl) { %>
@@ -96,8 +98,8 @@
 <script src="/share/static/metafizzy/isotope.min.js"></script>
 <script src="/share/static/metafizzy/masonry.min.js"></script>
 <script type="text/javascript">
-  initLightGallery(<%- JSON.stringify(lgConfig) %>) // initLightGallery imported from web.js
-  <% if (openItem) { %>
+  lgallery.init(<%- JSON.stringify({lgConfig, items, openItem}) %>) // initLightGallery imported from web.js
+ <% if (openItem) { %>
   const openItem = <%- openItem %>
   const thumbs = document.querySelectorAll('#lightgallery a')
   if (thumbs.length >= openItem) {

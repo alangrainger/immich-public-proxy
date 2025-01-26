@@ -7,7 +7,7 @@ import dayjs from 'dayjs'
 import { Request, Response, NextFunction } from 'express-serve-static-core'
 import { AssetType, ImageSize } from './types'
 import { decrypt } from './encrypt'
-import { log, toString, addResponseHeaders } from './functions'
+import { log, toString, addResponseHeaders, getConfigOption } from './functions'
 
 // Extend the Request type with a `password` property
 declare module 'express-serve-static-core' {
@@ -40,11 +40,6 @@ const checkPassword = (req: Request, res: Response, next: NextFunction) => {
       }))
       if (payload?.expires && dayjs(payload.expires) > dayjs()) {
         req.password = payload.password
-      } else {
-        log(`Attempted to load assets from ${req.params.key} with an expired decryption token`)
-        // Send 404 rather than 401 so as not to provide information to an attacker that there is "something" at this path
-        res.status(404).send()
-        return
       }
     } catch (e) { }
   }
@@ -76,12 +71,10 @@ app.get('/share/:key/:mode(download)?', checkPassword, async (req, res) => {
 
 /*
  * [ROUTE] Receive an unlock request from the password page
+ * Returns an encrypted unlock key which lasts for 1 hour
  */
 app.post('/share/unlock', async (req, res) => {
-  await immich.handleShareRequest({
-    key: toString(req.body.key),
-    password: toString(req.body.password)
-  }, res)
+  res.send(immich.encryptPassword(req.body.password))
 })
 
 /*
@@ -131,13 +124,15 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', checkPassword, async (req, 
  * It was requested here to have *something* on the home page:
  * https://github.com/alangrainger/immich-public-proxy/discussions/19
  *
- * If you don't want to see this, you can redirect to a URL of your choice by changing your
- * reverse proxy config, or even redirect to 404 if you like.
+ * If you don't want to see this, set showHomePage as false in your config.json:
+ * https://github.com/alangrainger/immich-public-proxy?tab=readme-ov-file#immich-public-proxy-options
  */
-app.get(/^\/(|share)\/*$/, (_req, res) => {
-  addResponseHeaders(res)
-  res.render('home')
-})
+if (getConfigOption('ipp.showHomePage', true)) {
+  app.get(/^\/(|share)\/*$/, (_req, res) => {
+    addResponseHeaders(res)
+    res.render('home')
+  })
+}
 
 /*
  * Send a 404 for all other routes
@@ -148,7 +143,7 @@ app.get('*', (req, res) => {
 })
 
 // Start the ExpressJS server
-const port = process.env.IPP_PORT || 3000;
+const port = process.env.IPP_PORT || 3000
 app.listen(port, () => {
   console.log(dayjs().format() + ' Server started on port ' + port)
 })

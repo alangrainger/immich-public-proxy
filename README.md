@@ -2,13 +2,16 @@
 
 <p align="center" width="100%">
 <a href="https://hub.docker.com/r/alangrainger/immich-public-proxy/tags">
-    <img alt="Docker pulls" src="https://badgen.net/docker/pulls/alangrainger/immich-public-proxy?v1.5.3&icon=docker&label=docker%20pulls&color=green&scale=1.1"></a>
+    <img alt="Docker pulls" src="https://badgen.net/docker/pulls/alangrainger/immich-public-proxy?v1.6.3&icon=docker&label=docker%20pulls&color=green&scale=1.1"></a>
 <a href="https://github.com/alangrainger/immich-public-proxy/releases/latest">
-    <img alt="Latest release" src="https://badgen.net/static/release/v1.5.3/blue?scale=1.1"></a>
-<a href="https://immich-demo.note.sx/share/ffSw63qnIYMtpmg0RNvOui0Dpio7BbxsObjvH8YZaobIjIAzl5n7zTX5d6EDHdOYEvo"><img alt="Open demo gallery" src="https://badgen.net/static/↗🖼️/live%20demo/green?scale=1.1"></a>
+    <img alt="Latest release" src="https://badgen.net/static/release/v1.6.3/blue?scale=1.1"></a>
+<a href="https://immich-demo.note.sx/share/gJfs8l4LcJJrBUpjhMnDoKXFt1Tm5vKXPbXl8BgwPtLtEBCOOObqbQdV5i0oun5hZjQ"><img alt="Open demo gallery" src="https://badgen.net/static/↗🖼️/live%20demo/green?scale=1.1"></a>
 </p>
 
 Share your Immich photos and albums in a safe way without exposing your Immich instance to the public.
+
+👉 See a [Live demo gallery](https://immich-demo.note.sx/share/gJfs8l4LcJJrBUpjhMnDoKXFt1Tm5vKXPbXl8BgwPtLtEBCOOObqbQdV5i0oun5hZjQ)
+serving straight out of my own Immich instance.
 
 Setup takes less than a minute, and you never need to touch it again as all of your sharing stays managed within Immich.
 
@@ -19,7 +22,9 @@ Setup takes less than a minute, and you never need to touch it again as all of y
 ### Table of Contents
 
 - [About this project](#about-this-project)
-- [Install with Docker](#installation)
+- [Installation](#installation)
+  - [Install with Docker](#install-with-docker--podman)
+  - [Install with Kubernetes](docs/kubernetes.md)
 - [How to use it](#how-to-use-it)
 - [How it works](#how-it-works)
 - [Additional configuration](#additional-configuration)
@@ -37,9 +42,6 @@ which you have publicly shared.
 It is stateless and does not know anything about your Immich instance. It does not require an API key which reduces the attack 
 surface even further. The only things that the proxy can access are photos that you have made publicly available in Immich. 
 
-See a [Live demo gallery](https://immich-demo.note.sx/share/ffSw63qnIYMtpmg0RNvOui0Dpio7BbxsObjvH8YZaobIjIAzl5n7zTX5d6EDHdOYEvo)
-serving straight out of my own Immich instance.
-
 ### Features
 
 - Supports sharing photos and videos.
@@ -56,6 +58,8 @@ For me, the ideal setup is to have Immich secured privately behind mTLS or VPN, 
 Here is an example setup for [securing Immich behind mTLS](./docs/securing-immich-with-mtls.md) using Caddy.
 
 ## Installation
+
+### Install with Docker / Podman
 
 1. Download the [docker-compose.yml](https://github.com/alangrainger/immich-public-proxy/blob/main/docker-compose.yml) file.
 
@@ -77,11 +81,15 @@ Now whenever you share an image or gallery through Immich, it will automatically
 🚨 **IMPORTANT**: If you're using Cloudflare, please make sure to set your `/share/video/*` path to Bypass Cache, otherwise you may
 run into video playback issues. See [Troubleshooting](#troubleshooting) for more information.
 
-### Running on a single domain
+#### Running on a single domain
 
 Because all IPP paths are under `/share/...`, you can run Immich Public Proxy and Immich on the same domain.
 
 See the instructions here: [Running on a single domain](./docs/running-on-single-domain.md).
+
+### Install with Kubernetes
+
+[See the docs here](docs/kubernetes.md).
 
 ## How to use it
 
@@ -135,6 +143,20 @@ There are some additional configuration options you can change, for example the 
 | `downloadOriginalPhoto` | Set to `false` if you only want people to be able to download the 'preview' quality photo, rather than your original photo. |
 | `showGalleryTitle`      | Show a title on the gallery page.                                                                                           |
 | `allowDownloadAll`      | Allow visitors to download all files as a zip.                                                                              |
+| `showHomePage`          | Set to `false` to remove the IPP shield page at `/` and at `/share`                                                         |
+
+For example, to disable the home page at `/` and at `/share` you need to change `showHomePage` to `false`:
+
+```json
+{
+  "ipp": {
+    "showHomePage": false,
+    ...
+  }
+}
+
+
+```
 
 ### lightGallery
 
@@ -164,6 +186,8 @@ If you're using Cloudflare and having issues with videos not playing well, make 
 I ran into this issue myself, and found [some helpful advice here](https://community.cloudflare.com/t/mp4-wont-load-in-safari-using-cloudflare/10587/48).
 
 <a href="docs/cloudflare-video-cache.webp"><img src="docs/cloudflare-video-cache.webp" style="width:70%"></a>
+
+This project is tested with BrowserStack.
 
 ## Feature requests
 

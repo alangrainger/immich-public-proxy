@@ -3,7 +3,7 @@ import { Response } from 'express-serve-static-core'
 
 let config = {}
 try {
-  const configJson = require('../config.json')
+  const configJson = require(process.env.IPP_CONFIG || '../config.json')
   if (typeof configJson === 'object') config = configJson
 } catch (e) { }
 
