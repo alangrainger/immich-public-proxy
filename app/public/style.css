@@ -92,13 +92,46 @@ html {
     color: white;
     width: 100%;
     display: flex;
+    max-width: var(--gallery-width-mobile);
+    margin: 0 auto;
+}
+#header h1 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-right: 1rem;
+    word-wrap: break-word;
+    overflow: hidden;
+}
+@media screen and (min-width: 600px) {
+    #header {
+        max-width: var(--gallery-width-tablet);
+        margin: .5rem auto;
+    }
+    #header h1 {
+        font-size: 20pt;
+    }
 }
 
-#header h1 {
-    font-size: 18pt;
-    font-weight: bold;
-    margin: 4px;
+@media screen and (min-width: 900px) {
+    #header {
+        max-width: var(--gallery-width-desktop);
+        margin: 1rem auto;
+    }
+    #header h1 {
+        font-size: 32pt;
+    }
 }
+
+@media screen and (min-width: 1950px) {
+    #header {
+        max-width: var(--gallery-width-ultrawide);
+    }
+    #header h1 {
+        font-size: 32pt;
+    }
+}
+
+
 
 #download-all {
     margin: auto 4px auto auto;
