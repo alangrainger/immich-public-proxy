@@ -5,7 +5,7 @@
     <img alt="Docker pulls" src="https://badgen.net/docker/pulls/alangrainger/immich-public-proxy?v1.5.3&icon=docker&label=docker%20pulls&color=green&scale=1.1"></a>
 <a href="https://github.com/alangrainger/immich-public-proxy/releases/latest">
     <img alt="Latest release" src="https://badgen.net/static/release/v1.5.3/blue?scale=1.1"></a>
-<a href="https://immich-demo.note.sx/share/ffSw63qnIYMtpmg0RNvOui0Dpio7BbxsObjvH8YZaobIjIAzl5n7zTX5d6EDHdOYEvo"><img alt="Open demo gallery" src="https://badgen.net/static/↗🖼️/live%20demo/green?scale=1.1"></a>
+<a href="https://immich-demo.note.sx/share/Ue5o4NiNrttsPQOXJsVrwbP2wg-HQrrO85RckdDNlN2DUY3zndTEFpQpfC78qH5cfFo"><img alt="Open demo gallery" src="https://badgen.net/static/↗🖼️/live%20demo/green?scale=1.1"></a>
 </p>
 
 Share your Immich photos and albums in a safe way without exposing your Immich instance to the public.
@@ -37,7 +37,7 @@ which you have publicly shared.
 It is stateless and does not know anything about your Immich instance. It does not require an API key which reduces the attack 
 surface even further. The only things that the proxy can access are photos that you have made publicly available in Immich. 
 
-See a [Live demo gallery](https://immich-demo.note.sx/share/ffSw63qnIYMtpmg0RNvOui0Dpio7BbxsObjvH8YZaobIjIAzl5n7zTX5d6EDHdOYEvo)
+See a [Live demo gallery](https://immich-demo.note.sx/share/Ue5o4NiNrttsPQOXJsVrwbP2wg-HQrrO85RckdDNlN2DUY3zndTEFpQpfC78qH5cfFo)
 serving straight out of my own Immich instance.
 
 ### Features
