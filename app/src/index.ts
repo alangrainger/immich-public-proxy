@@ -104,17 +104,20 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
   // Add the headers configured in config.json (most likely `cache-control`)
   addResponseHeaders(res)
 
+  // Check if we should redirect on 404
+  const redirectOn404 = getConfigOption('ipp.redirectOn404', false) as string | false
+
   // Check for valid key and ID
   if (!immich.isKey(req.params.key) || !immich.isId(req.params.id)) {
     log('Invalid key or ID for ' + req.path)
-    res.status(404).send()
+    redirectOn404 ? res.redirect(redirectOn404) : res.status(404).send()
     return
   }
 
   // Validate the size parameter
   if (req.params.size && !Object.values(ImageSize).includes(req.params.size as ImageSize)) {
     log('Invalid size parameter ' + req.path)
-    res.status(404).send()
+    redirectOn404 ? res.redirect(redirectOn404) : res.status(404).send()
     return
   }
 
@@ -135,7 +138,7 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
     }
   } else {
     log('No asset found for ' + req.path)
-    res.status(404).send()
+    redirectOn404 ? res.redirect(redirectOn404) : res.status(404).send()
   }
 })
 
@@ -160,7 +163,8 @@ if (getConfigOption('ipp.showHomePage', true)) {
  */
 app.get('*', (req, res) => {
   log('Invalid route ' + req.path)
-  res.status(404).send()
+  const redirectOn404 = getConfigOption('ipp.redirectOn404', false) as string | false
+  redirectOn404 ? res.redirect(redirectOn404) : res.status(404).send()
 })
 
 // Start the ExpressJS server

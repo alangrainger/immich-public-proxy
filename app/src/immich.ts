@@ -45,10 +45,13 @@ class Immich {
   async handleShareRequest (request: IncomingShareRequest, res: Response) {
     addResponseHeaders(res)
 
+    // Check if we should redirect on 404
+    const redirectOn404 = getConfigOption('ipp.redirectOn404', false) as string | false
+
     // Check that the key is a valid format
     if (!immich.isKey(request.key)) {
       log('Invalid share key ' + request.key)
-      res.status(404).send()
+      redirectOn404 ? res.redirect(redirectOn404) : res.status(404).send()
       return
     }
 
@@ -56,7 +59,7 @@ class Immich {
     const sharedLinkRes = await immich.getShareByKey(request.key, request.password)
     if (!sharedLinkRes.valid) {
       // This isn't a valid request - check the console for more information
-      res.status(404).send()
+      redirectOn404 ? res.redirect(redirectOn404) : res.status(404).send()
       return
     }
 
@@ -89,7 +92,7 @@ class Immich {
 
     if (!sharedLinkRes.link) {
       log('Unknown error with key ' + request.key)
-      res.status(404).send()
+      redirectOn404 ? res.redirect(redirectOn404) : res.status(404).send()
       return
     }
 
@@ -97,7 +100,7 @@ class Immich {
     const link = sharedLinkRes.link
     if (!link.assets.length) {
       log('No assets for key ' + request.key)
-      res.status(404).send()
+      redirectOn404 ? res.redirect(redirectOn404) : res.status(404).send()
       return
     }
 
