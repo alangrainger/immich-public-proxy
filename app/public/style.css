@@ -55,8 +55,14 @@ html {
 #header {
     font-family: system-ui, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, Helvetica, Arial, "Helvetica Neue", sans-serif;
     color: white;
-    width: 100%;
+    background-color: rgb(10, 10, 10);
+    width: calc(100% - 28px);
     display: flex;
+    margin: 20px 0px;
+    padding: 20px 14px;
+    position: sticky;
+    top: 0px;
+    z-index: 100;
 }
 
 #header h1 {
