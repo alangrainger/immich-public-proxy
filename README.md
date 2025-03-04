@@ -147,6 +147,7 @@ There are some additional configuration options you can change, for example the 
 | `showGalleryTitle`      | Show a title on the gallery page.                                                                                           |
 | `allowDownloadAll`      | Allow visitors to download all files as a zip.                                                                              |
 | `showHomePage`          | Set to `false` to remove the IPP shield page at `/` and at `/share`                                                         |
+| `stealthMode`           | Set to `true` to stop IPP from responding to malformed or unauthenticated requests.                                         |
 
 For example, to disable the home page at `/` and at `/share` you need to change `showHomePage` to `false`:
 

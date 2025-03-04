@@ -9,7 +9,8 @@
     "downloadOriginalPhoto": true,
     "showGalleryTitle": false,
     "allowDownloadAll": false,
-    "showHomePage": true
+    "showHomePage": true,
+    "stealthMode": false
   },
   "lightGallery": {
     "controls": true,

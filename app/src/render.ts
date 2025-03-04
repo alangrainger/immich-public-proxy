@@ -74,6 +74,9 @@ class Render {
       )
       res.end()
     } else {
+      if (getConfigOption('ipp.stealthMode', true)) {
+        res.destroy();
+      }
       res.status(404).send()
     }
   }

@@ -49,6 +49,9 @@ class Immich {
     // Check that the key is a valid format
     if (!immich.isKey(request.key)) {
       log('Invalid share key ' + request.key)
+      if (getConfigOption('ipp.stealthMode', true)) {
+        res.destroy();
+      }
       res.status(404).send()
       return
     }
@@ -57,6 +60,9 @@ class Immich {
     const sharedLinkRes = await immich.getShareByKey(request.key, request.password)
     if (!sharedLinkRes.valid) {
       // This isn't a valid request - check the console for more information
+      if (getConfigOption('ipp.stealthMode', true)) {
+        res.destroy();
+      }
       res.status(404).send()
       return
     }

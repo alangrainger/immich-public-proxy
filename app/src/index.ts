@@ -107,6 +107,9 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
   // Check for valid key and ID
   if (!immich.isKey(req.params.key) || !immich.isId(req.params.id)) {
     log('Invalid key or ID for ' + req.path)
+    if (getConfigOption('ipp.stealthMode', true)) {
+      res.destroy();
+    }
     res.status(404).send()
     return
   }
@@ -114,6 +117,9 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
   // Validate the size parameter
   if (req.params.size && !Object.values(ImageSize).includes(req.params.size as ImageSize)) {
     log('Invalid size parameter ' + req.path)
+    if (getConfigOption('ipp.stealthMode', true)) {
+      res.destroy();
+    }
     res.status(404).send()
     return
   }
@@ -135,6 +141,9 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
     }
   } else {
     log('No asset found for ' + req.path)
+    if (getConfigOption('ipp.stealthMode', true)) {
+      res.destroy();
+    }
     res.status(404).send()
   }
 })
@@ -160,6 +169,9 @@ if (getConfigOption('ipp.showHomePage', true)) {
  */
 app.get('*', (req, res) => {
   log('Invalid route ' + req.path)
+  if (getConfigOption('ipp.stealthMode', true)) {
+    res.destroy(); 
+  }
   res.status(404).send()
 })
 
