@@ -4,47 +4,49 @@ import { Asset, AssetType, ImageSize, IncomingShareRequest, SharedLink } from '.
 import { getConfigOption } from './functions'
 import archiver from 'archiver'
 import { respondToInvalidRequest } from './invalidRequestHandler'
+import { pipeline } from 'stream';
+import { promisify } from 'util';
+
+const pipelineAsync = promisify(pipeline);
 
 class Render {
   lgConfig
 
-  constructor () {
+  constructor() {
     this.lgConfig = getConfigOption('lightGallery', {})
   }
 
   /**
    * Stream data from Immich back to the client
    */
-  async assetBuffer (req: IncomingShareRequest, res: Response, asset: Asset, size?: ImageSize | string) {
+  async assetBuffer(req: IncomingShareRequest, res: Response, asset: Asset, size?: ImageSize | string) {
     // Prepare the request
-    const headerList = ['content-type', 'content-length', 'last-modified', 'etag']
-    size = immich.validateImageSize(size)
-    let subpath, sizeQueryParam
+    const headerList = ['content-type', 'content-length', 'last-modified', 'etag'];
+    size = immich.validateImageSize(size);
+    let subpath, sizeQueryParam;
     if (asset.type === AssetType.video) {
-      subpath = '/video/playback'
+      subpath = '/video/playback';
     } else if (asset.type === AssetType.image) {
-      // For images, there are three combinations of path + query string, depending on image size
       if (size === ImageSize.original && getConfigOption('ipp.downloadOriginalPhoto', true)) {
-        subpath = '/original'
+        subpath = '/original';
       } else if (size === ImageSize.preview || size === ImageSize.original) {
-        // IPP is configured in config.json to send the preview size instead of the original size
-        subpath = '/thumbnail'
-        sizeQueryParam = 'preview'
+        subpath = '/thumbnail';
+        sizeQueryParam = 'preview';
       } else {
-        subpath = '/' + size
+        subpath = '/' + size;
       }
     }
-    const headers = { range: '' }
+    const headers = {range: ''};
 
     // For videos, request them in 2.5MB chunks rather than the entire video
     if (asset.type === AssetType.video) {
-      const range = (req.range || '').replace(/bytes=/, '').split('-')
-      const start = parseInt(range[0], 10) || 0
-      const end = parseInt(range[1], 10) || start + 2499999
-      headers.range = `bytes=${start}-${end}`
-      headerList.push('cache-control', 'content-range')
-      res.setHeader('accept-ranges', 'bytes')
-      res.status(206) // Partial Content
+      const range = (req.range || '').replace(/bytes=/, '').split('-');
+      const start = parseInt(range[0], 10) || 0;
+      const end = parseInt(range[1], 10) || start + 2499999;
+      headers.range = `bytes=${start}-${end}`;
+      headerList.push('cache-control', 'content-range');
+      res.setHeader('accept-ranges', 'bytes');
+      res.status(206); // Partial Content
     }
 
     // Request data from Immich
@@ -52,30 +54,27 @@ class Render {
       key: asset.key,
       size: sizeQueryParam,
       password: asset.password
-    })
-    const data = await fetch(url, { headers })
+    });
+    const data = await fetch(url, {headers});
 
     // Add the filename for downloaded assets
     if (size === ImageSize.original && asset.originalFileName && getConfigOption('ipp.downloadOriginalPhoto', true)) {
-      res.setHeader('Content-Disposition', `attachment; filename="${asset.originalFileName}"`)
+      res.setHeader('Content-Disposition', `attachment; filename="${asset.originalFileName}"`);
     }
 
     // Return the response to the client
-    if (data.status >= 200 && data.status < 300) {
+    if (data.status >= 200 && data.status < 300 && data.body) {
       // Populate the whitelisted response headers
       headerList.forEach(header => {
-        const value = data.headers.get(header)
-        if (value) res.setHeader(header, value)
-      })
-      // Return the Immich asset binary data
-      await data.body?.pipeTo(
-        new WritableStream({
-          write (chunk) { res.write(chunk) }
-        })
-      )
-      res.end()
+        const value = data.headers.get(header);
+        if (value) res.setHeader(header, value);
+      });
+
+      // Use Node.js pipeline to stream data efficiently
+      const nodeStream = Readable.fromWeb(data.body);
+      await pipelineAsync(nodeStream, res);
     } else {
-      respondToInvalidRequest(res, 404)
+      respondToInvalidRequest(res, 404);
     }
   }
 
@@ -86,7 +85,7 @@ class Render {
    * @param share - Immich `shared-link` containing the assets to show in the gallery
    * @param [openItem] - Immediately open a lightbox to the Nth item when the gallery loads
    */
-  async gallery (res: Response, share: SharedLink, openItem?: number) {
+  async gallery(res: Response, share: SharedLink, openItem?: number) {
     const items = []
     for (const asset of share.assets) {
       let video, downloadUrl
@@ -130,37 +129,72 @@ class Render {
   /**
    * Attempt to get a title from the link description or the album title
    */
-  title (share: SharedLink) {
+  title(share: SharedLink) {
     return share.description || share?.album?.albumName || 'Gallery'
   }
 
   /**
    * Download all assets as a zip file
    */
-  async downloadAll (res: Response, share: SharedLink) {
-    res.setHeader('Content-Type', 'application/zip')
-    const title = this.title(share).replace(/[^\w .-]/g, '') + '.zip'
-    res.setHeader('Content-Disposition', `attachment; filename="${title}"`)
-    const archive = archiver('zip', { zlib: { level: 6 } })
-    archive.pipe(res)
-    for (const asset of share.assets) {
-      const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + '/original', {
-        key: asset.key,
-        password: asset.password
-      })
-      const data = await fetch(url)
-      // Check the response for validity
-      if (!data.ok) {
-        console.warn(`Failed to fetch asset: ${asset.id}`)
-        continue
+  async assetBuffer(req: IncomingShareRequest, res: Response, asset: Asset, size?: ImageSize | string) {
+    // Prepare the request
+    const headerList = ['content-type', 'content-length', 'last-modified', 'etag'];
+    size = immich.validateImageSize(size);
+    let subpath, sizeQueryParam;
+    if (asset.type === AssetType.video) {
+      subpath = '/video/playback';
+    } else if (asset.type === AssetType.image) {
+      if (size === ImageSize.original && getConfigOption('ipp.downloadOriginalPhoto', true)) {
+        subpath = '/original';
+      } else if (size === ImageSize.preview || size === ImageSize.original) {
+        subpath = '/thumbnail';
+        sizeQueryParam = 'preview';
+      } else {
+        subpath = '/' + size;
       }
-      archive.append(Buffer.from(await data.arrayBuffer()), { name: asset.originalFileName || asset.id })
     }
-    await archive.finalize()
-    archive.on('end', () => res.end())
+    const headers = {range: ''};
+
+    // For videos, request them in 2.5MB chunks rather than the entire video
+    if (asset.type === AssetType.video) {
+      const range = (req.range || '').replace(/bytes=/, '').split('-');
+      const start = parseInt(range[0], 10) || 0;
+      const end = parseInt(range[1], 10) || start + 2499999;
+      headers.range = `bytes=${start}-${end}`;
+      headerList.push('cache-control', 'content-range');
+      res.setHeader('accept-ranges', 'bytes');
+      res.status(206); // Partial Content
+    }
+
+    // Request data from Immich
+    const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + subpath, {
+      key: asset.key,
+      size: sizeQueryParam,
+      password: asset.password
+    });
+    const data = await fetch(url, {headers});
+
+    // Add the filename for downloaded assets
+    if (size === ImageSize.original && asset.originalFileName && getConfigOption('ipp.downloadOriginalPhoto', true)) {
+      res.setHeader('Content-Disposition', `attachment; filename="${asset.originalFileName}"`);
+    }
+
+    // Return the response to the client
+    if (data.status >= 200 && data.status < 300 && data.body) {
+      // Populate the whitelisted response headers
+      headerList.forEach(header => {
+        const value = data.headers.get(header);
+        if (value) res.setHeader(header, value);
+      });
+
+      // Use Node.js pipeline to stream data efficiently
+      const nodeStream = Readable.fromWeb(data.body);
+      await pipelineAsync(nodeStream, res);
+    } else {
+      respondToInvalidRequest(res, 404);
+    }
   }
 }
-
 const render = new Render()
 
 export default render
