@@ -5,6 +5,10 @@ export enum AssetType {
   video = 'VIDEO'
 }
 
+export interface ExifInfo {
+  description?: string;
+}
+
 export interface Asset {
   id: string;
   key: string;
@@ -13,6 +17,7 @@ export interface Asset {
   fileCreatedAt?: string; // May not exist - see https://github.com/alangrainger/immich-public-proxy/issues/61
   type: AssetType;
   isTrashed: boolean;
+  exifInfo?: ExifInfo;
 }
 
 export interface SharedLink {
