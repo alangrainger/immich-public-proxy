@@ -34,6 +34,9 @@
     items.slice(0, 50).forEach(item => {
     if (item.video) { %>
         <a data-video='<%- item.video %>'
+        <% if (item.description) { %>
+           data-sub-html='<p><%= item.description %></p>'
+        <% } %>
         <% if (item.downloadUrl) { %>
            data-download-url="<%- item.downloadUrl %>"
                 <% } %>
@@ -43,6 +46,9 @@
         </a>
     <% } else { %>
         <a href="<%- item.previewUrl %>"
+        <% if (item.description) { %>
+           data-sub-html='<p><%= item.description %></p>'
+        <% } %>
         <% if (item.downloadUrl) { %>
            data-download-url="<%- item.downloadUrl %>"
                 <% } %>

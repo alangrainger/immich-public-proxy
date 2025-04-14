@@ -121,7 +121,8 @@ class Render {
         previewUrl: immich.photoUrl(share.key, asset.id, ImageSize.preview),
         downloadUrl,
         thumbnailUrl: baseUrl + immich.photoUrl(share.key, asset.id, ImageSize.thumbnail),
-        video
+        video,
+        description: asset?.exifInfo?.description ?? ''
       })
     }
     res.render('gallery', {
