@@ -102,14 +102,14 @@
 <script src="/share/static/metafizzy/isotope.min.js"></script>
 <script src="/share/static/metafizzy/masonry.min.js"></script>
 <script type="text/javascript">
-  lgallery.init(<%- JSON.stringify({lgConfig, items, openItem}) %>) // initLightGallery imported from web.js
- <% if (openItem) { %>
-  const openItem = <%- openItem %>
-  const thumbs = document.querySelectorAll('#lightgallery a')
-  if (thumbs.length >= openItem) {
-    thumbs[openItem - 1].click()
-  }
-  <% } %>
-</script>
+    initLightGallery(<%- JSON.stringify(lgConfig) %>) // initLightGallery imported from web.js
+    <% if (openItem) { %>
+    const openItem = <%- openItem %>
+    const thumbs = document.querySelectorAll('#lightgallery a')
+    if (thumbs.length >= openItem) {
+      thumbs[openItem - 1].click()
+    }
+    <% } %>
+  </script>
 </body>
 </html>
