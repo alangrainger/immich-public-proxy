@@ -1,61 +1,60 @@
 name: Create and publish a Docker image
 
-env:
-  IMAGE_NAME: ${{ github.repository }}
-  
 on:
   workflow_dispatch:
   push:
-    paths-ignore:
-    - '**/**.md'
-    branches:
-    - main
-    - dev
     tags:
-    - '[0-9]+.*'
+      - 'v*'
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-permissions:
-  packages: write
+env:
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  docker:
+  build-and-push-image:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
- 
-      - name: Convert repository name to image name
-        id: image_name
-        run: |
-          sed -E -e 's/docker-//' -e 's/^/image_name=/' <<<"${{ github.repository }}" >> "$GITHUB_OUTPUT"
+    permissions:
+      contents: read
+      packages: write
 
-      - name: Generate Docker tag names
-        id: meta
-        uses: docker/metadata-action@v5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get version from package.json
+        run: echo "PACKAGE_VERSION=$(jq -r '.version' app/package.json)" >> $GITHUB_ENV
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          # list of Docker images to use as base name for tags
-          images: |
-            ghcr.io/${{ steps.image_name.outputs.image_name }}
-          # generate Docker tags based on the following events/attributes
-          tags: |
-            # set latest tag for default branch
-            type=raw,value=latest,enable={{is_default_branch}}
-            # set edge tag for dev branch
-            type=edge,enable=true,branch=dev
-            # Tags for non SemVer tag names
-            type=match,pattern=([0-9]+.*),group=1
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Log in to Docker Hub
+      #   uses: docker/login-action@v3
+      #   with:
+      #     username: ${{ secrets.DOCKER_HUB_USERNAME }}
+      #     password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v3.2.0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          build-args: |
+            PACKAGE_VERSION=${{ env.PACKAGE_VERSION }}
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ env.PACKAGE_VERSION }}
+            ghcr.io/${{ github.repository }}:latest
+      
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         # Skip when PR from a fork
@@ -64,11 +63,3 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/arm/v7,linux/arm64/v8,linux/amd64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
