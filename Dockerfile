@@ -1,16 +1,8 @@
-FROM node:lts-slim
-
-# Install wget for healthcheck
-RUN apt-get update && \
-    apt-get install -y wget && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+FROM node:lts-alpine
 
 WORKDIR /app
 
 COPY app/ ./
-
-RUN npm install pm2 -g
 
 RUN chown -R node:node /app
 
@@ -27,6 +19,4 @@ ENV NODE_ENV=production
 # Type checking is done in the repo before building the image.
 RUN npx tsc --noCheck
 
-HEALTHCHECK --interval=30s --start-period=10s --timeout=5s CMD wget -q --spider http://localhost:3000/share/healthcheck || exit 1
-
-CMD ["pm2-runtime", "dist/index.js" ]
+CMD ["node", "dist/index.js" ]

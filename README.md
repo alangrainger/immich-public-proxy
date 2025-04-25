@@ -2,9 +2,9 @@
 
 <p align="center" width="100%">
 <a href="https://hub.docker.com/r/alangrainger/immich-public-proxy/tags">
-    <img alt="Docker pulls" src="https://badgen.net/docker/pulls/alangrainger/immich-public-proxy?v1.6.3&icon=docker&label=docker%20pulls&color=green&scale=1.1"></a>
+    <img alt="Docker pulls" src="https://badgen.net/docker/pulls/alangrainger/immich-public-proxy?v1.10.0&icon=docker&label=docker%20pulls&color=green&scale=1.1"></a>
 <a href="https://github.com/alangrainger/immich-public-proxy/releases/latest">
-    <img alt="Latest release" src="https://badgen.net/static/release/v1.6.3/blue?scale=1.1"></a>
+    <img alt="Latest release" src="https://badgen.net/github/release/alangrainger/immich-public-proxy?v1.10.0&scale=1.1"></a>
 <a href="https://immich-demo.note.sx/share/gJfs8l4LcJJrBUpjhMnDoKXFt1Tm5vKXPbXl8BgwPtLtEBCOOObqbQdV5i0oun5hZjQ"><img alt="Open demo gallery" src="https://badgen.net/static/↗🖼️/live%20demo/green?scale=1.1"></a>
 </p>
 
@@ -28,6 +28,9 @@ Setup takes less than a minute, and you never need to touch it again as all of y
 - [How to use it](#how-to-use-it)
 - [How it works](#how-it-works)
 - [Additional configuration](#additional-configuration)
+  - [IPP options](#immich-public-proxy-options)
+  - [lightGallery](#lightgallery)
+  - [Custom error pages](#customising-your-error-response-pages)
 - [Troubleshooting](#troubleshooting)
 - [Feature requests](#feature-requests)
 
@@ -137,13 +140,15 @@ There are some additional configuration options you can change, for example the 
 
 ### Immich Public Proxy options
 
-| Option                  | Description                                                                                                                 |
-|-------------------------|-----------------------------------------------------------------------------------------------------------------------------|
-| `responseHeaders`       | Change the headers sent with your web responses. By default there is `cache-control` and CORS added.                        |
-| `downloadOriginalPhoto` | Set to `false` if you only want people to be able to download the 'preview' quality photo, rather than your original photo. |
-| `showGalleryTitle`      | Show a title on the gallery page.                                                                                           |
-| `allowDownloadAll`      | Allow visitors to download all files as a zip.                                                                              |
-| `showHomePage`          | Set to `false` to remove the IPP shield page at `/` and at `/share`                                                         |
+| Option                  | Type     | Description                                                                                                                                                                                                                       |
+|-------------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `responseHeaders`       | `object` | Change the headers sent with your web responses. By default there is `cache-control` and CORS added.                                                                                                                              |
+| `singleImageGallery`    | `bool`   | By default a link to a single image will directly open the image file. Set to `true` if you want to show a gallery page instead for a single item.                                                                                |
+| `downloadOriginalPhoto` | `bool`   | Set to `false` if you only want people to be able to download the 'preview' quality photo, rather than your original photo.                                                                                                       |
+| `showGalleryTitle`      | `bool`   | Show a title on the gallery page.                                                                                                                                                                                                 |
+| `allowDownloadAll`      | `int`    | Allow visitors to download all files as a zip.<br>`0` disable downloads<br>`1` follow Immich setting per share ([example](https://github.com/user-attachments/assets/79ea8c08-71ce-42ab-b025-10aec384938a))<br>`2` always allowed |
+| `showHomePage`          | `bool`   | Set to `false` to remove the IPP shield page at `/` and at `/share`                                                                                                                                                               |
+| `customInvalidResponse` | various  | Send a custom response instead of the default 404 - see [Custom responses](docs/custom-responses.md) for more details.                                                                                                            |
 
 For example, to disable the home page at `/` and at `/share` you need to change `showHomePage` to `false`:
 
@@ -180,6 +185,18 @@ For example, to disable the download button for images, you would edit the `ligh
 }
 ```
 
+### Customising your error response pages
+
+You can customise the responses that IPP sends for invalid requests. For example you could:
+
+- Drop the connection entirely (no response).
+- Redirect to a new website.
+- Send a different status code.
+- Send a custom 404 page.
+- And so on...
+
+See [Custom responses](docs/custom-responses.md) for more details.
+
 ## Troubleshooting
 
 If you're using Cloudflare and having issues with videos not playing well, make sure your `/share/video/` paths are set to bypass cache.
@@ -187,7 +204,7 @@ I ran into this issue myself, and found [some helpful advice here](https://commu
 
 <a href="docs/cloudflare-video-cache.webp"><img src="docs/cloudflare-video-cache.webp" style="width:70%"></a>
 
-This project is tested with BrowserStack.
+I use Linux/Android, so this project is tested with BrowserStack for Apple/Windows devices.
 
 ## Feature requests
 
@@ -197,7 +214,9 @@ however my goal with this project is to keep it as lean as possible.
 Due to the sensitivity of data contained within Immich, I want anyone with a bit of coding knowledge
 to be able to read this codebase and fully understand everything it is doing.
 
-Things that not be considered for this project are:
+The most basic rule for this project is that it has **read-only** access to Immich.
+
+Things that will not be considered for this project are:
 
 - Anything that modifies Immich or its files in any way. If it requires an API key or privileged accesss, it won't be considered as a new feature.
 - Uploading photos (see above).

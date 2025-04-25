@@ -8,8 +8,9 @@
     "singleItemAutoOpen": true,
     "downloadOriginalPhoto": true,
     "showGalleryTitle": false,
-    "allowDownloadAll": false,
-    "showHomePage": true
+    "allowDownloadAll": 0,
+    "showHomePage": true,
+    "customInvalidResponse": false
   },
   "lightGallery": {
     "controls": true,

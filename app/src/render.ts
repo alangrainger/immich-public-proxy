@@ -1,8 +1,9 @@
 import immich from './immich'
 import { Response } from 'express-serve-static-core'
 import { Asset, AssetType, ImageSize, IncomingShareRequest, SharedLink } from './types'
-import { getConfigOption } from './functions'
+import { canDownload, getConfigOption } from './functions'
 import archiver from 'archiver'
+import { respondToInvalidRequest } from './invalidRequestHandler'
 
 class Render {
   lgConfig
@@ -74,7 +75,7 @@ class Render {
       )
       res.end()
     } else {
-      res.status(404).send()
+      respondToInvalidRequest(res, 404)
     }
   }
 
@@ -87,6 +88,14 @@ class Render {
    */
   async gallery (res: Response, share: SharedLink, openItem?: number) {
     const items = []
+
+    // Originally I had the base URL as a config option in .env.
+    // The issue with that is people who may be wanting to route in via multiple
+    // public URLs. So instead we generate the base URL from the incoming request data.
+    // This may cause issues with some reverse proxies, in which case just make sure
+    // that you're sending the correct `host` header to IPP.
+    const baseUrl = res.req.protocol + '://' + res.req.headers.host
+
     for (const asset of share.assets) {
       let video, downloadUrl
       if (asset.type === AssetType.video) {
@@ -94,7 +103,7 @@ class Render {
         video = JSON.stringify({
           source: [
             {
-              src: immich.videoUrl(share.key, asset.id, asset.password),
+              src: immich.videoUrl(share.key, asset.id),
               type: await immich.getVideoContentType(asset)
             }
           ],
@@ -106,12 +115,12 @@ class Render {
       }
       if (getConfigOption('ipp.downloadOriginalPhoto', true)) {
         // Add a download link for the original-size image, if configured in config.json
-        downloadUrl = immich.photoUrl(share.key, asset.id, ImageSize.original, asset.password)
+        downloadUrl = immich.photoUrl(share.key, asset.id, ImageSize.original)
       }
       items.push({
-        previewUrl: immich.photoUrl(share.key, asset.id, ImageSize.preview, asset.password),
+        previewUrl: immich.photoUrl(share.key, asset.id, ImageSize.preview),
         downloadUrl,
-        thumbnailUrl: immich.photoUrl(share.key, asset.id, ImageSize.thumbnail, asset.password),
+        thumbnailUrl: baseUrl + immich.photoUrl(share.key, asset.id, ImageSize.thumbnail),
         video
       })
     }
@@ -120,8 +129,7 @@ class Render {
       openItem,
       title: this.title(share),
       path: '/share/' + share.key,
-      showDownload: getConfigOption('ipp.allowDownloadAll', false),
-      password: share.password ? immich.encryptPassword(share.password) : {},
+      showDownload: canDownload(share),
       showTitle: getConfigOption('ipp.showGalleryTitle', false),
       lgConfig: getConfigOption('lightGallery', {})
     })
@@ -141,7 +149,7 @@ class Render {
     res.setHeader('Content-Type', 'application/zip')
     const title = this.title(share).replace(/[^\w .-]/g, '') + '.zip'
     res.setHeader('Content-Disposition', `attachment; filename="${title}"`)
-    const archive = archiver('zip', { zlib: { level: 9 } })
+    const archive = archiver('zip', { zlib: { level: 6 } })
     archive.pipe(res)
     for (const asset of share.assets) {
       const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + '/original', {
@@ -149,10 +157,15 @@ class Render {
         password: asset.password
       })
       const data = await fetch(url)
+      // Check the response for validity
+      if (!data.ok) {
+        console.warn(`Failed to fetch asset: ${asset.id}`)
+        continue
+      }
       archive.append(Buffer.from(await data.arrayBuffer()), { name: asset.originalFileName || asset.id })
     }
     await archive.finalize()
-    res.end()
+    archive.on('end', () => res.end())
   }
 }
 

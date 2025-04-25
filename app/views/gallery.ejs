@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title><%- title %></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <%
+    // Add an og-image using the first image's thumbnail
+    if (items?.[0]?.thumbnailUrl) {
+    %>
+    <meta property="og:image" content="<%- items[0].thumbnailUrl %>"/>
+    <% } %>
     <link rel="icon" href="/share/static/favicon.ico" type="image/x-icon">
     <link type="text/css" rel="stylesheet" href="/share/static/style.css"/>
     <link type="text/css" rel="stylesheet" href="/share/static/lg/lightgallery-bundle.min.css"/>
@@ -54,11 +60,9 @@
     <% } %>
     <%
     if (showDownload) {
-        // If there is a password required for the download, format it as a query string
-        const passwordQuery = Object.entries(password).length ? '?' + (new URLSearchParams(password)).toString() : ''
     %>
     <div id="download-all">
-        <a href="<%- path %>/download<%- passwordQuery %>" title="Download all"><img src="/share/static/images/download-all.svg"
+        <a href="<%- path %>/download" title="Download all"><img src="/share/static/images/download-all.svg"
                                                                                      height="24"
                                                                                      width="24" alt="Download all"></a>
     </div>
