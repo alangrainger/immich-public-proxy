@@ -1,9 +1,18 @@
-import { Asset, AssetType, ImageSize, IncomingShareRequest, SharedLink, SharedLinkResult } from './types'
+import {
+  Album,
+  AlbumType,
+  Asset,
+  AssetType,
+  ImageSize,
+  IncomingShareRequest,
+  SharedLink,
+  SharedLinkResult
+} from './types'
 import dayjs from 'dayjs'
-import { addResponseHeaders, getConfigOption, log } from './functions'
+import { addResponseHeaders, canDownload, getConfigOption, log } from './functions'
 import render from './render'
 import { Response } from 'express-serve-static-core'
-import { encrypt } from './encrypt'
+import { respondToInvalidRequest } from './invalidRequestHandler'
 
 class Immich {
   /**
@@ -26,6 +35,7 @@ class Immich {
       }
     } catch (e) {
       log('Unable to reach Immich on ' + process.env.IMMICH_URL)
+      log(`From the server IPP is running on, see if you can curl to ${this.apiUrl()}/server/ping and receive a JSON result.`)
     }
   }
 
@@ -44,13 +54,12 @@ class Immich {
    * 404 - any other failed request. Check console.log for details.
    */
   async handleShareRequest (request: IncomingShareRequest, res: Response) {
-    // Add the headers configured in config.json (most likely `cache-control`)
     addResponseHeaders(res)
 
     // Check that the key is a valid format
     if (!immich.isKey(request.key)) {
       log('Invalid share key ' + request.key)
-      res.status(404).send()
+      respondToInvalidRequest(res, 404)
       return
     }
 
@@ -58,15 +67,23 @@ class Immich {
     const sharedLinkRes = await immich.getShareByKey(request.key, request.password)
     if (!sharedLinkRes.valid) {
       // This isn't a valid request - check the console for more information
-      res.status(404).send()
+      respondToInvalidRequest(res, 404)
       return
     }
 
     // A password is required, but the visitor-provided one doesn't match
     if (sharedLinkRes.passwordRequired && request.password) {
       log('Invalid password for key ' + request.key)
-      res.status(401).send()
-      return
+      res.status(401)
+      // Delete the cookie-session data, so that it doesn't keep saying "Invalid password"
+      if (request.req?.session) delete request.req.session[request.key]
+    }
+
+    // Don't cache password-protected albums
+    if (sharedLinkRes.passwordRequired || request.password) {
+      res.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+      res.header('Pragma', 'no-cache')
+      res.header('Expires', '0')
     }
 
     // Password required - show the visitor the password page
@@ -75,28 +92,30 @@ class Immich {
       const key = request.key.replace(/[^\w-]/g, '')
       res.render('password', {
         key,
-        lgConfig: render.lgConfig
+        lgConfig: render.lgConfig,
+        notifyInvalidPassword: !!request.password
       })
       return
     }
 
     if (!sharedLinkRes.link) {
       log('Unknown error with key ' + request.key)
-      res.status(404).send()
+      respondToInvalidRequest(res, 404)
       return
     }
+    const link = sharedLinkRes.link
 
     // Make sure there are some photo/video assets for this link
-    const link = sharedLinkRes.link
+    /*
     if (!link.assets.length) {
       log('No assets for key ' + request.key)
-      res.status(404).send()
+      respondToInvalidRequest(res, 404)
       return
-    }
+    } */
 
     // Everything is ok - output the shared link data
 
-    if (request.mode === 'download' && getConfigOption('ipp.allowDownloadAll', false)) {
+    if (request.mode === 'download' && canDownload(link)) {
       // Download all assets as a zip file
       await render.downloadAll(res, link)
     } else if (link.assets.length === 1) {
@@ -136,6 +155,25 @@ class Immich {
         if (res.status === 200) {
           // Normal response - get the shared assets
           link = jsonBody as SharedLink
+
+          // For an album, we need to make a second request to Immich to populate
+          // the array of assets
+          if (link.type === AlbumType.album) {
+            const albumRes = await fetch(this.buildUrl(this.apiUrl() + '/albums/' + link?.album?.id, {
+              key,
+              password
+            }))
+            const album = await albumRes.json() as Album
+            if (!album?.id) {
+              log('Invalid album ID - ' + link?.album?.id)
+              return {
+                valid: false
+              }
+            }
+            // Replace the empty link.assets array with the array of assets from the album
+            link.assets = album.assets
+          }
+
           link.password = password
           if (link.expiresAt && dayjs(link.expiresAt) < dayjs()) {
             // This link has expired
@@ -148,6 +186,13 @@ class Immich {
               asset.key = key
               asset.password = password
             })
+            // Sort album if there is a sort order specified
+            const sortOrder = link.album?.order
+            if (sortOrder === 'asc') {
+              link.assets.sort((a, b) => a?.fileCreatedAt?.localeCompare(b.fileCreatedAt || '') || 0)
+            } else if (sortOrder === 'desc') {
+              link.assets.sort((a, b) => b?.fileCreatedAt?.localeCompare(a.fileCreatedAt || '') || 0)
+            }
             return {
               valid: true,
               link
@@ -212,19 +257,17 @@ class Immich {
   /**
    * Return the image data URL for a photo
    */
-  photoUrl (key: string, id: string, size?: ImageSize, password?: string) {
+  photoUrl (key: string, id: string, size?: ImageSize) {
     const path = ['photo', key, id]
     if (size) path.push(size)
-    const params = password ? this.encryptPassword(password) : {}
-    return this.buildUrl('/share/' + path.join('/'), params)
+    return this.buildUrl('/share/' + path.join('/'))
   }
 
   /**
    * Return the video data URL for a video
    */
-  videoUrl (key: string, id: string, password?: string) {
-    const params = password ? this.encryptPassword(password) : {}
-    return this.buildUrl(`/share/video/${key}/${id}`, params)
+  videoUrl (key: string, id: string) {
+    return this.buildUrl(`/share/video/${key}/${id}`)
   }
 
   /**
@@ -241,20 +284,6 @@ class Immich {
    */
   isKey (key: string) {
     return !!key.match(/^[\w-]+$/)
-  }
-
-  /**
-   * When loading assets from a password-protected link, make the decryption key valid for a
-   * short time. If the visitor loads the share link again, it will renew that expiry time.
-   * Even though the recipient already knows the password, this is just in case - for example
-   * to protect against the password-protected link being revoked, but the asset links still
-   * being valid.
-   */
-  encryptPassword (password: string) {
-    return encrypt(JSON.stringify({
-      password,
-      expires: dayjs().add(1, 'hour').format()
-    }))
   }
 
   async accessible () {

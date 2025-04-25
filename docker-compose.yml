@@ -8,6 +8,6 @@ services:
     environment:
       - IMMICH_URL=http://your-internal-immich-server:2283
     healthcheck:
-      test: wget -q --spider http://localhost:3000/share/healthcheck || exit 1
+      test: wget -q -T 10 --spider http://localhost:3000/share/healthcheck || exit 1
       start_period: 10s
       timeout: 5s
