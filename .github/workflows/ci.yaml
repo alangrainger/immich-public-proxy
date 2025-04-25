@@ -10,7 +10,7 @@ on:
     - '**/**.md'
     branches:
     - main
-    - dev
+    - masonry
     tags:
     - '[0-9]+.*'
 
