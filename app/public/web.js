@@ -113,10 +113,11 @@ class LGallery {
       this.masonry.appended(Array.from(newItems))
       
       // Refresh masonry, lightgallery and the index
-      this.masonry.layout()
+      imagesLoaded(newItems, () => {
+        this.masonry.layout()
+      })
       this.lightGallery.refresh()
 
-      this.masonry.layout()
       this.index += PER_PAGE
 
     }
