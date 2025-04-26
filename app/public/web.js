@@ -89,7 +89,16 @@ class LGallery {
    * https://www.lightgalleryjs.com/demos/infinite-scrolling/
    */
   loadMoreItems () {
-    // 1) Build a single HTML string for the batch
+    if (this.index >= this.items.length) return
+
+    // Show bottom loader
+    const loader = document.getElementById('bottom-loader')
+    if (loader) {
+      loader.classList.remove('fade-out-loader')
+      loader.classList.add('fade-in-loader')
+    }
+
+    // Build a single HTML string for the batch
     let html = ''
     this.items
       .slice(this.index, this.index + PER_PAGE)
@@ -107,23 +116,30 @@ class LGallery {
         }
       })
 
-    // 2) Parse it into a DocumentFragment
+    // Parse it into a DocumentFragment
     const fragment = document.createRange().createContextualFragment(html)
 
-    // 3) Grab exactly the new <a> nodes
+    // Grab exactly the new <a> nodes
     const newItems = Array.from(fragment.querySelectorAll('a.grid-item'))
 
-    // 4) Append them in one go
+    // Append them in one go
     this.element.append(fragment)
 
-    // 5) Tell Masonry about the new items, then wait for images and layout → refresh
+    // Tell Masonry about the new items, then wait for images and layout → refresh
     this.masonry.appended(newItems)
     imagesLoaded(newItems, () => {
       this.masonry.layout()
       this.lightGallery.refresh()
+
+      // Hide bottom loader
+      if (loader) {
+        loader.classList.remove('fade-in-loader')
+        loader.classList.add('fade-out-loader')
+      }
+
     })
 
-    // 6) Advance the index
+    // Advance the index
     this.index += PER_PAGE
   }
 
