@@ -8,7 +8,7 @@ class LGallery {
   lightGallery
   element
   index = PER_PAGE
-  
+  masonry
 
   spinner () {
     /* Preloader */
@@ -33,17 +33,16 @@ class LGallery {
    */
 
   init (params = {}) {
-    let masonry
-    
+
     this.element = document.getElementById('lightgallery'),
-    masonry = new Masonry(this.element,{
+    this.masonry = new Masonry(this.element,{
       itemSelector: '.grid-item',
       percentPosition: true,
       gutter: 0,
       columnWidth: '.lg-item:first-of-type' //Taken from first item. Can put .Class as selector
     })
   
-    masonry.layout()
+    this.masonry.layout()
   
     this.lightGallery = lightGallery(this.element, Object.assign({
       selector: '.lg-item',
@@ -97,87 +96,24 @@ class LGallery {
         .forEach(item => {
           if (item.video) {
             this.element.insertAdjacentHTML('beforeend', `<a data-video='${item.video}'
-        ${item.downloadUrl ? 'data-download-url="' + item.downloadUrl + '"' : ''}>
-        <img alt="" src="${item.thumbnailUrl}"/><div class="play-icon"></div></a>`)
+                                                          ${item.downloadUrl ? 'data-download-url="' + item.downloadUrl + '"' : ''}>
+                                                          <img alt="" src="${item.thumbnailUrl}"/><div class="play-icon"></div></a>`)
           } else {
             this.element.insertAdjacentHTML('beforeend', `<a href="${item.previewUrl}"
-        ${item.downloadUrl ? 'data-download-url="' + item.downloadUrl + '"' : ''}>
-        <img alt="" src="${item.thumbnailUrl}"/></a>`)
+                                                          ${item.downloadUrl ? 'data-download-url="' + item.downloadUrl + '"' : ''}>
+                                                          <img alt="" src="${item.thumbnailUrl}"/></a>`)
           }
         })
-      this.index += PER_PAGE
+      
+      // Select the newly added elements
+      const newItems = this.element.querySelectorAll('.lg-item:nth-last-child(-n+' + PER_PAGE + ')')
+      // Tell Masonry about the new elements
+      this.masonry.appended(Array.from(newItems))
+      this.masonry.layout()
+      
+        this.index += PER_PAGE
       this.lightGallery.refresh()
     }
   }
 }
 const lgallery = new LGallery()
-
-
-
-
-
-
-// function initLightGallery (config = {}) {
-// /* Preloader */
-//   const preloader = document.getElementById('page-loader');
-//   if (preloader) {
-//     const fadeEffect = () => {
-//       setInterval(() => {
-//         if (!preloader.style.opacity)    { preloader.style.opacity = 1; }
-//         if (preloader.style.opacity > 0) { preloader.style.opacity -= 0.1;} 
-//         else { 
-//           clearInterval(fadeEffect);
-//           preloader.remove();
-//         }
-//       }, 20)
-//     }
-//     window.addEventListener('load', fadeEffect);
-//   }
-
-// /* Init Gallery */
-//   masonryElMixed = document.getElementById('lightgallery'),
-//   masonryElMixed && imagesLoaded( document.getElementById('lightgallery'), function() {
-
-//     masonry = new Masonry(masonryElMixed,{
-//       itemSelector: '.grid-item',
-//       percentPosition: true,
-//       gutter: 0,
-//       columnWidth: '.lg-item:first-of-type' //Taken from first item. Can put .Class as selector
-//     })
-
-//     masonry.layout()
-
-//     lgallery = window.lightGallery(masonryElMixed, Object.assign({
-//       selector: '.lg-item',
-//       animateThumb: true,
-//       /*
-//       This license key was graciously provided by LightGallery under their
-//       GPLv3 open-source project license:
-//       */
-//       licenseKey: '8FFA6495-676C4D30-8BFC54B6-4D0A6CEC',
-//       /*
-//       Please do not take it and use it for other projects, as it was provided
-//       specifically for Immich Public Proxy.
-
-//       For your own projects you can use the default license key of
-//       0000-0000-000-0000 as per their docs:
-
-//       https://www.lightgalleryjs.com/docs/settings/#licenseKey
-//       */
-//       plugins: [
-//         lgFullscreen, 
-//         lgThumbnail,
-//         lgVideo,
-//         lgZoom
-//       ],
-//       hash: true,
-//       toggleThumb: true,
-//       allowMediaOverlap: true,
-//       subHtmlSelectorRelative: true,
-//       zoomFromOrigin: true,
-//     }), config)
-
-//   })
-// }
-
-
