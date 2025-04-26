@@ -90,6 +90,7 @@ class LGallery {
    */
   loadMoreItems () {
     if (this.index < this.items.length) {
+      
       // Append new thumbnails
       this.items
         .slice(this.index, this.index + PER_PAGE)
@@ -104,16 +105,20 @@ class LGallery {
                                                           <img alt="" src="${item.thumbnailUrl}"/></a>`)
           }
         })
-      
+
       // Select the newly added elements
       const newItems = this.element.querySelectorAll('.lg-item:nth-last-child(-n+' + PER_PAGE + ')')
-      console.log(newItems)
+
       // Tell Masonry about the new elements
       this.masonry.appended(Array.from(newItems))
-      this.masonry.layout()
       
-      this.index += PER_PAGE
+      // Refresh masonry, lightgallery and the index
+      this.masonry.layout()
       this.lightGallery.refresh()
+
+      this.masonry.layout()
+      this.index += PER_PAGE
+
     }
   }
 }
