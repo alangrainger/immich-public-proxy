@@ -88,43 +88,101 @@ class LGallery {
    * Load more gallery items as per lightGallery docs
    * https://www.lightgalleryjs.com/demos/infinite-scrolling/
    */
+  // loadMoreItems () {
+  //   if (this.index < this.items.length) {
+      
+  //     const existingCount = this.element.querySelectorAll('.grid-item').length
+
+  //     // Append new thumbnails
+  //     this.items
+  //       .slice(this.index, this.index + PER_PAGE)
+  //       .forEach(item => {
+  //         if (item.video) {
+  //           this.element.insertAdjacentHTML('beforeend', `<a class="lg-item grid-item" data-video='${item.video}'
+  //                                                         ${item.downloadUrl ? 'data-download-url="' + item.downloadUrl + '"' : ''}>
+  //                                                         <img alt="" src="${item.thumbnailUrl}"/><div class="play-icon"></div></a>`)
+  //         } else {
+  //           this.element.insertAdjacentHTML('beforeend', `<a class="lg-item grid-item" href="${item.previewUrl}"
+  //                                                         ${item.downloadUrl ? 'data-download-url="' + item.downloadUrl + '"' : ''}>
+  //                                                         <img alt="" src="${item.thumbnailUrl}"/></a>`)
+  //         }
+  //       })
+
+  //     // Select the newly added elements
+  //     const allItems = this.element.querySelectorAll('.grid-item')
+  //     const newItems = Array.from(allItems).slice(existingCount)
+
+  //     // Tell Masonry about the new elements
+  //     this.masonry.appended(Array.from(newItems))
+      
+  //     // Refresh masonry, lightgallery and the index
+  //     imagesLoaded(newItems, () => {
+  //       this.masonry.layout()
+  //     })
+  //     this.lightGallery.refresh()
+
+  //     this.index += PER_PAGE
+
+  //   }
+  // }
+
   loadMoreItems () {
-    if (this.index < this.items.length) {
-      
-      const existingCount = this.element.querySelectorAll('.grid-item').length
-
-      // Append new thumbnails
-      this.items
-        .slice(this.index, this.index + PER_PAGE)
-        .forEach(item => {
-          if (item.video) {
-            this.element.insertAdjacentHTML('beforeend', `<a class="lg-item grid-item" data-video='${item.video}'
-                                                          ${item.downloadUrl ? 'data-download-url="' + item.downloadUrl + '"' : ''}>
-                                                          <img alt="" src="${item.thumbnailUrl}"/><div class="play-icon"></div></a>`)
-          } else {
-            this.element.insertAdjacentHTML('beforeend', `<a class="lg-item grid-item" href="${item.previewUrl}"
-                                                          ${item.downloadUrl ? 'data-download-url="' + item.downloadUrl + '"' : ''}>
-                                                          <img alt="" src="${item.thumbnailUrl}"/></a>`)
+    if (this.index >= this.items.length) return
+  
+    // 1) Build new batch off-DOM
+    const fragment = document.createDocumentFragment()
+    const newItems = []
+  
+    this.items
+      .slice(this.index, this.index + PER_PAGE)
+      .forEach(item => {
+        const a = document.createElement('a')
+        a.classList.add('lg-item', 'grid-item')
+  
+        if (item.video) {
+          a.setAttribute('data-video', item.video)
+          if (item.downloadUrl) {
+            a.setAttribute('data-download-url', item.downloadUrl)
           }
-        })
-
-      // Select the newly added elements
-      //const newItems = this.element.querySelectorAll('.grid-item:nth-last-child(-n+' + PER_PAGE + ')')
-      const allItems = this.element.querySelectorAll('.grid-item')
-      const newItems = Array.from(allItems).slice(existingCount)
-
-      // Tell Masonry about the new elements
-      this.masonry.appended(Array.from(newItems))
-      
-      // Refresh masonry, lightgallery and the index
-      imagesLoaded(newItems, () => {
-        this.masonry.layout()
+          const img = document.createElement('img')
+          img.alt = ''
+          img.src = item.thumbnailUrl
+          a.append(img)
+  
+          const play = document.createElement('div')
+          play.classList.add('play-icon')
+          a.append(play)
+  
+        } else {
+          a.href = item.previewUrl
+          if (item.downloadUrl) {
+            a.setAttribute('data-download-url', item.downloadUrl)
+          }
+          const img = document.createElement('img')
+          img.alt = ''
+          img.src = item.thumbnailUrl
+          a.append(img)
+        }
+  
+        fragment.append(a)
+        newItems.push(a)
       })
+  
+    // 2) Append everything in one reflow
+    this.element.append(fragment)
+  
+    // 3) Tell Masonry exactly which items are new
+    this.masonry.appended(newItems)
+  
+    // 4) Wait for those images to load, then layout and finally refresh lightGallery
+    imagesLoaded(newItems, () => {
+      this.masonry.layout()
       this.lightGallery.refresh()
-
-      this.index += PER_PAGE
-
-    }
+    })
+  
+    // 5) Advance index
+    this.index += PER_PAGE
   }
+
 }
 const lgallery = new LGallery()
