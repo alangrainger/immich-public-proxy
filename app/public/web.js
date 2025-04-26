@@ -107,11 +107,12 @@ class LGallery {
       
       // Select the newly added elements
       const newItems = this.element.querySelectorAll('.lg-item:nth-last-child(-n+' + PER_PAGE + ')')
+      console.log(newItems)
       // Tell Masonry about the new elements
       this.masonry.appended(Array.from(newItems))
       this.masonry.layout()
       
-        this.index += PER_PAGE
+      this.index += PER_PAGE
       this.lightGallery.refresh()
     }
   }
