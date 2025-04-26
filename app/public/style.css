@@ -206,3 +206,11 @@ html {
 #bottom-loader.fade-out {
     animation: fadeOutLoader 0.4s ease-out forwards;
 }
+
+
+/* Lightgallery mods */
+
+/* Since photos load gradually, the conuter does not display the actual amount of images in the album */
+.lg-container .lg-counter {
+    display: none;
+}
