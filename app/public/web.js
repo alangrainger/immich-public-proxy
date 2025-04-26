@@ -95,11 +95,11 @@ class LGallery {
         .slice(this.index, this.index + PER_PAGE)
         .forEach(item => {
           if (item.video) {
-            this.element.insertAdjacentHTML('beforeend', `<a data-video='${item.video}'
+            this.element.insertAdjacentHTML('beforeend', `<a class="lg-item grid-item" data-video='${item.video}'
                                                           ${item.downloadUrl ? 'data-download-url="' + item.downloadUrl + '"' : ''}>
                                                           <img alt="" src="${item.thumbnailUrl}"/><div class="play-icon"></div></a>`)
           } else {
-            this.element.insertAdjacentHTML('beforeend', `<a href="${item.previewUrl}"
+            this.element.insertAdjacentHTML('beforeend', `<a class="lg-item grid-item" href="${item.previewUrl}"
                                                           ${item.downloadUrl ? 'data-download-url="' + item.downloadUrl + '"' : ''}>
                                                           <img alt="" src="${item.thumbnailUrl}"/></a>`)
           }
