@@ -6,7 +6,6 @@ on:
     tags:
       - 'v*'
     branches:
-      - main
       - masonry
 env:
   IMAGE_NAME: ${{ github.repository }}

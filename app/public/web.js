@@ -91,6 +91,8 @@ class LGallery {
   loadMoreItems () {
     if (this.index < this.items.length) {
       
+      const existingCount = this.element.querySelectorAll('.grid-item').length
+
       // Append new thumbnails
       this.items
         .slice(this.index, this.index + PER_PAGE)
@@ -107,7 +109,9 @@ class LGallery {
         })
 
       // Select the newly added elements
-      const newItems = this.element.querySelectorAll('.lg-item:nth-last-child(-n+' + PER_PAGE + ')')
+      //const newItems = this.element.querySelectorAll('.grid-item:nth-last-child(-n+' + PER_PAGE + ')')
+      const allItems = this.element.querySelectorAll('.grid-item')
+      const newItems = Array.from(allItems).slice(existingCount)
 
       // Tell Masonry about the new elements
       this.masonry.appended(Array.from(newItems))
