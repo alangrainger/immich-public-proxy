@@ -102,7 +102,7 @@
 <script src="/share/static/metafizzy/isotope.min.js"></script>
 <script src="/share/static/metafizzy/masonry.min.js"></script>
 <script type="text/javascript">
-    initLightGallery(<%- JSON.stringify(lgConfig) %>) // initLightGallery imported from web.js
+     lgallery.init(<%- JSON.stringify({lgConfig, items, openItem}) %>) // initLightGallery imported from web.js
     <% if (openItem) { %>
     const openItem = <%- openItem %>
     const thumbs = document.querySelectorAll('#lightgallery a')
