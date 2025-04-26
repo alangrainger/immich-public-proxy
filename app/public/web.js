@@ -1,27 +1,31 @@
 // How many thumbnails to load per "page" fetched from Immich
 const PER_PAGE = 50
 
-/* Preloader */
-  const preloader = document.getElementById('page-loader');
-  if (preloader) {
-    const fadeEffect = () => {
-      setInterval(() => {
-        if (!preloader.style.opacity)    { preloader.style.opacity = 1; }
-        if (preloader.style.opacity > 0) { preloader.style.opacity -= 0.1;} 
-        else { 
-          clearInterval(fadeEffect);
-          preloader.remove();
-        }
-      }, 20)
-    }
-    window.addEventListener('load', fadeEffect);
-  }
+
 
 class LGallery {
   items
   lightGallery
   element
   index = PER_PAGE
+
+  spinner (){
+    /* Preloader */
+    const preloader = document.getElementById('page-loader');
+    if (preloader) {
+      const fadeEffect = () => {
+        setInterval(() => {
+          if (!preloader.style.opacity)    { preloader.style.opacity = 1; }
+          if (preloader.style.opacity > 0) { preloader.style.opacity -= 0.1;} 
+          else { 
+            clearInterval(fadeEffect);
+            preloader.remove();
+          }
+        }, 20)
+      }
+      window.addEventListener('load', fadeEffect);
+    }
+  }
 
   /**
    * Create a lightGallery instance and populate it with the first page of gallery items

@@ -103,6 +103,7 @@
 <script src="/share/static/metafizzy/masonry.min.js"></script>
 <script type="text/javascript">
      lgallery.init(<%- JSON.stringify({lgConfig, items, openItem}) %>) // initLightGallery imported from web.js
+     lgallery.spinner()
     <% if (openItem) { %>
     const openItem = <%- openItem %>
     const thumbs = document.querySelectorAll('#lightgallery a')
