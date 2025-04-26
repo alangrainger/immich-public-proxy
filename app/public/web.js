@@ -8,8 +8,8 @@ class LGallery {
   lightGallery
   element
   index = PER_PAGE
-  masonry
   
+
   spinner () {
     /* Preloader */
     const preloader = document.getElementById('page-loader');
@@ -33,7 +33,8 @@ class LGallery {
    */
 
   init (params = {}) {
-
+    let masonry
+    
     this.element = document.getElementById('lightgallery'),
     masonry = new Masonry(this.element,{
       itemSelector: '.grid-item',
