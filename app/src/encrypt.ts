@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 
 interface EncryptedPayload {
-  iv: string;
+  iv: string; // Initialization Vector (IV)
   cr: string; // Encrypted data
 }
 
@@ -9,6 +9,9 @@ interface EncryptedPayload {
 const key = crypto.randomBytes(32)
 const algorithm = 'aes-256-cbc'
 
+/**
+ * Encrypt text data for storing in the session cookie
+ */
 export function encrypt (text: string): EncryptedPayload {
   try {
     const ivBuf = crypto.randomBytes(16)
@@ -27,7 +30,10 @@ export function encrypt (text: string): EncryptedPayload {
   }
 }
 
-export function decrypt (payload: EncryptedPayload) {
+/**
+ * Decrypt data which was stored in the session cookie
+ */
+export function decrypt (payload: EncryptedPayload): string {
   try {
     const decipher = crypto.createDecipheriv(algorithm, Buffer.from(key), Buffer.from(payload.iv, 'hex'))
     let decrypted = decipher.update(payload.cr, 'hex', 'utf8')
