@@ -8,8 +8,9 @@ class LGallery {
   lightGallery
   element
   index = PER_PAGE
-
-  spinner (){
+  masonry
+  
+  spinner () {
     /* Preloader */
     const preloader = document.getElementById('page-loader');
     if (preloader) {
