@@ -148,7 +148,13 @@ html {
     left: 0;
     right: 0;
     bottom: 0;  
-    background-color: var(--color-1)
+    background-color: var(--color-1);
+    opacity: 1;
+    transition: opacity 0.4s ease-out;
+  }
+#page-loader.hidden {
+    opacity: 0;
+    pointer-events: none; /* so it stops blocking clicks */
 }
 #stencil {
     display: flex;
@@ -177,7 +183,7 @@ html {
 
 
 #bottom-loader {
-    background: linear-gradient(0deg, rgba(25, 25, 25, 1) 0%, rgba(25, 25, 25, 1) 33%, rgba(0, 0, 0, 0) 100%);
+    background: linear-gradient(0deg, var(--color-1) 0%, var(--color-1) 33%, rgba(0, 0, 0, 0) 100%);
     position: fixed;
     bottom: 0;
     width: 100%;
@@ -190,13 +196,13 @@ html {
     from { opacity: 0; }
     to   { opacity: 1; }
 }
-.fade-in-loader {
+#bottom-loader.fade-in {
     animation: fadeInLoader 0.4s ease-out forwards;
 }
 @keyframes fadeOutLoader {
     from { opacity: 1; }
     to   { opacity: 0; }
 }
-.fade-out-loader {
+#bottom-loader.fade-out {
     animation: fadeOutLoader 0.4s ease-out forwards;
 }

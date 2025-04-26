@@ -1,147 +1,156 @@
-// How many thumbnails to load per "page" fetched from Immich
-const PER_PAGE = 50
-
-
+// LGallery.js
 
 class LGallery {
-  items
-  lightGallery
-  element
-  index = PER_PAGE
-  masonry
+  // — Centralized configuration —
+  static PER_PAGE       = 50;
+  static SCROLL_BUFFER  = 200;
+  static MASONRY_CONFIG = {
+    itemSelector:   '.grid-item',
+    percentPosition: true,
+    gutter:          0,
+    columnWidth:     '.grid-item:first-of-type'
+  };
 
-  spinner () {
-    /* Preloader */
-    const preloader = document.getElementById('page-loader');
-    if (preloader) {
-      const fadeEffect = () => {
-        setInterval(() => {
-          if (!preloader.style.opacity)    { preloader.style.opacity = 1; }
-          if (preloader.style.opacity > 0) { preloader.style.opacity -= 0.1;} 
-          else { 
-            clearInterval(fadeEffect);
-            preloader.remove();
-          }
-        }, 20)
-      }
-      window.addEventListener('load', fadeEffect);
-    }
+  // — Instance properties —
+  items         = [];
+  index         = LGallery.PER_PAGE;
+  element       = null;
+  masonry       = null;
+  lightGallery  = null;
+  loader        = null; // #bottom-loader
+  preloader     = null; // #page-loader
+
+  constructor() {
+    // bind once so we can safely use `this` in event listeners
+    this.handleScroll = this.handleScroll.bind(this);
+
+    // cache loader elements
+    this.loader    = document.getElementById('bottom-loader');
+    this.preloader = document.getElementById('page-loader');
   }
 
   /**
-   * Create a lightGallery instance and populate it with the first page of gallery items
+   * Fade out & remove the page preloader once everything's loaded
    */
+  preloaded() {
+    if (!this.preloader) return;
+    window.addEventListener('load', () => {
+      this.preloader.classList.add('hidden');
+      this.preloader.addEventListener('transitionend', () => {
+        this.preloader.remove();
+      });
+    });
+  }
 
-  init (params = {}) {
+  /**
+   * Initialize Masonry, lightGallery, and scroll‐to‐load behavior
+   */
+  init({ items = [], lgConfig = {} } = {}) {
+    this.items   = items;
+    this.element = document.getElementById('lightgallery');
 
-    this.element = document.getElementById('lightgallery'),
-    this.masonry = new Masonry(this.element,{
-      itemSelector: '.grid-item',
-      percentPosition: true,
-      gutter: 0,
-      columnWidth: '.lg-item:first-of-type' //Taken from first item. Can put .Class as selector
-    })
-  
-    this.masonry.layout()
-  
-    this.lightGallery = lightGallery(this.element, Object.assign({
-      selector: '.lg-item',
-      animateThumb: true,
-      licenseKey: '8FFA6495-676C4D30-8BFC54B6-4D0A6CEC',
-      plugins: [
-        lgFullscreen, 
-        lgThumbnail,
-        lgVideo,
-        lgZoom
-      ],
-      hash: true,
-      toggleThumb: true,
-      allowMediaOverlap: true,
-      subHtmlSelectorRelative: true,
-      zoomFromOrigin: true,
-    }, params.lgConfig))
+    // set up Masonry
+    this.masonry = new Masonry(this.element, LGallery.MASONRY_CONFIG);
+    this.masonry.layout();
 
-    this.items = params.items
+    // set up lightGallery
+    this.lightGallery = lightGallery(
+      this.element,
+      Object.assign({
+        selector:               '.lg-item',
+        animateThumb:           true,
+        licenseKey:             '8FFA6495-676C4D30-8BFC54B6-4D0A6CEC',
+        plugins:                [lgFullscreen, lgThumbnail, lgVideo, lgZoom],
+        hash:                   true,
+        toggleThumb:            true,
+        allowMediaOverlap:      true,
+        subHtmlSelectorRelative:true,
+        zoomFromOrigin:         true
+      }, lgConfig)
+    );
 
-    let timeout
+    // scroll listener with inline debounce
+    let timeout;
     window.addEventListener('scroll', () => {
-      if (timeout) clearTimeout(timeout)
-      timeout = setTimeout(lgallery.handleScroll, 100)
-    })
-    lgallery.handleScroll()
+      clearTimeout(timeout);
+      timeout = setTimeout(this.handleScroll, 100);
+    });
+
+    // load initial batch if needed
+    this.handleScroll();
   }
 
   /**
-   * Listen for scroll events and load more gallery items
+   * Listen for scroll events, check how close we are to the bottom, then load more
    */
-  handleScroll () {
-    const rect = lgallery.element.getBoundingClientRect()
-    const scrollPosition = Math.max(0, rect.bottom - window.innerHeight)
-    const buffer = 200 // pixels before bottom to trigger load
-
-    if (scrollPosition <= buffer) {
-      lgallery.loadMoreItems()
-    }
+  handleScroll() {
+    if (!this.element) return;
+    
+    const { bottom } = this.element.getBoundingClientRect();
+    
+    if (bottom - window.innerHeight > LGallery.SCROLL_BUFFER) return;
+    
+    this.loadMoreItems();
   }
 
   /**
    * Load more gallery items as per lightGallery docs
    * https://www.lightgalleryjs.com/demos/infinite-scrolling/
    */
-  loadMoreItems () {
-    if (this.index >= this.items.length) return
+  loadMoreItems() {
+    if (this.index >= this.items.length) return;
 
     // Show bottom loader
-    const loader = document.getElementById('bottom-loader')
-    if (loader) {
-      loader.classList.remove('fade-out-loader')
-      loader.classList.add('fade-in-loader')
+    if (this.loader) {
+      this.loader.classList.remove('fade-out');
+      this.loader.classList.add('fade-in');
     }
 
     // Build a single HTML string for the batch
-    let html = ''
+    let html = '';
     this.items
-      .slice(this.index, this.index + PER_PAGE)
+      .slice(this.index, this.index + LGallery.PER_PAGE)
       .forEach(item => {
         if (item.video) {
-          html += `<a class="lg-item grid-item" data-video="${item.video}"
-            ${item.downloadUrl ? 'data-download-url="' + item.downloadUrl + '"' : ''}>
-              <img alt="" src="${item.thumbnailUrl}"/><div class="play-icon"></div>
-          </a>`
+          html += `<a class="lg-item grid-item" data-video="${item.video}"${
+            item.downloadUrl ? ` data-download-url="${item.downloadUrl}"` : ''
+          }>
+            <img alt="" src="${item.thumbnailUrl}"/><div class="play-icon"></div>
+          </a>`;
         } else {
-          html += `<a class="lg-item grid-item" href="${item.previewUrl}"
-            ${item.downloadUrl ? 'data-download-url="' + item.downloadUrl + '"' : ''}>
-              <img alt="" src="${item.thumbnailUrl}"/>
-          </a>`
+          html += `<a class="lg-item grid-item" href="${item.previewUrl}"${
+            item.downloadUrl ? ` data-download-url="${item.downloadUrl}"` : ''
+          }>
+            <img alt="" src="${item.thumbnailUrl}"/>
+          </a>`;
         }
-      })
+      });
 
     // Parse it into a DocumentFragment
-    const fragment = document.createRange().createContextualFragment(html)
-
+    const fragment = document.createRange().createContextualFragment(html);
+    
     // Grab exactly the new <a> nodes
-    const newItems = Array.from(fragment.querySelectorAll('a.grid-item'))
+    const newItems = Array.from(fragment.querySelectorAll('a.lg-item'));
 
     // Append them in one go
-    this.element.append(fragment)
+    this.element.append(fragment);
 
     // Tell Masonry about the new items, then wait for images and layout → refresh
-    this.masonry.appended(newItems)
+    this.masonry.appended(newItems);
     imagesLoaded(newItems, () => {
-      this.masonry.layout()
-      this.lightGallery.refresh()
+      this.masonry.layout();
+      this.lightGallery.refresh();
 
       // Hide bottom loader
-      if (loader) {
-        loader.classList.remove('fade-in-loader')
-        loader.classList.add('fade-out-loader')
+      if (this.loader) {
+        this.loader.classList.remove('fade-in');
+        this.loader.classList.add('fade-out');
       }
-
-    })
-
+    });
+    
     // Advance the index
-    this.index += PER_PAGE
+    this.index += LGallery.PER_PAGE;
   }
-
 }
-const lgallery = new LGallery()
+
+const lgallery = new LGallery();
