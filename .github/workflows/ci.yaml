@@ -3,8 +3,6 @@ name: Create and publish a Docker image
 on:
   workflow_dispatch:
   push:
-    tags:
-      - 'v*'
     branches:
       - masonry
 env:
