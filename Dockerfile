@@ -1,24 +1,23 @@
-FROM node:lts-alpine
-
-RUN apk --no-cache add curl
-
-WORKDIR /app
-
-COPY app/ ./
-
-RUN chown -R node:node /app
+FROM node:lts-alpine as builder
 
 USER node
+WORKDIR /app
+COPY -chown=node:node app/ ./
 
-RUN npm install --omit=dev
+RUN npm ci \
+    && npx tsc 
+
+FROM node:lts-alpine as runner
+
+USER node
+WORKDIR /app
+COPY --chown=node:node app/ ./
+
+RUN apk --no-cache add curl \
+    && npm ci --omit=dev
 
 ARG PACKAGE_VERSION
 ENV APP_VERSION=${PACKAGE_VERSION}
 ENV NODE_ENV=production
-
-# Build without type checking, as we have removed the Typescript
-# dev-dependencies above to save space in the final build.
-# Type checking is done in the repo before building the image.
-RUN npx tsc --noCheck
 
 CMD ["node", "dist/index.js" ]
