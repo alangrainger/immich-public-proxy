@@ -183,6 +183,9 @@ html {
 
 
 #bottom-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: linear-gradient(0deg, var(--color-1) 0%, var(--color-1) 25%, rgba(0, 0, 0, 0) 100%);
     position: fixed;
     bottom: 0;
@@ -191,6 +194,9 @@ html {
     opacity: 0;
     pointer-events: none;
     z-index: 999;
+}
+#bottom-loader #stencil {
+    width: calc(var(--stencil-width) / 2);;
 }
 @keyframes fadeInLoader {
     from { opacity: 0; }
