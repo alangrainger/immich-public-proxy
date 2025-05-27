@@ -73,7 +73,7 @@ html {
     transform: translate(-50%, -50%);
     width: 50px;
     height: 50px;
-    background-image: url('/images/play.png');
+    background-image: url('/share/static/images/play.png');
     background-size: contain;
     background-repeat: no-repeat;
     opacity: 0.5;
@@ -92,13 +92,46 @@ html {
     color: white;
     width: 100%;
     display: flex;
+    max-width: var(--gallery-width-mobile);
+    margin: 0 auto;
+}
+#header h1 {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-right: 1rem;
+    word-wrap: break-word;
+    overflow: hidden;
+}
+@media screen and (min-width: 600px) {
+    #header {
+        max-width: var(--gallery-width-tablet);
+        margin: .5rem auto;
+    }
+    #header h1 {
+        font-size: 20pt;
+    }
 }
 
-#header h1 {
-    font-size: 18pt;
-    font-weight: bold;
-    margin: 4px;
+@media screen and (min-width: 900px) {
+    #header {
+        max-width: var(--gallery-width-desktop);
+        margin: 1rem auto;
+    }
+    #header h1 {
+        font-size: 32pt;
+    }
 }
+
+@media screen and (min-width: 1950px) {
+    #header {
+        max-width: var(--gallery-width-ultrawide);
+    }
+    #header h1 {
+        font-size: 32pt;
+    }
+}
+
+
 
 #download-all {
     margin: auto 4px auto auto;
@@ -115,7 +148,13 @@ html {
     left: 0;
     right: 0;
     bottom: 0;  
-    background-color: var(--color-1)
+    background-color: var(--color-1);
+    opacity: 1;
+    transition: opacity 0.4s ease-out;
+  }
+#page-loader.hidden {
+    opacity: 0;
+    pointer-events: none; /* so it stops blocking clicks */
 }
 #stencil {
     display: flex;
@@ -140,4 +179,44 @@ html {
 100% {
     transform: rotate(360deg);
 }
+}
+
+
+#bottom-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(0deg, var(--color-1) 0%, var(--color-1) 25%, rgba(0, 0, 0, 0) 100%);
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 65vh;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 999;
+}
+#bottom-loader #stencil {
+    width: calc(var(--stencil-width) / 2);;
+}
+@keyframes fadeInLoader {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+#bottom-loader.fade-in {
+    animation: fadeInLoader 0.4s ease-out forwards;
+}
+@keyframes fadeOutLoader {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+}
+#bottom-loader.fade-out {
+    animation: fadeOutLoader 0.4s ease-out forwards;
+}
+
+
+/* Lightgallery mods */
+
+/* Since photos load gradually, the conuter does not display the actual amount of images in the album */
+.lg-container .lg-counter {
+    display: none;
 }

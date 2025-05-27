@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import { Response } from 'express-serve-static-core'
+import { DownloadAll, SharedLink } from './types'
 
 let config = {}
 try {
@@ -45,4 +46,18 @@ export function addResponseHeaders (res: Response) {
     .forEach(([header, value]) => {
       res.set(header, value)
     })
+}
+
+export function canDownload (share: SharedLink) {
+  const allowDownloadConfig = getConfigOption('ipp.allowDownloadAll', 0) as DownloadAll
+  if (!allowDownloadConfig) {
+    // Downloading is disabled in config.json
+    return false
+  } else if (allowDownloadConfig === DownloadAll.always) {
+    // Always allowed to download in config.json
+    return true
+  } else {
+    // Return Immich's setting for this shared link
+    return !!share.allowDownload
+  }
 }
