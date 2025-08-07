@@ -135,7 +135,12 @@ class Immich {
     } else {
       // Multiple images - render as a gallery
       log('Serving link ' + request.key)
-      await render.gallery(res, link)
+      let openItem: number | undefined = undefined
+      if (request.asset) {
+        const idx = link.assets.findIndex(a => a.id === request.asset)
+        if (idx !== -1) openItem = idx + 1 // openItem is 1-based
+      }
+      await render.gallery(res, link, openItem)
     }
   }
 

@@ -48,7 +48,7 @@
       items,
       openItem
   }) %>) // initLightGallery imported from web.js
-  <% if (openItem) { %>
+  <% if (typeof openItem !== 'undefined') { %>
   const openItem = <%- openItem %>
   const thumbs = document.querySelectorAll('#lightgallery a')
   if (thumbs.length >= openItem) {

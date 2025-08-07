@@ -1,8 +1,14 @@
 FROM node:lts-alpine AS builder
 
+# Maak de map aan en stel juiste rechten in
+RUN mkdir /app && chown node:node /app
+
 USER node
 WORKDIR /app
 COPY --chown=node:node app/ ./
+
+# Zorg dat node_modules map er is en van node is
+RUN mkdir -p node_modules && npm ci && npx tsc
 
 RUN npm ci \
     && npx tsc 

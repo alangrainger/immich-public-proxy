@@ -33,6 +33,16 @@ class LGallery {
     }, params.lgConfig))
     this.items = params.items
 
+    // If openItem is provided, open the corresponding image (1-based index)
+    if (typeof params.openItem !== 'undefined' && params.openItem > 0) {
+      setTimeout(() => {
+        const thumbs = document.querySelectorAll('#lightgallery a')
+        if (thumbs.length >= params.openItem) {
+          thumbs[params.openItem - 1].click()
+        }
+      }, 0)
+    }
+
     let timeout
     window.addEventListener('scroll', () => {
       if (timeout) clearTimeout(timeout)

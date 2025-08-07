@@ -75,12 +75,14 @@ app.get(/^(|\/share)\/healthcheck$/, async (_req, res) => {
  * [ROUTE] This is the main URL that someone would visit if they are opening a shared link
  */
 app.get('/:shareType(share|s)/:key/:mode(download)?', decodeCookie, async (req, res) => {
+  // Accept ?asset=ID for deep-linking to a specific asset in the gallery
   await immich.handleShareRequest({
     req,
     key: req.params.key,
     keyType: req.params.shareType === 's' ? KeyType.slug : KeyType.key,
     mode: req.params.mode,
-    password: req.password
+    password: req.password,
+    asset: req.query.asset as string | undefined // <-- new
   }, res)
 })
 
