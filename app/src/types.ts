@@ -68,8 +68,9 @@ export interface IncomingShareRequest {
   req: Request;
   key: string;
   keyType?: KeyType;
-  password?: string;
   mode?: string;
+  password?: string;
+  asset?: string; // Optional asset ID for deep-linking
   size?: ImageSize;
   range?: string;
 }

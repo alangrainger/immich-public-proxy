@@ -84,7 +84,7 @@ class Render {
    *
    * @param res - ExpressJS Response
    * @param share - Immich `shared-link` containing the assets to show in the gallery
-   * @param [openItem] - Immediately open a lightbox to the Nth item when the gallery loads
+   * @param [openItem] - Immediately open a lightbox to the Nth item when the gallery loads (1-based index)
    */
   async gallery (res: Response, share: SharedLink, openItem?: number) {
     const items = []
@@ -136,7 +136,7 @@ class Render {
     }
     res.render('gallery', {
       items,
-      openItem,
+      openItem, // 1-based index for initial open item
       title: this.title(share),
       publicBaseUrl,
       path: '/share/' + share.key,
