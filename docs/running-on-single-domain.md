@@ -6,7 +6,7 @@ proxy to send all `/share/*` requests to IPP.
 
 ## Caddy
 
-Here's an example of how to do this with Caddy:
+[View Caddy docs](https://caddyserver.com/docs/caddyfile/directives/basic_auth) for more info. Here's an example of how to do this with Caddy:
 
 ```
 https://your-domain.com {
@@ -19,7 +19,7 @@ https://your-domain.com {
     
     # All other paths, require basic auth and send to Immich
     handle {
-        basicauth {
+        basic_auth {
             user password_hash
         }
         # Your Immich server and port
