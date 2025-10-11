@@ -139,6 +139,7 @@ class Render {
         description ? ` data-sub-html='<p>${description}</p>'` : '',
         `><img alt="" src="${thumbnailUrl}"/>`,
         video ? '<div class="play-icon"></div>' : '',
+        canDownload(share) ? `<div class="check-icon" onclick="selectAsset(event, '${asset.id}')"></div>` : '',
         '</a>'
       ].join('')
 
@@ -167,9 +168,11 @@ class Render {
   }
 
   /**
-   * Download all assets as a zip file
+   * Download assets as a zip file
+   * If assetIds is provided, only those assets will be included in the zip
+   * Otherwise, download all assets
    */
-  async downloadAll (res: Response, share: SharedLink) {
+  async downloadAll (res: Response, share: SharedLink, assetIds?: string[]) {
     res.setHeader('Content-Type', 'application/zip')
     let filename = (sanitize(this.title(share)) || 'photos') + '.zip'
     filename = encodeURI(filename)
@@ -177,6 +180,9 @@ class Render {
     const archive = archiver('zip', { zlib: { level: 6 } })
     archive.pipe(res)
     for (const asset of share.assets) {
+      if (assetIds && !assetIds.includes(asset.id)) {
+        continue
+      }
       const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + '/original', {
         key: asset.key,
         password: asset.password

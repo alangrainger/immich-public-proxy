@@ -117,8 +117,18 @@ class Immich {
     // Everything is ok - output the shared link data
 
     if (request.mode === 'download' && canDownload(link)) {
+      const assetIdsQuery = request.req.query.assetids;
+      let assetIds: string[]|undefined = undefined;
+      if (Array.isArray(assetIdsQuery)) {
+        assetIds = [];
+        for (const id of assetIdsQuery) {
+          if (typeof id === 'string') assetIds.push(id);
+        }
+      } else if (typeof assetIdsQuery === 'string') {
+        assetIds = [assetIdsQuery];
+      }
       // Download all assets as a zip file
-      await render.downloadAll(res, link)
+      await render.downloadAll(res, link, assetIds)
     } else if (link.assets.length === 1) {
       // This is an individual item (not a gallery)
       log('Serving link ' + request.key)
