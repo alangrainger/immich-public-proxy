@@ -75,3 +75,24 @@ class LGallery {
   }
 }
 const lgallery = new LGallery()
+
+const assetIdParams = new URLSearchParams();
+function selectAsset(event, assetId) {
+  const element = event.target;
+  if (element.classList.contains('selected')) {
+    element.classList.remove('selected');
+    assetIdParams.delete('assetids', assetId);
+  } else {
+    element.classList.add('selected');
+    assetIdParams.append('assetids', assetId);
+  }
+  event.stopPropagation();
+  event.preventDefault();
+  return false;
+}
+
+function downloadAsset(event, url) {
+  window.open(url + '?' + assetIdParams.toString(), '_self');
+  event.preventDefault();
+  return false;
+}

@@ -48,6 +48,28 @@ html {
     opacity: 1;
 }
 
+.check-icon {
+    position: absolute;
+    top: 0;
+    width: 28px;
+    height: 28px;
+    background-image: url('/share/static/images/circle-check.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0;
+    margin: 8px;
+    transition: opacity 0.3s;
+}
+
+#lightgallery a:has(.check-icon):hover .check-icon:not(.selected) {
+    opacity: 0.5;
+}
+
+.check-icon.selected {
+    opacity: 1;
+    background-image: url('/share/static/images/circle-check-soild.svg');
+}
+
 #password {
     color: white;
 }
