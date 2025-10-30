@@ -72,7 +72,9 @@ Here is an example setup for [securing Immich behind mTLS](./docs/securing-immic
 3. Update or remove the value for `PUBLIC_BASE_URL`. This should be the public base URL for IPP, without a trailing slash (example `https://your-proxy-url.com`). 
 If you remove this value, it will dynamically generate it based on the request hostname. This can be useful if you are [serving from multiple domains](#serving-from-multiple-domains).
 
-4. Start the docker container. You can test that it is working by visiting `https://your-proxy-url.com/share/healthcheck`. 
+4. _Optional_: Add `IPP_PORT` to environment variables in your docker-compose file to change the port from the default of 3000. Note that you will have to change the `ports` and `healthcheck` sections accordingly.
+
+5. Start the docker container. You can test that it is working by visiting `https://your-proxy-url.com/share/healthcheck`. 
 Check the container console output for any error messages.
 
 ```bash
