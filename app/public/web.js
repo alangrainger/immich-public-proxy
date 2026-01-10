@@ -20,7 +20,7 @@ class LGallery {
       This license key was graciously provided by LightGallery under their
       GPLv3 open-source project license:
       */
-      licenseKey: '8FFA6495-676C4D30-8BFC54B6-4D0A6CEC'
+      licenseKey: '8FFA6495-676C4D30-8BFC54B6-4D0A6CEC',
       /*
       Please do not take it and use it for other projects, as it was provided
       specifically for Immich Public Proxy.
@@ -30,6 +30,8 @@ class LGallery {
 
       https://www.lightgalleryjs.com/docs/settings/#licenseKey
       */
+      dynamic: true,
+      dynamicEl: params.items.slice(0, PER_PAGE).map((item) => item.dynamicEl),
     }, params.lgConfig))
     this.items = params.items
 
@@ -67,7 +69,7 @@ class LGallery {
           this.element.insertAdjacentHTML('beforeend', item.html + '\n')
         })
       this.index += PER_PAGE
-      this.lightGallery.refresh()
+      this.lightGallery.refresh(this.items.slice(0, this.index).map((item) => item.dynamicEl))
     } else {
       // Remove the loading spinner once all items are loaded
       document.getElementById('loading-spinner')?.remove()
@@ -75,3 +77,8 @@ class LGallery {
   }
 }
 const lgallery = new LGallery()
+
+function openGallery(event, index) {
+  event.preventDefault() // don't open the <a href=""> image link
+  lgallery.lightGallery.openGallery(index)
+}

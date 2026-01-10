@@ -110,7 +110,7 @@ class Render {
     const publicBaseUrl = process.env.PUBLIC_BASE_URL || res.req.headers.publicBaseUrl || (res.req.protocol + '://' + res.req.headers.host)
 
     // Use .map to generate an array of promises, then await them all to load in parallel.
-    const items = await Promise.all(share.assets.map(async (asset) => {
+    const items = await Promise.all(share.assets.map(async (asset, index) => {
       let video, downloadUrl
       if (asset.type === AssetType.video) {
         // Populate the data-video property
@@ -139,6 +139,7 @@ class Render {
       // Create the full HTML element source to pass to the gallery view
       const itemHtml = [
         video ? `<a data-video='${video}'` : `<a href="${previewUrl}"`,
+        ` onClick="openGallery(event, ${index})"`,
         downloadUrl ? ` data-download-url="${downloadUrl}"` : '',
         description ? ` data-sub-html='<p>${description}</p>'` : '',
         ` data-download="${this.getFilename(asset)}"><img alt="" src="${thumbnailUrl}"/>`,
@@ -149,7 +150,15 @@ class Render {
       return {
         html: itemHtml,
         thumbnailUrl,
-        previewUrl
+        previewUrl,
+        dynamicEl: {
+          src: video ? undefined : previewUrl,
+          thumb: thumbnailUrl,
+          subHtml: description ? `<p>${description}</p>` : '',
+          downloadUrl: downloadUrl ?? false,
+          video: video,
+          alt: thumbnailUrl
+        }
       }
     }))
 
