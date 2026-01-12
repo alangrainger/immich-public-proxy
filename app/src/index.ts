@@ -125,6 +125,27 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
     return
   }
 
+  // Security fix: Validate share link and check password before serving assets
+  // This prevents direct URL access from bypassing password protection
+  const share = await immich.getShareByKey(req.params.key, req.password)
+  if (!share) {
+    respondToInvalidRequest(res, 404, 'Invalid share link')
+    return
+  }
+
+  // If password is required but not provided, redirect to the share page
+  if (share.passwordRequired) {
+    res.redirect('/share/' + req.params.key)
+    return
+  }
+
+  // Verify the requested asset belongs to this share link
+  const assetBelongsToShare = share.assets?.some(a => a.id === req.params.id)
+  if (!assetBelongsToShare) {
+    respondToInvalidRequest(res, 404, 'Asset not found in share')
+    return
+  }
+
   const request = {
     req,
     key: req.params.key,
