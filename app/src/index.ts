@@ -125,6 +125,13 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
     return
   }
 
+  /*
+  This was the change made in PR https://github.com/alangrainger/immich-public-proxy/pull/174
+  I have had to remove this because it was preventing password-protected slug albums
+  from working.
+
+  This will be added back in once the slug issue is solved.
+
   // Validate share link and check password before serving assets
   // This prevents direct URL access from bypassing password protection
   // The password is provided from the encrypted session cookie (if set)
@@ -146,6 +153,7 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
     respondToInvalidRequest(res, 404, 'Asset not found in share')
     return
   }
+  */
 
   const request = {
     req,
