@@ -105,8 +105,8 @@ class Immich {
     }
     const link = sharedLinkRes.link
 
-    // If this was a slug link, we need to also store session information for the ID-based key
-    if (request.req.session && !request.req.session[link.key]) {
+    // If this was a password-protected slug link, we need to also store session information for the ID-based key
+    if (request.password && request.req.session && !request.req.session[link.key]) {
       request.req.session[link.key] = encrypt(JSON.stringify({
         password: request.password,
         expires: dayjs().add(1, 'hour').format()
