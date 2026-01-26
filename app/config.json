@@ -20,6 +20,7 @@
   "lightGallery": {
     "controls": true,
     "download": true,
+    "customSlideName": true,
     "mobileSettings": {
       "controls": false,
       "showCloseIcon": true,
