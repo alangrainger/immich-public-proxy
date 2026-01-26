@@ -14,6 +14,7 @@ import { addResponseHeaders, canDownload, getConfigOption, log } from './functio
 import render from './render'
 import { Response } from 'express-serve-static-core'
 import { respondToInvalidRequest } from './invalidRequestHandler'
+import { encrypt } from './encrypt'
 
 class Immich {
   /**
@@ -104,13 +105,13 @@ class Immich {
     }
     const link = sharedLinkRes.link
 
-    // Make sure there are some photo/video assets for this link
-    /*
-    if (!link.assets.length) {
-      log('No assets for key ' + request.key)
-      respondToInvalidRequest(res, 404)
-      return
-    } */
+    // If this was a slug link, we need to also store session information for the ID-based key
+    if (request.req.session && !request.req.session[link.key]) {
+      request.req.session[link.key] = encrypt(JSON.stringify({
+        password: request.password,
+        expires: dayjs().add(1, 'hour').format()
+      }))
+    }
 
     // Everything is ok - output the shared link data
 

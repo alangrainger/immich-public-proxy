@@ -95,6 +95,10 @@ app.get('/:shareType(share|s)/:key/:mode(download)?', decodeCookie, async (req, 
  * [ROUTE] Receive an unlock request from the password page
  * Stores a cookie with an encrypted payload which expires in 1 hour.
  * After that time, the visitor will need to provide the password again.
+ *
+ * The data is encrypted/decrypted on the server as a db-less way of
+ * managing user session data. The data is provided to the server by the
+ * user's browser in its encrypted state.
  */
 app.post('/share/unlock', async (req, res) => {
   if (req.session && req.body.key) {
@@ -125,13 +129,6 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
     return
   }
 
-  /*
-  This was the change made in PR https://github.com/alangrainger/immich-public-proxy/pull/174
-  I have had to remove this because it was preventing password-protected slug albums
-  from working.
-
-  This will be added back in once the slug issue is solved.
-
   // Validate share link and check password before serving assets
   // This prevents direct URL access from bypassing password protection
   // The password is provided from the encrypted session cookie (if set)
@@ -153,7 +150,6 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
     respondToInvalidRequest(res, 404, 'Asset not found in share')
     return
   }
-  */
 
   const request = {
     req,
