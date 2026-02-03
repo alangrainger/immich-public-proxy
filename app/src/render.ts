@@ -135,10 +135,13 @@ class Render {
       const thumbnailUrl = immich.photoUrl(share.key, asset.id, ImageSize.thumbnail)
       const previewUrl = immich.photoUrl(share.key, asset.id, immich.getPreviewImageSize(asset))
       const description = getConfigOption('ipp.showMetadata.description', false) && typeof asset?.exifInfo?.description === 'string' ? asset.exifInfo.description.replace(/'/g, '&apos;') : ''
+      const assetWidth = asset.width || asset.exifInfo?.exifImageWidth
+      const assetHeight = asset.height || asset.exifInfo?.exifImageHeight
 
       // Create the full HTML element source to pass to the gallery view
       const itemHtml = [
         video ? `<a data-video='${video}'` : `<a href="${previewUrl}"`,
+        assetWidth && assetHeight ? ` data-lg-size="${assetWidth}-${assetHeight}"` : '',
         downloadUrl ? ` data-download-url="${downloadUrl}"` : '',
         description ? ` data-sub-html='<p>${description}</p>'` : '',
         ` data-download="${this.getFilename(asset)}" data-slide-name="${asset.id}"><img alt="" src="${thumbnailUrl}"/>`,

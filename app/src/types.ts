@@ -12,6 +12,8 @@ export enum KeyType {
 
 export interface ExifInfo {
   description?: string;
+  exifImageWidth?: number;
+  exifImageHeight?: number;
 }
 
 export enum AlbumType {
@@ -30,6 +32,8 @@ export interface Asset {
   type: AssetType;
   isTrashed: boolean;
   exifInfo?: ExifInfo;
+  width?: number;
+  height?: number;
 }
 
 export interface Album {
