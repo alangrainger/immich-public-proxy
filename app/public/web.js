@@ -39,6 +39,13 @@ class LGallery {
       timeout = setTimeout(lgallery.handleScroll, 100)
     })
     lgallery.handleScroll()
+
+    const preloadThreshold = 8
+    this.element.addEventListener('lgAfterSlide', (event) => {
+      if (event.detail.index >= this.index - preloadThreshold) {
+        lgallery.loadMoreItems();
+      }
+    });
   }
 
   /**
