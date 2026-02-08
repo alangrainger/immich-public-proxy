@@ -1,19 +1,10 @@
 import immich from './immich'
 import { Response } from 'express-serve-static-core'
 import { Asset, AssetType, ImageSize, IncomingShareRequest, SharedLink } from './types'
-import { canDownload, getConfigOption } from './functions'
+import { canDownload, escapeHtml, getConfigOption } from './functions'
 import archiver from 'archiver'
 import { respondToInvalidRequest } from './invalidRequestHandler'
 import { sanitize } from './includes/sanitize'
-
-function escapeHtml (str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-}
 
 class Render {
   lgConfig
