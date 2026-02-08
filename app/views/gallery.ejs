@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title><%- title %></title>
+    <title><%= title %></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <%
     // Add an og-image using the first image's thumbnail
     if (items?.[0]?.previewUrl) {
     %>
-        <meta property="og:title" content="<%- title %>">
+        <meta property="og:title" content="<%= title %>">
         <meta property="og:image" content="<%- publicBaseUrl %><%- items[0].previewUrl %>">
-        <meta name="twitter:title" content="<%- title %>">
+        <meta name="twitter:title" content="<%= title %>">
         <meta name="twitter:image" content="<%- publicBaseUrl %><%- items[0].previewUrl %>">
         <meta name="twitter:card" content="summary_large_image">
     <% } %>
@@ -20,7 +20,7 @@
 <body>
 <div id="header">
     <% if (showTitle) { %>
-        <h1><%- title || 'Gallery' %></h1>
+        <h1><%= title || 'Gallery' %></h1>
     <% } %>
     <%
     if (showDownload) {
