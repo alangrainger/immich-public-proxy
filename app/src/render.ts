@@ -6,6 +6,15 @@ import archiver from 'archiver'
 import { respondToInvalidRequest } from './invalidRequestHandler'
 import { sanitize } from './includes/sanitize'
 
+function escapeHtml (str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 class Render {
   lgConfig
 
@@ -134,7 +143,7 @@ class Render {
 
       const thumbnailUrl = immich.photoUrl(share.key, asset.id, ImageSize.thumbnail)
       const previewUrl = immich.photoUrl(share.key, asset.id, immich.getPreviewImageSize(asset))
-      const description = getConfigOption('ipp.showMetadata.description', false) && typeof asset?.exifInfo?.description === 'string' ? asset.exifInfo.description.replace(/'/g, '&apos;') : ''
+      const description = getConfigOption('ipp.showMetadata.description', false) && typeof asset?.exifInfo?.description === 'string' ? escapeHtml(asset.exifInfo.description) : ''
 
       // Create the full HTML element source to pass to the gallery view
       const itemHtml = [
