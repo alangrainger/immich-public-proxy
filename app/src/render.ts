@@ -126,6 +126,7 @@ class Render {
             controls: 'controls'
           }
         })
+        downloadUrl = immich.videoUrl(share.key, asset.id)
       }
       if (getConfigOption('ipp.downloadOriginalPhoto', true)) {
         // Add a download link for the original-size image, if configured in config.json
