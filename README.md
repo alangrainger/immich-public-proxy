@@ -1,4 +1,9 @@
-# Immich Public Proxy
+# OTN Immich Public Proxy
+
+Extra features plan from the original [Immich Public Proxy]
+- random order of photos in an album
+
+---
 
 <p align="center" width="100%">
 <a href="https://hub.docker.com/r/alangrainger/immich-public-proxy/tags">
