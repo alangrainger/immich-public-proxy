@@ -45,10 +45,12 @@ export interface SharedLink {
   assets: Asset[];
   allowDownload?: boolean;
   password?: string;
+  slug: string;
   album?: {
     id: string;
     albumName?: string;
     order?: string;
+    description?: string;
   }
   expiresAt: string | null;
 }

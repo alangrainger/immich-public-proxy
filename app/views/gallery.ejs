@@ -20,7 +20,7 @@
 <body>
 <div id="header">
     <% if (showTitle) { %>
-        <h1><%= title || 'Gallery' %></h1>
+        <h1><%= title || 'Gallery' %></h1>  
     <% } %>
     <%
     if (showDownload) {
@@ -32,10 +32,15 @@
         </div>
     <% } %>
 </div>
+<% if (showDescription) { %>
+<div id="album-description">
+    <h2><%= description %></h2>
+</div>
+<% } %>
 <div id="lightgallery">
     <%
-    // Load the first 50 thumbnails, then load more as the user scrolls. See web.js
-    items.slice(0, 50).forEach(item => {
+    // Load the first 50 thumbnails if batch loading is enabled, then load more as the user scrolls. See web.js
+    items.slice(0, (slice ? 50 : items.length)).forEach(item => {
     %><%- item.html %>
     <% }) %>
 </div>
