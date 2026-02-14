@@ -154,15 +154,26 @@ class Render {
       }
     }))
 
+    //shuffle gallery items
+    const shuffleEnabled = getConfigOption("ipp.shuffleItems", false)
+    const shuffleBySlug: string[] = getConfigOption("ipp.shuffleItemsBySlug", []) as string[];
+    if(shuffleEnabled || shuffleBySlug.includes(share.slug)) {
+      items.sort(() => Math.random() - 0.5);
+    }
+
     res.render('gallery', {
       items,
       openItem,
       title: this.title(share),
+      slice: getConfigOption('ipp.batchLoadImages', true),
+      description: this.description(share),
       publicBaseUrl,
       path: '/share/' + share.key,
       showDownload: canDownload(share),
       showTitle: getConfigOption('ipp.showGalleryTitle', false),
-      lgConfig: getConfigOption('lightGallery', {})
+      showDescription: getConfigOption('ipp.showGalleryDescription', false),
+      lgConfig: getConfigOption('lightGallery', {}),
+      shuffle: true
     })
   }
 
@@ -171,6 +182,13 @@ class Render {
    */
   title (share: SharedLink) {
     return share.description || share?.album?.albumName || 'Gallery'
+  }
+
+  /**
+   * Get the immich album description.
+   */
+  description (share: SharedLink) {
+    return share?.album?.description || ''
   }
 
   /**

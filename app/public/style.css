@@ -65,6 +65,20 @@ html {
     margin: 4px;
 }
 
+#album-description {
+    font-family: system-ui, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, Helvetica, Arial, "Helvetica Neue", sans-serif;
+    color: white;
+    width: 100%;
+    display: flex;
+}
+
+#album-description h2 {
+    font-size: 14pt;
+    font-weight: normal;
+    font-style: italic;
+    margin: 4px;
+}
+
 #download-all {
     margin: auto 4px auto auto;
 }
