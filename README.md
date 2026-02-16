@@ -140,7 +140,7 @@ There are some additional configuration options you can change, for example the 
 
 ```yaml
     volumes:
-      - ./config.json:/app/config.json:ro
+      - ./config.json:/app/config.json
 ```
 
 3. Restart your container and your custom configuration should be active.
