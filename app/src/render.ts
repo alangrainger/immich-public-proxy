@@ -158,6 +158,7 @@ class Render {
       items,
       openItem,
       title: this.title(share),
+      description: getConfigOption('ipp.showGalleryDescription', false) ? this.description(share) : '',
       publicBaseUrl,
       path: '/share/' + share.key,
       showDownload: canDownload(share),
@@ -171,6 +172,13 @@ class Render {
    */
   title (share: SharedLink) {
     return share.description || share?.album?.albumName || 'Gallery'
+  }
+
+  /**
+   * Get the Immich shared link description
+   */
+  description (share: SharedLink) {
+    return share?.album?.description || ''
   }
 
   /**

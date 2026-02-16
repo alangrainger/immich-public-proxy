@@ -12,6 +12,7 @@
     "allowSlugLinks": true,
     "showHomePage": true,
     "showGalleryTitle": false,
+    "showGalleryDescription": false,
     "showMetadata": {
       "description": false
     },

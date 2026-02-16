@@ -32,6 +32,11 @@
         </div>
     <% } %>
 </div>
+<% if (description) { %>
+    <div id="album-description">
+        <h2><%= description %></h2>
+    </div>
+<% } %>
 <div id="lightgallery">
     <%
     // Load the first 50 thumbnails, then load more as the user scrolls. See web.js

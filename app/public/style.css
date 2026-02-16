@@ -52,9 +52,12 @@ html {
     color: white;
 }
 
-#header {
+#header, #album-description {
     font-family: system-ui, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, Helvetica, Arial, "Helvetica Neue", sans-serif;
     color: white;
+}
+
+#header {
     width: 100%;
     display: flex;
 }
@@ -63,6 +66,14 @@ html {
     font-size: 18pt;
     font-weight: bold;
     margin: 4px;
+}
+
+#album-description h2 {
+    font-size: 12pt;
+    font-weight: normal;
+    font-style: italic;
+    margin: 4px;
+    white-space: pre;
 }
 
 #download-all {

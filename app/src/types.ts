@@ -49,6 +49,7 @@ export interface SharedLink {
     id: string;
     albumName?: string;
     order?: string;
+    description?: string;
   }
   expiresAt: string | null;
 }
