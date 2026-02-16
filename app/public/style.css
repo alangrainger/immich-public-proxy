@@ -73,7 +73,7 @@ html {
     font-weight: normal;
     font-style: italic;
     margin: 4px;
-    white-space: pre;
+    white-space: pre-wrap;
 }
 
 #download-all {
