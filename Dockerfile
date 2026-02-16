@@ -7,7 +7,7 @@ COPY --chown=node:node app/ ./
 RUN npm ci \
     && npx tsc
 
-FROM node:lts-alpine3.20 AS runner
+FROM node:lts-alpine AS runner
 
 RUN apk --no-cache add curl
 
