@@ -3,6 +3,11 @@
 <head>
     <title><%= title %></title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <% if (description) { %>
+        <meta name="description" content="<%= description %>">
+        <meta property="og:description" content="<%= description %>">
+        <meta property="twitter:description" content="<%= description %>">
+    <% } %>
     <%
     // Add an og-image using the first image's thumbnail
     if (items?.[0]?.previewUrl) {
