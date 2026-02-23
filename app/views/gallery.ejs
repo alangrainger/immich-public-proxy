@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <title><%= title %></title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <%
     // Add an og-image using the first image's thumbnail
     if (items?.[0]?.previewUrl) {
@@ -44,7 +44,7 @@
     %><%- item.html %>
     <% }) %>
 </div>
-<div id="loading-spinner"><span class="loader"></span></div>
+<% if (items.length > 50) { %><div id="loading-spinner"><span class="loader"></span></div><% } %>
 <script src="/share/static/web.js"></script>
 <script src="/share/static/lg/lightgallery.min.js"></script>
 <script src="/share/static/lg/lg-fullscreen.min.js"></script>

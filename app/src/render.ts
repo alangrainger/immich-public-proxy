@@ -142,7 +142,7 @@ class Render {
         video ? `<a data-video='${video}'` : `<a href="${previewUrl}"`,
         downloadUrl ? ` data-download-url="${downloadUrl}"` : '',
         description ? ` data-sub-html='<p>${description}</p>'` : '',
-        ` data-download="${this.getFilename(asset)}" data-slide-name="${asset.id}"><img alt="" src="${thumbnailUrl}"/>`,
+        ` data-download="${this.getFilename(asset)}" data-slide-name="${asset.id}"><img alt="${description}" loading="lazy" src="${thumbnailUrl}"/>`,
         video ? '<div class="play-icon"></div>' : '',
         '</a>'
       ].join('')
@@ -191,7 +191,7 @@ class Render {
     res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${filename}`)
     const archive = archiver('zip', { zlib: { level: 6 } })
     archive.pipe(res)
-    for (const asset of share.assets) {
+    await Promise.all(share.assets.map(async (asset) => {
       const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + '/original', {
         key: asset.key,
         password: asset.password
@@ -200,10 +200,10 @@ class Render {
       // Check the response for validity
       if (!data.ok) {
         console.warn(`Failed to fetch asset: ${asset.id}`)
-        continue
+        return
       }
       archive.append(Buffer.from(await data.arrayBuffer()), { name: this.getFilename(asset) })
-    }
+    }))
     await archive.finalize()
     archive.on('end', () => res.end())
   }

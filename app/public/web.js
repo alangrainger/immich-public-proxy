@@ -33,24 +33,14 @@ class LGallery {
     }, params.lgConfig))
     this.items = params.items
 
-    let timeout
-    window.addEventListener('scroll', () => {
-      if (timeout) clearTimeout(timeout)
-      timeout = setTimeout(lgallery.handleScroll, 100)
-    })
-    lgallery.handleScroll()
-  }
-
-  /**
-   * Listen for scroll events and load more gallery items
-   */
-  handleScroll () {
-    const rect = lgallery.element.getBoundingClientRect()
-    const scrollPosition = Math.max(0, rect.bottom - window.innerHeight)
-    const buffer = 200 // pixels before bottom to trigger load
-
-    if (scrollPosition <= buffer) {
-      lgallery.loadMoreItems()
+    const spinner = document.getElementById('loading-spinner')
+    if (spinner) {
+      const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting) {
+          lgallery.loadMoreItems(observer, spinner)
+        }
+      }, { rootMargin: '200px' })
+      observer.observe(spinner)
     }
   }
 
@@ -58,7 +48,7 @@ class LGallery {
    * Load more gallery items as per lightGallery docs
    * https://www.lightgalleryjs.com/demos/infinite-scrolling/
    */
-  loadMoreItems () {
+  loadMoreItems (observer, spinner) {
     if (this.index < this.items.length) {
       // Append new thumbnails
       this.items
@@ -69,8 +59,9 @@ class LGallery {
       this.index += PER_PAGE
       this.lightGallery.refresh()
     } else {
-      // Remove the loading spinner once all items are loaded
-      document.getElementById('loading-spinner')?.remove()
+      // Remove the loading spinner and stop observing once all items are loaded
+      observer.disconnect()
+      spinner.remove()
     }
   }
 }
