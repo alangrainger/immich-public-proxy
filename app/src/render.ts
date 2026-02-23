@@ -142,7 +142,7 @@ class Render {
         video ? `<a data-video='${video}'` : `<a href="${previewUrl}"`,
         downloadUrl ? ` data-download-url="${downloadUrl}"` : '',
         description ? ` data-sub-html='<p>${description}</p>'` : '',
-        ` data-download="${this.getFilename(asset)}" data-slide-name="${asset.id}"><img alt="${description}" loading="lazy" src="${thumbnailUrl}"/>`,
+        ` data-download="${this.getFilename(asset)}" data-slide-name="${asset.id}"><img alt="${description}" loading="lazy" src="${thumbnailUrl}" onerror="this.closest('a').classList.add('thumb-error')"/>`,
         video ? '<div class="play-icon"></div>' : '',
         '</a>'
       ].join('')
