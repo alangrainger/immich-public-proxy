@@ -30,6 +30,20 @@ html {
         object-position: center;
     }
 }
+@media (min-width: 801px) {
+    #lightgallery a.thumb-error {
+        width: 250px;
+        height: 250px;
+        margin: 4px;
+    }
+}
+
+#lightgallery a.thumb-error {
+    background: #2a2a2a;
+}
+#lightgallery a.thumb-error img {
+    display: none;
+}
 
 .play-icon {
     position: absolute;
