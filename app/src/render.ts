@@ -185,6 +185,7 @@ class Render {
    * Download all assets as a zip file
    */
   async downloadAll (res: Response, share: SharedLink) {
+    const downloadOriginalAsset = getConfigOption('ipp.downloadOriginalPhoto', true)
     res.setHeader('Content-Type', 'application/zip')
     let filename = (sanitize(this.title(share)) || 'photos') + '.zip'
     filename = encodeURI(filename)
@@ -192,9 +193,11 @@ class Render {
     const archive = archiver('zip', { zlib: { level: 6 } })
     archive.pipe(res)
     await Promise.all(share.assets.map(async (asset) => {
-      const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + '/original', {
+      const endpoint = downloadOriginalAsset ? 'original' : 'thumbnail'
+      const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + '/' + endpoint, {
         key: asset.key,
-        password: asset.password
+        password: asset.password,
+        size: downloadOriginalAsset ? '' : 'preview'
       })
       const data = await fetch(url)
       // Check the response for validity
