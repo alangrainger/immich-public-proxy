@@ -200,8 +200,8 @@ class Immich {
               link
             }
           }
-        } else if (res.status === 401 && jsonBody?.message === 'Invalid password') {
-          // Password authentication required
+        } else if (res.status === 401) {
+          // Password authentication required (handles both "Invalid password" and "Password required" from Immich API)
           return {
             valid: true,
             passwordRequired: true
