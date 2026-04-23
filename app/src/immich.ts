@@ -201,13 +201,18 @@ class Immich {
             }
           }
         } else if (res.status === 401) {
-          // Password authentication required (handles both "Invalid password" and "Password required" from Immich API)
-          return {
-            valid: true,
-            passwordRequired: true
+          // Immich returns 401 for both invalid keys and password-protected shares.
+          // Check the message to distinguish between the two cases.
+          if (jsonBody?.message === 'Invalid share key' || jsonBody?.message === 'Invalid share slug') {
+            // Known invalid key/slug - treat as invalid request
+            log('Invalid share key ' + key)
+          } else {
+            // Default: treat as password required (fail-safe)
+            return {
+              valid: true,
+              passwordRequired: true
+            }
           }
-        } else if (jsonBody?.message === 'Invalid share key') {
-          log('Invalid share key ' + key)
         } else {
           console.log(JSON.stringify(jsonBody))
         }
