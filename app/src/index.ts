@@ -111,6 +111,15 @@ app.post('/share/unlock', async (req, res) => {
 })
 
 /*
+ * [ROUTE] Catch accidental POST requests to share URLs (e.g. from browser history 
+ * state issues) and force a clean GET redirect.
+ * See https://github.com/alangrainger/immich-public-proxy/pull/205
+ */
+app.post('/:shareType(share|s)/:key/:mode(download)?', (req, res) => {
+  res.redirect(303, req.originalUrl)
+})
+
+/*
  * [ROUTE] This is the direct link to a photo or video asset
  */
 app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, res) => {
