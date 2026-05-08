@@ -6,9 +6,6 @@ on:
     tags:
       - 'v*'
 
-env:
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
@@ -19,6 +16,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set lowercase image name
+        run: echo "IMAGE_NAME=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Get version from package.json
         run: echo "PACKAGE_VERSION=$(jq -r '.version' app/package.json)" >> $GITHUB_ENV
@@ -46,7 +46,7 @@ jobs:
         id: metadata
         uses: docker/metadata-action@v5
         with:
-          images: ${{ github.repository }}
+          images: ${{ env.IMAGE_NAME }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -58,8 +58,8 @@ jobs:
           build-args: |
             PACKAGE_VERSION=${{ env.PACKAGE_VERSION }}
           tags: |
-            ${{ github.repository }}:${{ env.PACKAGE_VERSION }}
-            ${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ env.PACKAGE_VERSION }}
-            ghcr.io/${{ github.repository }}:latest
+            ${{ env.IMAGE_NAME }}:${{ env.PACKAGE_VERSION }}
+            ${{ env.IMAGE_NAME }}:latest
+            ghcr.io/${{ env.IMAGE_NAME }}:${{ env.PACKAGE_VERSION }}
+            ghcr.io/${{ env.IMAGE_NAME }}:latest
           annotations: ${{ steps.metadata.output.annotations }}
