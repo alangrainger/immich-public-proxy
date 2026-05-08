@@ -8,7 +8,8 @@ import render from './render'
 import dayjs from 'dayjs'
 import { NextFunction, Request, Response } from 'express-serve-static-core'
 import { Asset, AssetType, ImageSize, KeyType } from './types'
-import { addResponseHeaders, getConfigOption, toString } from './functions'
+import { addResponseHeaders, canUpload, getConfigOption, log, toString } from './functions'
+import multer from 'multer'
 import { decrypt, encrypt } from './encrypt'
 import { respondToInvalidRequest } from './invalidRequestHandler'
 
@@ -108,6 +109,48 @@ app.post('/share/unlock', async (req, res) => {
     }))
   }
   res.send()
+})
+
+/*
+ * [ROUTE] Upload files to a shared album.
+ * Requires `ipp.allowUpload: true` in config.json AND the shared link must have
+ * `allowUpload` enabled in Immich. Any validation failure returns a generic 404.
+ */
+const multerUpload = multer({ storage: multer.memoryStorage() }).array('assets')
+app.post('/share/:key/upload', decodeCookie, multerUpload, async (req, res) => {
+  if (!immich.isKey(req.params.key)) {
+    respondToInvalidRequest(res, 404, 'Invalid key format for upload')
+    return
+  }
+
+  const share = await immich.getShareByKey(req.params.key, req.password)
+  if (!share.valid || share.passwordRequired || !share.link) {
+    respondToInvalidRequest(res, 404, 'Invalid share link for upload')
+    return
+  }
+
+  if (!canUpload(share.link)) {
+    respondToInvalidRequest(res, 404, 'Upload not permitted for this share')
+    return
+  }
+
+  const files = req.files as Express.Multer.File[]
+  if (!files || files.length === 0) {
+    res.status(400).json({ error: 'No files provided' })
+    return
+  }
+
+  const results = await Promise.all(files.map(async (file) => {
+    try {
+      const result = await immich.uploadAsset(share.link!.key, share.link!.keyType, req.password, file)
+      return { filename: file.originalname, status: result.status, id: result.id }
+    } catch (e) {
+      log('Upload failed for file ' + file.originalname + ': ' + (e as Error).message)
+      return { filename: file.originalname, status: 'failed' }
+    }
+  }))
+
+  res.json({ results })
 })
 
 /*

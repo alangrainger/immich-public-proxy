@@ -317,6 +317,30 @@ class Immich {
     }
   }
 
+  /**
+   * Upload a file to an Immich shared album on behalf of the visitor.
+   * Requires the shared link to have `allowUpload` enabled in Immich.
+   */
+  async uploadAsset (key: string, keyType: KeyType, password: string | undefined, file: Express.Multer.File): Promise<{ id: string; status: string }> {
+    const url = this.buildUrl(this.apiUrl() + '/assets', {
+      [keyType]: key,
+      password
+    })
+    const now = new Date().toISOString()
+    const form = new FormData()
+    form.append('assetData', new Blob([file.buffer], { type: file.mimetype }), file.originalname)
+    form.append('deviceAssetId', Date.now() + '-' + file.originalname)
+    form.append('deviceId', 'immich-public-proxy')
+    form.append('fileCreatedAt', now)
+    form.append('fileModifiedAt', now)
+    const res = await fetch(url, { method: 'POST', body: form })
+    if (!res.ok) {
+      const msg = await res.text().catch(() => '')
+      throw new Error('Immich upload failed with status ' + res.status + ': ' + msg)
+    }
+    return res.json() as Promise<{ id: string; status: string }>
+  }
+
   getKeyTypeFromShare (shareType: string) {
     return shareType === 's' ? KeyType.slug : KeyType.key
   }

@@ -9,6 +9,7 @@
     "downloadOriginalPhoto": true,
     "downloadedFilename": 0,
     "allowDownloadAll": 0,
+    "allowUpload": true,
     "allowSlugLinks": true,
     "showHomePage": true,
     "showGalleryTitle": false,

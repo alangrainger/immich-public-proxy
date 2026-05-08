@@ -45,6 +45,18 @@ html {
     display: none;
 }
 
+#lightgallery a.thumb-loading {
+    background: #1e1e1e;
+    animation: thumb-pulse 1.4s ease-in-out infinite;
+}
+#lightgallery a.thumb-loading img {
+    opacity: 0;
+}
+@keyframes thumb-pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.45; }
+}
+
 .play-icon {
     position: absolute;
     top: 50%;
@@ -92,6 +104,85 @@ html {
 
 #download-all {
     margin: auto 4px auto auto;
+}
+
+.upload-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #4a9eff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    transition: background 0.2s;
+}
+
+.upload-fab:hover {
+    background: #2e86f5;
+}
+
+.upload-fab:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.upload-fab .fab-spinner {
+    display: none;
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: rotation 0.8s linear infinite;
+}
+
+.upload-fab.uploading svg {
+    display: none;
+}
+
+.upload-fab.uploading .fab-spinner {
+    display: block;
+}
+
+.upload-toast {
+    position: fixed;
+    bottom: 92px;
+    left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    opacity: 0;
+    transition: opacity 0.25s, transform 0.25s;
+    background: #333;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 24px;
+    font-family: system-ui, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, Helvetica, Arial, "Helvetica Neue", sans-serif;
+    font-size: 14px;
+    white-space: nowrap;
+    z-index: 1001;
+    pointer-events: none;
+}
+
+.upload-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.upload-toast.success {
+    background: #2d7a2d;
+}
+
+.upload-toast.error {
+    background: #9a2424;
+    pointer-events: auto;
+    cursor: pointer;
 }
 
 #loading-spinner {

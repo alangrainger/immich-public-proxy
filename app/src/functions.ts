@@ -69,6 +69,15 @@ export function canDownload (share: SharedLink) {
   }
 }
 
+export function canUpload (share: SharedLink) {
+  if (!getConfigOption('ipp.allowUpload', false)) {
+    // Uploading is disabled in config.json
+    return false
+  }
+  // Return Immich's setting for this shared link
+  return !!share.allowUpload
+}
+
 export function escapeHtml (str: string): string {
   return str
     .replace(/&/g, '&amp;')

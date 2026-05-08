@@ -17,12 +17,14 @@
   "main": "dist/index.js",
   "bin": "dist/index.js",
   "dependencies": {
+    "@types/multer": "^2.1.0",
     "archiver": "^7.0.1",
     "cookie-session": "^2.1.0",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "express": "^4.21.1",
+    "multer": "^2.1.1",
     "tslib": "^2.8.1"
   },
   "devDependencies": {
