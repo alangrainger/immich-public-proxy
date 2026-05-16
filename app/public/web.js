@@ -16,6 +16,7 @@ class LGallery {
     this.lightGallery = lightGallery(this.element, Object.assign({
       plugins: [lgZoom, lgThumbnail, lgVideo, lgFullscreen, lgHash],
       speed: 500,
+      loop: params.items.length <= PER_PAGE,
       /*
       This license key was graciously provided by LightGallery under their
       GPLv3 open-source project license:
@@ -34,14 +35,23 @@ class LGallery {
     this.items = params.items
 
     const spinner = document.getElementById('loading-spinner')
+    let observer = null
+
     if (spinner) {
-      const observer = new IntersectionObserver((entries) => {
+      observer = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting) {
           lgallery.loadMoreItems(observer, spinner)
         }
       }, { rootMargin: '200px' })
       observer.observe(spinner)
     }
+
+    const preloadThreshold = 8
+    this.element.addEventListener('lgAfterSlide', (event) => {
+      if (event.detail.index >= this.index - preloadThreshold) {
+        lgallery.loadMoreItems(observer, spinner)
+      }
+    })
   }
 
   /**
@@ -60,8 +70,8 @@ class LGallery {
       this.lightGallery.refresh()
     } else {
       // Remove the loading spinner and stop observing once all items are loaded
-      observer.disconnect()
-      spinner.remove()
+      if (observer) observer.disconnect()
+      if (spinner) spinner.remove()
     }
   }
 }
