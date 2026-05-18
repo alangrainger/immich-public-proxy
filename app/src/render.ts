@@ -1,7 +1,7 @@
 import immich from './immich'
 import { Response } from 'express-serve-static-core'
 import { Asset, AssetType, ImageSize, IncomingShareRequest, SharedLink } from './types'
-import { canDownload, escapeHtml, getConfigOption, toString } from './functions'
+import { canDownload, escapeHtml, getConfigOption, log, toString } from './functions'
 import archiver from 'archiver'
 import { respondToInvalidRequest } from './invalidRequestHandler'
 import { sanitize } from './includes/sanitize'
@@ -202,7 +202,7 @@ class Render {
   }
 
   /**
-   * Download all assets in a share as a zip file
+   * Download all assets in a share as a zip file.
    */
   async downloadAll (res: Response, share: SharedLink) {
     await this.downloadAssets(res, share, share.assets)
@@ -211,31 +211,103 @@ class Render {
   /**
    * Stream the given assets back as a zip file. Caller is responsible for
    * checking that every asset belongs to the share (security boundary).
+   *
+   * Assets are fetched from Immich with a bounded concurrency (configurable via
+   * `ipp.downloadFromImmichConcurrencyLimit`, default 20) rather than all at once.
+   * Fetching every asset in parallel overwhelms the Immich server on large albums
+   * and causes the client download to time out before the first bytes are sent.
+   *
+   * Each asset is retried up to 3 times with linear backoff. If any asset still
+   * fails after retries, the in-flight download is aborted mid-stream: the
+   * archive is aborted, the HTTP response socket is destroyed, and the failure
+   * is logged. We do this (rather than silently omitting the asset) because by
+   * the time we know the asset failed we've already sent a 200 response to the
+   * client, so the only way to signal "your zip is incomplete" is to terminate
+   * the response — leaving the user with a visibly broken/truncated download
+   * instead of a zip that's quietly missing files.
    */
   async downloadAssets (res: Response, share: SharedLink, assets: Asset[]) {
     const downloadOriginalAsset = getConfigOption('ipp.downloadOriginalPhoto', true)
+    const concurrency = Math.max(1, getConfigOption('ipp.downloadFromImmichConcurrencyLimit', 20) as number)
     res.setHeader('Content-Type', 'application/zip')
     let filename = (sanitize(this.title(share)) || 'photos') + '.zip'
     filename = encodeURI(filename)
     res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${filename}`)
     const archive = archiver('zip', { zlib: { level: 6 } })
     archive.pipe(res)
-    await Promise.all(assets.map(async (asset) => {
-      const endpoint = downloadOriginalAsset ? 'original' : 'thumbnail'
-      const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + '/' + endpoint, {
-        key: asset.key,
-        password: asset.password,
-        size: downloadOriginalAsset ? '' : 'preview'
-      })
-      const data = await fetch(url)
-      if (!data.ok) {
-        console.warn(`Failed to fetch asset: ${asset.id}`)
-        return
+
+    let aborted = false
+    let failure: { asset: Asset, url: string, status?: number, error?: unknown } | null = null
+    const fail = (info: { asset: Asset, url: string, status?: number, error?: unknown }) => {
+      if (!aborted) {
+        aborted = true
+        failure = info
       }
-      archive.append(Buffer.from(await data.arrayBuffer()), { name: this.getFilename(asset) })
-    }))
+    }
+
+    const maxAttempts = 3
+    const queue = assets.slice()
+    const worker = async () => {
+      while (queue.length > 0) {
+        if (aborted) return
+        const asset = queue.shift()
+        if (!asset) return
+        const endpoint = downloadOriginalAsset ? 'original' : 'thumbnail'
+        const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + '/' + endpoint, {
+          key: asset.key,
+          password: asset.password,
+          size: downloadOriginalAsset ? '' : 'preview'
+        })
+
+        let buffer: Buffer | undefined
+        let lastStatus: number | undefined
+        let lastError: unknown
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          if (aborted) return
+          try {
+            const data = await fetch(url)
+            if (data.ok) {
+              buffer = Buffer.from(await data.arrayBuffer())
+              break
+            }
+            lastStatus = data.status
+            lastError = undefined
+          } catch (e) {
+            lastError = e
+            lastStatus = undefined
+          }
+          if (attempt < maxAttempts) {
+            const reason = lastStatus !== undefined
+              ? `HTTP ${lastStatus}`
+              : (lastError instanceof Error ? lastError.message : String(lastError))
+            log(`Retrying asset ${asset.id} (attempt ${attempt + 1}/${maxAttempts}) after ${reason}`)
+            // Linear backoff between attempts to avoid hammering a struggling server.
+            await new Promise(resolve => setTimeout(resolve, 500 * attempt))
+          }
+        }
+
+        if (!buffer) {
+          fail({ asset, url, status: lastStatus, error: lastError })
+          return
+        }
+        if (aborted) return
+        archive.append(buffer, { name: this.getFilename(asset) })
+      }
+    }
+    await Promise.all(Array.from({ length: concurrency }, () => worker()))
+
+    if (aborted && failure) {
+      const f = failure as { asset: Asset, url: string, status?: number, error?: unknown }
+      const detail = f.status !== undefined
+        ? `HTTP ${f.status}`
+        : (f.error instanceof Error ? f.error.message : String(f.error))
+      log(`Aborting zip download for share ${share.key}: failed to fetch asset ${f.asset.id} from ${f.url} (${detail})`)
+      archive.abort()
+      res.destroy()
+      return
+    }
+
     await archive.finalize()
-    archive.on('end', () => res.end())
   }
 
   /**
