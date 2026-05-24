@@ -13,6 +13,9 @@ import dayjs from 'dayjs'
 import { addResponseHeaders, canDownload, getConfigOption, log } from './functions'
 import render from './render'
 import { Response } from 'express-serve-static-core'
+import { h } from 'preact'
+import { renderPage } from './views/_render'
+import { Password } from './views/password'
 import { respondToInvalidRequest } from './invalidRequestHandler'
 import { encrypt } from './encrypt'
 
@@ -90,12 +93,11 @@ class Immich {
     // Password required - show the visitor the password page
     if (sharedLinkRes.passwordRequired) {
       // `request.key` is already sanitised at this point, but it never hurts to be explicit
-      const key = request.key.replace(/[^\w-]/g, '')
-      res.render('password', {
-        key,
-        lgConfig: render.lgConfig,
+      const shareKey = request.key.replace(/[^\w-]/g, '')
+      res.send(renderPage(h(Password, {
+        shareKey,
         notifyInvalidPassword: !!request.password
-      })
+      })))
       return
     }
 
@@ -122,13 +124,13 @@ class Immich {
       // This is an individual item (not a gallery)
       log('Serving link ' + request.key)
       const asset = link.assets[0]
-      if (asset.type === AssetType.image && !getConfigOption('ipp.singleImageGallery') && !request.password) {
+      if (asset.type === AssetType.image && !getConfigOption('ipp.gallery.singleImage') && !request.password) {
         // For photos, output the image directly unless configured to show a gallery,
         // or unless it's a password-protected link
         await render.assetBuffer(request, res, link.assets[0], ImageSize.preview)
       } else {
         // Show a gallery page
-        const openItem = getConfigOption('ipp.singleItemAutoOpen', true) ? 1 : 0
+        const openItem = getConfigOption('ipp.gallery.singleItemAutoOpen', true) ? 1 : 0
         await render.gallery(res, link, openItem)
       }
     } else {
@@ -235,7 +237,7 @@ class Immich {
   }
 
   /**
-   * Get the content-type of a video, for passing back to lightGallery
+   * Get the content-type of a video, for the lightbox <video> element
    */
   async getVideoContentType (asset: Asset) {
     const data = await this.request(this.buildUrl('/assets/' + encodeURIComponent(asset.id) + '/video/playback', {

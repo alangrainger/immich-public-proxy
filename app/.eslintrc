@@ -22,5 +22,14 @@
     "@typescript-eslint/ban-ts-comment": "off",
     "no-prototype-builtins": "off",
     "@typescript-eslint/no-empty-function": "off"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["public/web.js"],
+      "env": { "browser": true, "node": false },
+      "rules": {
+        "import/no-absolute-path": "off"
+      }
+    }
+  ]
 }

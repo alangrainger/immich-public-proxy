@@ -1,18 +1,15 @@
 import immich from './immich'
 import { Response } from 'express-serve-static-core'
 import { Asset, AssetType, ImageSize, IncomingShareRequest, SharedLink } from './types'
-import { canDownload, escapeHtml, getConfigOption } from './functions'
+import { canDownload, escapeHtml, getConfigOption, toString } from './functions'
 import archiver from 'archiver'
 import { respondToInvalidRequest } from './invalidRequestHandler'
 import { sanitize } from './includes/sanitize'
+import { h } from 'preact'
+import { renderPage } from './views/_render'
+import { Gallery, GalleryItem, GalleryProps } from './views/gallery'
 
 class Render {
-  lgConfig
-
-  constructor () {
-    this.lgConfig = getConfigOption('lightGallery', {})
-  }
-
   /**
    * Stream data from Immich back to the client
    */
@@ -98,23 +95,30 @@ class Render {
   }
 
   /**
-   * Render a gallery page for a given SharedLink, using EJS and lightGallery.
+   * Render a gallery page for a given SharedLink.
    *
    * @param res - ExpressJS Response
    * @param share - Immich `shared-link` containing the assets to show in the gallery
-   * @param [openItem] - Immediately open a lightbox to the Nth item when the gallery loads
+   * @param [openItem] - Immediately open the lightbox to the Nth item when the gallery loads
    */
   async gallery (res: Response, share: SharedLink, openItem?: number) {
     // publicBaseUrl is used for the og:image, which requires a fully qualified URL.
     // You can specify this in your docker-compose file, or send it dynamically as a `publicBaseUrl` header
     const publicBaseUrl = process.env.PUBLIC_BASE_URL || res.req.headers.publicBaseUrl || (res.req.protocol + '://' + res.req.headers.host)
 
-    // Use .map to generate an array of promises, then await them all to load in parallel.
-    const items = await Promise.all(share.assets.map(async (asset) => {
-      let video, downloadUrl
+    // Date grouping needs chronological order; sort newest-first when enabled
+    // (overrides any album.order the upstream applied).
+    const groupByDate = !!getConfigOption('ipp.gallery.groupByDate', false)
+    if (groupByDate) {
+      share.assets.sort((a, b) => (b.fileCreatedAt || '').localeCompare(a.fileCreatedAt || ''))
+    }
+
+    // Build structured items in parallel
+    const items: GalleryItem[] = await Promise.all(share.assets.map(async (asset): Promise<GalleryItem> => {
+      let videoData: string | undefined
+      let downloadUrl: string | undefined
       if (asset.type === AssetType.video) {
-        // Populate the data-video property
-        video = JSON.stringify({
+        videoData = JSON.stringify({
           source: [
             {
               src: immich.videoUrl(share.key, asset.id),
@@ -129,42 +133,58 @@ class Render {
         downloadUrl = immich.videoUrl(share.key, asset.id)
       }
       if (getConfigOption('ipp.downloadOriginalPhoto', true)) {
-        // Add a download link for the original-size image, if configured in config.json
         downloadUrl = immich.photoUrl(share.key, asset.id, ImageSize.original)
       }
 
       const thumbnailUrl = immich.photoUrl(share.key, asset.id, ImageSize.thumbnail)
       const previewUrl = immich.photoUrl(share.key, asset.id, immich.getPreviewImageSize(asset))
-      const description = getConfigOption('ipp.showMetadata.description', false) && typeof asset?.exifInfo?.description === 'string' ? escapeHtml(asset.exifInfo.description) : ''
+      const description = getConfigOption('ipp.showMetadata.description', false) && typeof asset?.exifInfo?.description === 'string'
+        ? escapeHtml(asset.exifInfo.description)
+        : ''
 
-      // Create the full HTML element source to pass to the gallery view
-      const itemHtml = [
-        video ? `<a data-video='${video}'` : `<a href="${previewUrl}"`,
-        downloadUrl ? ` data-download-url="${downloadUrl}"` : '',
-        description ? ` data-sub-html='<p>${description}</p>'` : '',
-        ` data-download="${this.getFilename(asset)}" data-slide-name="${asset.id}"><img alt="${description}" loading="lazy" src="${thumbnailUrl}" onerror="this.closest('a').classList.add('thumb-error')"/>`,
-        video ? '<div class="play-icon"></div>' : '',
-        '</a>'
-      ].join('')
+      let width = asset.exifInfo?.exifImageWidth
+      let height = asset.exifInfo?.exifImageHeight
+      const orientation = asset.exifInfo?.orientation
+      if (orientation && ['5', '6', '7', '8'].includes(orientation) && width && height) {
+        [width, height] = [height, width]
+      }
 
       return {
-        html: itemHtml,
+        id: asset.id,
+        type: asset.type,
+        previewUrl,
         thumbnailUrl,
-        previewUrl
+        downloadUrl,
+        videoData,
+        description: description || undefined,
+        downloadFilename: this.getFilename(asset),
+        width,
+        height,
+        thumbhash: asset.thumbhash,
+        fileCreatedAt: asset.fileCreatedAt
       }
     }))
 
-    res.render('gallery', {
+    const downloadAllowed = canDownload(share)
+    const props: GalleryProps = {
       items,
-      openItem,
       title: this.title(share),
-      description: getConfigOption('ipp.showGalleryDescription', false) ? this.description(share) : '',
-      publicBaseUrl,
+      description: getConfigOption('ipp.gallery.showDescription', false) ? this.description(share) : '',
+      publicBaseUrl: toString(publicBaseUrl),
       path: '/share/' + share.key,
-      showDownload: canDownload(share),
-      showTitle: getConfigOption('ipp.showGalleryTitle', false),
-      lgConfig: getConfigOption('lightGallery', {})
-    })
+      showDownload: downloadAllowed,
+      showTitle: !!getConfigOption('ipp.gallery.showTitle', false),
+      openItem,
+      lightboxConfig: {
+        // Show download button only if downloading is allowed AND configured.
+        showDownload: downloadAllowed && !!getConfigOption('ipp.lightbox.showDownload', true),
+        showArrows: !!getConfigOption('ipp.lightbox.showArrows', true),
+        mobileArrows: !!getConfigOption('ipp.lightbox.mobileArrows', false)
+      },
+      groupByDate
+    }
+
+    res.send(renderPage(h(Gallery, props)))
   }
 
   /**
@@ -182,9 +202,17 @@ class Render {
   }
 
   /**
-   * Download all assets as a zip file
+   * Download all assets in a share as a zip file
    */
   async downloadAll (res: Response, share: SharedLink) {
+    await this.downloadAssets(res, share, share.assets)
+  }
+
+  /**
+   * Stream the given assets back as a zip file. Caller is responsible for
+   * checking that every asset belongs to the share (security boundary).
+   */
+  async downloadAssets (res: Response, share: SharedLink, assets: Asset[]) {
     const downloadOriginalAsset = getConfigOption('ipp.downloadOriginalPhoto', true)
     res.setHeader('Content-Type', 'application/zip')
     let filename = (sanitize(this.title(share)) || 'photos') + '.zip'
@@ -192,7 +220,7 @@ class Render {
     res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${filename}`)
     const archive = archiver('zip', { zlib: { level: 6 } })
     archive.pipe(res)
-    await Promise.all(share.assets.map(async (asset) => {
+    await Promise.all(assets.map(async (asset) => {
       const endpoint = downloadOriginalAsset ? 'original' : 'thumbnail'
       const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + '/' + endpoint, {
         key: asset.key,
@@ -200,7 +228,6 @@ class Render {
         size: downloadOriginalAsset ? '' : 'preview'
       })
       const data = await fetch(url)
-      // Check the response for validity
       if (!data.ok) {
         console.warn(`Failed to fetch asset: ${asset.id}`)
         return
