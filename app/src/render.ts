@@ -173,7 +173,7 @@ class Render {
       publicBaseUrl: toString(publicBaseUrl),
       path: '/share/' + share.key,
       showDownload: downloadAllowed,
-      showTitle: !!getConfigOption('ipp.gallery.showTitle', false),
+      showTitle: !!getConfigOption('ipp.gallery.showTitle', true),
       openItem,
       lightboxConfig: {
         // Show download button only if downloading is allowed AND configured.
