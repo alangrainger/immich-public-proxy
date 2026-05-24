@@ -16,7 +16,7 @@
     "gallery": {
       "singleImage": false,
       "singleItemAutoOpen": true,
-      "showTitle": false,
+      "showTitle": true,
       "showDescription": false,
       "groupByDate": false
     },
