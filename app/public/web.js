@@ -441,6 +441,21 @@ function selectAllOrNone () {
 
 function downloadSelected () {
   if (selected.size === 0) return
+  // Single selection: download the file directly so the user gets the image
+  // (or video) instead of a one-entry zip.
+  if (selected.size === 1) {
+    const id = selected.values().next().value
+    const item = items.find(it => it.id === id)
+    if (item && item.downloadUrl) {
+      const a = document.createElement('a')
+      a.href = item.downloadUrl
+      a.download = item.downloadFilename || ''
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      return
+    }
+  }
   // Form POST so the browser handles streaming the zip directly to disk.
   const form = document.createElement('form')
   form.method = 'POST'
@@ -574,7 +589,7 @@ function loadVisibleTiles () {
     const aTopInVp = containerTop + parseFloat(a.style.top || '0')
     const aHeight = parseFloat(a.style.height || '0')
     const isFar = aTopInVp + aHeight < -IMAGE_LOAD_MARGIN_PX ||
-                  aTopInVp > vpHeight + IMAGE_LOAD_MARGIN_PX
+      aTopInVp > vpHeight + IMAGE_LOAD_MARGIN_PX
     if (isFar) {
       if (img.src && !img.complete) {
         img.dataset.src = img.src
@@ -629,9 +644,9 @@ function buildDataSource () {
       return {
         html:
           '<div class="pswp__video-wrap">' +
-            '<video controls playsinline poster="' + escapeAttr(item.thumbnailUrl) + '">' +
-              '<source src="' + escapeAttr(v.src) + '" type="' + escapeAttr(v.type) + '">' +
-            '</video>' +
+          '<video controls playsinline poster="' + escapeAttr(item.thumbnailUrl) + '">' +
+          '<source src="' + escapeAttr(v.src) + '" type="' + escapeAttr(v.type) + '">' +
+          '</video>' +
           '</div>'
       }
     }
