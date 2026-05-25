@@ -28,7 +28,7 @@
 }
 
 /* Standard icon buttons: cleaner sizing, hover state */
-.pswp__button {
+.pswp__top-bar .pswp__button {
   width: 44px;
   height: 44px;
   margin: 6px;
@@ -36,27 +36,27 @@
   transition: background-color 0.15s;
 }
 
-.pswp__button:hover,
-.pswp__button:focus-visible {
+.pswp__top-bar .pswp__button:hover,
+.pswp__top-bar .pswp__button:focus-visible {
   background-color: rgba(255, 255, 255, 0.12);
   outline: none;
+}
+
+.pswp__top-bar .pswp__button .pswp__icn {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 22px;
+  height: 22px;
+  color: var(--pswp-icon-color);
 }
 
 .pswp__button--close {
   margin-right: 10px;
 }
 
-/* Custom download button - same metrics as the built-ins */
 .pswp__button--download-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   color: #fff;
-}
-
-.pswp__button--download-button .pswp__icn {
-  width: 22px;
-  height: 22px;
 }
 
 /* Side arrows: hover-revealed on desktop, hidden by default on mobile */
