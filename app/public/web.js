@@ -303,7 +303,10 @@ function createTile (index) {
   }
 
   const img = document.createElement('img')
-  img.alt = item.description || ''
+  // alt left empty: browsers paint alt text over the thumbhash background
+  // while the thumbnail downloads. Description (if any) is shown in the
+  // lightbox caption instead.
+  img.alt = ''
   img.dataset.src = item.thumbnailUrl
   img.onerror = onThumbError
   a.appendChild(img)
@@ -682,6 +685,29 @@ function initLightbox () {
       })
     })
   }
+
+  // Caption from EXIF description (only present when item.description is set;
+  // server-side gated on ipp.showMetadata.description). Content is already
+  // HTML-escaped in render.ts, so innerHTML assignment is safe.
+  lightbox.on('uiRegister', () => {
+    lightbox.pswp.ui.registerElement({
+      name: 'caption',
+      order: 9,
+      isButton: false,
+      appendTo: 'root',
+      onInit: (el, pswp) => {
+        el.classList.add('pswp__caption')
+        const render = () => {
+          const item = items[pswp.currIndex]
+          const text = (item && item.description) || ''
+          el.innerHTML = text
+          el.hidden = !text
+        }
+        render()
+        pswp.on('change', render)
+      }
+    })
+  })
 
   // Hash navigation: sync window.location.hash with the open slide
   lightbox.on('uiRegister', () => {

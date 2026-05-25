@@ -125,3 +125,26 @@ html.pswp-no-arrows .pswp__button--arrow {
 .pswp__bg {
   transition: opacity var(--pswp-transition-duration);
 }
+
+/* Image caption (from EXIF description) - centered in the 56px bottom margin
+   carved out by the lightbox `padding.bottom` setting. */
+.pswp__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 56px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+  pointer-events: none;
+}
+
+.pswp__caption[hidden] {
+  display: none;
+}

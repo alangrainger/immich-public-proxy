@@ -15,9 +15,7 @@ try {
   console.log(e)
 }
 
-// Backward-compat shim: users with a legacy `lightGallery.*` config section
-// get the few keys most of them had set mapped onto the current
-// `ipp.lightbox.*` schema, with a single startup notice.
+// Backward-compatability shim for 1.x users with a legacy `lightGallery.*` config section
 if (config.lightGallery && typeof config.lightGallery === 'object') {
   const lg = config.lightGallery as Record<string, unknown>
   const mobile = (lg.mobileSettings || {}) as Record<string, unknown>
