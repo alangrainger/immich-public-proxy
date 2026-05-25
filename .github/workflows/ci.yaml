@@ -6,9 +6,6 @@ on:
     tags:
       - 'v*'
 
-env:
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
@@ -37,7 +34,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3.2.0
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -46,7 +43,14 @@ jobs:
         id: metadata
         uses: docker/metadata-action@v5
         with:
-          images: ${{ github.repository }}
+          images: |
+            ${{ github.repository }}
+            ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}},value=v${{ env.PACKAGE_VERSION }}
+            type=semver,pattern={{major}}.{{minor}},value=v${{ env.PACKAGE_VERSION }}
+            type=semver,pattern={{major}},value=v${{ env.PACKAGE_VERSION }}
+            type=raw,value=latest
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -54,12 +58,11 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          platforms: linux/amd64,linux/arm64,linux/arm64/v8
+          platforms: linux/amd64,linux/arm64
           build-args: |
             PACKAGE_VERSION=${{ env.PACKAGE_VERSION }}
-          tags: |
-            ${{ github.repository }}:${{ env.PACKAGE_VERSION }}
-            ${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ env.PACKAGE_VERSION }}
-            ghcr.io/${{ github.repository }}:latest
-          annotations: ${{ steps.metadata.output.annotations }}
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          annotations: ${{ steps.metadata.outputs.annotations }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
