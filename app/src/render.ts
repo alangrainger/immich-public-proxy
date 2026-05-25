@@ -78,22 +78,19 @@ class Render {
    * Map an ImageSize to the Immich endpoint that serves it.
    *
    * Policy: when `ipp.downloadOriginalPhoto` is off, requests for the original
-   * or fullsize image are silently downgraded to preview — the operator has
-   * opted out of serving full-resolution files. (The original may also be a
-   * RAW/HEIC file the browser can't render.)
+   * image are silently downgraded to preview — the operator has opted out of
+   * serving full-resolution files. (The original may also be a RAW/HEIC file
+   * the browser can't render.)
    */
   private resolveImageEndpoint (size: ImageSize): { subpath: string; sizeQueryParam?: string; attachment: boolean } {
     const allowOriginal = getConfigOption('ipp.downloadOriginalPhoto', true)
     if (size === ImageSize.original && allowOriginal) {
       return { subpath: '/original', attachment: true }
     }
-    if (size === ImageSize.fullsize && allowOriginal) {
-      return { subpath: '/thumbnail', sizeQueryParam: 'fullsize', attachment: false }
-    }
     if (size === ImageSize.thumbnail) {
       return { subpath: '/thumbnail', attachment: false }
     }
-    // preview, or original/fullsize downgraded because downloadOriginalPhoto is off
+    // preview, or original downgraded because downloadOriginalPhoto is off
     return { subpath: '/thumbnail', sizeQueryParam: 'preview', attachment: false }
   }
 
@@ -140,15 +137,7 @@ class Render {
       }
 
       const thumbnailUrl = immich.photoUrl(share.key, asset.id, ImageSize.thumbnail)
-      const previewSize = immich.getPreviewImageSize(asset)
-      const previewUrl = immich.photoUrl(share.key, asset.id, previewSize)
-      // Emit a zoom-upgrade URL for the lightbox only when it would actually
-      // be larger than the preview. GIFs already serve as `original` (to keep
-      // animation), and if the operator has disabled original downloads they
-      // don't want full-res served at all.
-      const fullsizeUrl = previewSize === ImageSize.preview && getConfigOption('ipp.downloadOriginalPhoto', true)
-        ? immich.photoUrl(share.key, asset.id, ImageSize.fullsize)
-        : undefined
+      const previewUrl = immich.photoUrl(share.key, asset.id, immich.getPreviewImageSize(asset))
       const description = getConfigOption('ipp.showMetadata.description', false) && typeof asset?.exifInfo?.description === 'string'
         ? escapeHtml(asset.exifInfo.description)
         : ''
@@ -165,7 +154,6 @@ class Render {
         type: asset.type,
         previewUrl,
         thumbnailUrl,
-        fullsizeUrl,
         downloadUrl,
         videoData,
         description: description || undefined,

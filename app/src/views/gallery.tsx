@@ -6,11 +6,6 @@ export interface GalleryItem {
   type: AssetType
   previewUrl: string
   thumbnailUrl: string
-  // Full-resolution JPEG render. Omitted for GIFs (preview is already the
-  // original, so animation is preserved) and when ipp.downloadOriginalPhoto
-  // is off (operator opted out of serving full-res). When present, the
-  // lightbox swaps to this on zoom.
-  fullsizeUrl?: string
   downloadUrl?: string
   // pre-stringified JSON describing the video source (used to build a <video>
   // element for video slides in the PhotoSwipe lightbox)
