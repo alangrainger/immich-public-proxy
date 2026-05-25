@@ -1,6 +1,10 @@
 # Immich Public Proxy
 
 <p align="center" width="100%">
+<img src="docs/ipp.svg" width="180" height="180">
+</p>
+
+<p align="center" width="100%">
 <a href="https://hub.docker.com/r/alangrainger/immich-public-proxy/tags">
     <img alt="Docker pulls" src="https://badgen.net/docker/pulls/alangrainger/immich-public-proxy?icon=docker&label=docker%20pulls&color=green&scale=1.1"></a>
 <a href="https://github.com/alangrainger/immich-public-proxy/releases/latest">
@@ -16,7 +20,7 @@ serving straight out of my own Immich instance.
 Setup takes less than a minute, and you never need to touch it again as all of your sharing stays managed within Immich.
 
 <p align="center" width="100%">
-<img src="docs/ipp.svg" width="200" height="200">
+<img src="docs/screenshot.webp" width="602" height="414" border="1px solid white">
 </p>
 
 ### Table of Contents
