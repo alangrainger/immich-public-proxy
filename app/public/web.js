@@ -22,6 +22,7 @@ import { thumbHashToDataURL } from '/share/static/thumbhash/thumbhash.js'
  * @property {'IMAGE'|'VIDEO'} type
  * @property {string} previewUrl
  * @property {string} thumbnailUrl
+ * @property {string} [fullsizeUrl]   Optional full-res JPEG; used as the zoom-upgrade target in the lightbox
  * @property {string} [downloadUrl]
  * @property {string} [videoData]    JSON-stringified video source info
  * @property {string} [description]  Escaped HTML fragment for the lightbox caption

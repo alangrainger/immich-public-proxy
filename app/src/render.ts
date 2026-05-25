@@ -11,87 +11,90 @@ import { Gallery, GalleryItem, GalleryProps } from './views/gallery'
 
 class Render {
   /**
-   * Stream data from Immich back to the client
+   * Stream an asset from Immich back to the client.
+   *
+   * Errors from Immich are always reported to the client as 404 — see
+   * invalidRequestHandler. Upstream status codes are never surfaced. Trashed
+   * or locked assets are handled implicitly: Immich's own endpoints refuse
+   * to serve them, and the upstream failure surfaces as a client 404.
    */
   async assetBuffer (req: IncomingShareRequest, res: Response, asset: Asset, size?: ImageSize | string) {
-    // Get meta info regarding the asset
-    const metaRes = await fetch(immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id), {
-      key: asset.key
-    }))
-    const meta = await metaRes.json()
-
-    // Make sure we should display this asset
-    if (meta.isTrashed || meta.visibility === 'locked') {
-      respondToInvalidRequest(res, 404, `Asset ${asset.id} is trashed or locked`)
-      return
-    }
-
-    // Prepare the request
     const headerList = ['content-type', 'content-length', 'last-modified', 'etag']
-    size = immich.validateImageSize(size)
-    let subpath, sizeQueryParam
+    const fetchHeaders: Record<string, string> = {}
+    let subpath: string
+    let sizeQueryParam: string | undefined
+    let attachment = false
+
     if (asset.type === AssetType.video) {
       subpath = '/video/playback'
-    } else if (asset.type === AssetType.image) {
-      // For images, there are three combinations of path + query string, depending on image size
-      if (size === ImageSize.original && getConfigOption('ipp.downloadOriginalPhoto', true)) {
-        subpath = '/original'
-      } else if (size === ImageSize.preview || size === ImageSize.original) {
-        // IPP is configured in config.json to send the preview size instead of the original size
-        subpath = '/thumbnail'
-        sizeQueryParam = 'preview'
-      } else {
-        subpath = '/' + size
-      }
-    }
-    const headers = { range: '' }
-
-    // For videos, request them in 2.5MB chunks rather than the entire video
-    if (asset.type === AssetType.video) {
+      // Stream videos in 2.5 MB chunks rather than the entire file
       const range = (req.range || '').replace(/bytes=/, '').split('-')
       const start = parseInt(range[0], 10) || 0
       const end = parseInt(range[1], 10) || start + 2499999
-      headers.range = `bytes=${start}-${end}`
+      fetchHeaders.range = `bytes=${start}-${end}`
       headerList.push('cache-control', 'content-range')
       res.setHeader('accept-ranges', 'bytes')
       res.status(206) // Partial Content
+    } else {
+      const endpoint = this.resolveImageEndpoint(immich.validateImageSize(size))
+      subpath = endpoint.subpath
+      sizeQueryParam = endpoint.sizeQueryParam
+      attachment = endpoint.attachment
     }
 
-    // Request data from Immich
     const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + subpath, {
       [asset.keyType || 'key']: asset.key,
       size: sizeQueryParam,
       password: asset.password
     })
-    const data = await fetch(url, { headers })
+    const data = await fetch(url, { headers: fetchHeaders })
 
-    // Add the filename for downloaded assets
-    if (size === ImageSize.original && asset.originalFileName && getConfigOption('ipp.downloadOriginalPhoto', true)) {
-      res.setHeader('Content-Disposition', `attachment; filename="${this.getFilename(asset)}"`)
-    }
-
-    // Return the response to the client
-    if (data.status >= 200 && data.status < 300) {
-      // Populate the whitelisted response headers
-      headerList.forEach(header => {
-        const value = data.headers.get(header)
-        if (value) res.setHeader(header, value)
-      })
-      // Return the Immich asset binary data
-      await data.body?.pipeTo(
-        new WritableStream({
-          write (chunk) { res.write(chunk) }
-        })
-      )
-      res.end()
-    } else {
+    if (data.status < 200 || data.status >= 300) {
       let immichMessage = ''
       try {
         const json = await data.json()
         if (json.message) immichMessage = '\nResponse from Immich: ' + json.message
       } catch (e) { }
       respondToInvalidRequest(res, 404, 'Failed response from Immich for asset ' + asset.id + ' on this URL:\n' + url + immichMessage)
+      return
     }
+
+    if (attachment && asset.originalFileName) {
+      res.setHeader('Content-Disposition', `attachment; filename="${this.getFilename(asset)}"`)
+    }
+    headerList.forEach(header => {
+      const value = data.headers.get(header)
+      if (value) res.setHeader(header, value)
+    })
+    await data.body?.pipeTo(
+      new WritableStream({
+        write (chunk) { res.write(chunk) }
+      })
+    )
+    res.end()
+  }
+
+  /**
+   * Map an ImageSize to the Immich endpoint that serves it.
+   *
+   * Policy: when `ipp.downloadOriginalPhoto` is off, requests for the original
+   * or fullsize image are silently downgraded to preview — the operator has
+   * opted out of serving full-resolution files. (The original may also be a
+   * RAW/HEIC file the browser can't render.)
+   */
+  private resolveImageEndpoint (size: ImageSize): { subpath: string; sizeQueryParam?: string; attachment: boolean } {
+    const allowOriginal = getConfigOption('ipp.downloadOriginalPhoto', true)
+    if (size === ImageSize.original && allowOriginal) {
+      return { subpath: '/original', attachment: true }
+    }
+    if (size === ImageSize.fullsize && allowOriginal) {
+      return { subpath: '/thumbnail', sizeQueryParam: 'fullsize', attachment: false }
+    }
+    if (size === ImageSize.thumbnail) {
+      return { subpath: '/thumbnail', attachment: false }
+    }
+    // preview, or original/fullsize downgraded because downloadOriginalPhoto is off
+    return { subpath: '/thumbnail', sizeQueryParam: 'preview', attachment: false }
   }
 
   /**
@@ -137,7 +140,15 @@ class Render {
       }
 
       const thumbnailUrl = immich.photoUrl(share.key, asset.id, ImageSize.thumbnail)
-      const previewUrl = immich.photoUrl(share.key, asset.id, immich.getPreviewImageSize(asset))
+      const previewSize = immich.getPreviewImageSize(asset)
+      const previewUrl = immich.photoUrl(share.key, asset.id, previewSize)
+      // Emit a zoom-upgrade URL for the lightbox only when it would actually
+      // be larger than the preview. GIFs already serve as `original` (to keep
+      // animation), and if the operator has disabled original downloads they
+      // don't want full-res served at all.
+      const fullsizeUrl = previewSize === ImageSize.preview && getConfigOption('ipp.downloadOriginalPhoto', true)
+        ? immich.photoUrl(share.key, asset.id, ImageSize.fullsize)
+        : undefined
       const description = getConfigOption('ipp.showMetadata.description', false) && typeof asset?.exifInfo?.description === 'string'
         ? escapeHtml(asset.exifInfo.description)
         : ''
@@ -154,6 +165,7 @@ class Render {
         type: asset.type,
         previewUrl,
         thumbnailUrl,
+        fullsizeUrl,
         downloadUrl,
         videoData,
         description: description || undefined,
