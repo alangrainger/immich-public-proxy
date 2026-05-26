@@ -779,8 +779,21 @@ function initLightbox () {
     pswp.on('change', () => {
       const it = items[pswp.currIndex]
       if (it) history.replaceState({ pswp: lightboxPushedHistory }, '', '#' + it.id)
+
+      const activeIndex = pswp.currIndex
+      const updateVideoPlayState = () => {
+        if (pswp.currIndex !== activeIndex) return
+        document.querySelectorAll('.pswp__video-wrap video').forEach(v => v.pause())
+        if (pswp.currSlide && pswp.currSlide.container) {
+          const video = pswp.currSlide.container.querySelector('video')
+          if (video) video.play().catch(() => {})
+        }
+      }
+      updateVideoPlayState()
+      setTimeout(updateVideoPlayState, 50)
     })
     pswp.on('close', () => {
+      document.querySelectorAll('.pswp__video-wrap video').forEach(v => v.pause())
       scrollToCurrentSlide(pswp.currIndex)
       const wasFromHistory = closingFromHistory
       closingFromHistory = false
