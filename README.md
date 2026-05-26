@@ -220,6 +220,7 @@ The gallery's lightbox is powered by [PhotoSwipe](https://photoswipe.com/). Conf
 | `showArrows`   | `bool` | Show the prev/next arrows on desktop. They appear when the user hovers the lightbox. Default `true`.                                     |
 | `showDownload` | `bool` | Show a download button in the lightbox toolbar. Only takes effect when downloads are also allowed by `allowDownloadAll`. Default `true`. |
 | `mobileArrows` | `bool` | Show prev/next arrows on mobile (under 640px viewport). Off by default since swipe is the natural mobile navigation.                     |
+| `options`      | `object` | Custom [PhotoSwipe options](https://photoswipe.com/options/) to override defaults (e.g. `{"wheelToZoom": true}`).                      |
 
 Example: hide the download button inside the lightbox even though zip downloads are otherwise allowed:
 

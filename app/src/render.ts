@@ -179,7 +179,8 @@ class Render {
         // Show download button only if downloading is allowed AND configured.
         showDownload: downloadAllowed && !!getConfigOption('ipp.lightbox.showDownload', true),
         showArrows: !!getConfigOption('ipp.lightbox.showArrows', true),
-        mobileArrows: !!getConfigOption('ipp.lightbox.mobileArrows', false)
+        mobileArrows: !!getConfigOption('ipp.lightbox.mobileArrows', false),
+        options: getConfigOption('ipp.lightbox.options', {}) as Record<string, unknown>
       },
       groupByDate
     }

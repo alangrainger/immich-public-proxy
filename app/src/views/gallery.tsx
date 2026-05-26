@@ -27,6 +27,7 @@ export interface LightboxConfig {
   showArrows: boolean
   showDownload: boolean
   mobileArrows: boolean
+  options?: Record<string, unknown>
 }
 
 export interface GalleryProps {
