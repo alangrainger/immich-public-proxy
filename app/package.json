@@ -1,6 +1,6 @@
 {
   "name": "immich-public-proxy",
-  "version": "1.15.6",
+  "version": "2.0.2",
   "scripts": {
     "dev": "ts-node src/index.ts",
     "build": "npx tsc",
@@ -21,8 +21,9 @@
     "cookie-session": "^2.1.0",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.5",
-    "ejs": "^3.1.10",
     "express": "^4.21.1",
+    "preact": "^10.29.2",
+    "preact-render-to-string": "^6.7.0",
     "tslib": "^2.8.1"
   },
   "devDependencies": {

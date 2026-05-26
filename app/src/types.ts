@@ -12,6 +12,11 @@ export enum KeyType {
 
 export interface ExifInfo {
   description?: string;
+  exifImageWidth?: number;
+  exifImageHeight?: number;
+  // EXIF orientation string ("1".."8") or null. Values 5-8 indicate the image
+  // is rotated 90°/270°, so the displayed aspect ratio swaps width/height.
+  orientation?: string | null;
 }
 
 export enum AlbumType {
@@ -30,6 +35,8 @@ export interface Asset {
   type: AssetType;
   isTrashed: boolean;
   exifInfo?: ExifInfo;
+  // Base64-encoded thumbhash for tasteful blur placeholders during lazy-load
+  thumbhash?: string;
 }
 
 export interface Album {

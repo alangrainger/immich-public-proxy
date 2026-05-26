@@ -1,0 +1,150 @@
+/*
+  PhotoSwipe overrides to match Immich's AssetViewer aesthetic.
+  Layered on top of photoswipe/photoswipe.css.
+*/
+
+.pswp {
+  --pswp-bg: #000;
+  --pswp-placeholder-bg: #111;
+  --pswp-icon-color: #fff;
+  --pswp-icon-color-secondary: transparent;
+  --pswp-icon-stroke-width: 0;
+  --pswp-error-text-color: #fff;
+  --pswp-preloader-color: rgba(255, 255, 255, 0.4);
+  --pswp-preloader-color-secondary: rgba(255, 255, 255, 0.9);
+  --pswp-transition-duration: 250ms;
+}
+
+/* Hide UI Immich doesn't show */
+.pswp__button--zoom,
+.pswp__counter {
+  display: none !important;
+}
+
+/* Top toolbar: subtle dark backdrop, no shadows */
+.pswp__top-bar {
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);
+  height: 56px;
+}
+
+/* Standard icon buttons: cleaner sizing, hover state */
+.pswp__top-bar .pswp__button {
+  width: 44px;
+  height: 44px;
+  margin: 6px;
+  border-radius: 50%;
+  transition: background-color 0.15s;
+}
+
+.pswp__top-bar .pswp__button:hover,
+.pswp__top-bar .pswp__button:focus-visible {
+  background-color: rgba(255, 255, 255, 0.12);
+  outline: none;
+}
+
+.pswp__top-bar .pswp__button .pswp__icn {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 22px;
+  height: 22px;
+  color: var(--pswp-icon-color);
+}
+
+.pswp__button--close {
+  margin-right: 10px;
+}
+
+.pswp__button--download-button {
+  color: #fff;
+}
+
+/* Side arrows: hover-revealed on desktop, hidden by default on mobile */
+.pswp__button--arrow {
+  width: 56px;
+  height: 100px;
+  margin-top: -50px;
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.15s;
+  border-radius: 8px;
+  background-color: transparent;
+}
+
+.pswp:hover .pswp__button--arrow {
+  opacity: 0.6;
+}
+
+.pswp__button--arrow:hover,
+.pswp__button--arrow:focus-visible {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.12);
+  outline: none;
+}
+
+/* Disable arrows at far ends of gallery */
+.pswp__button--arrow:disabled {
+  opacity: 0 !important;
+  cursor: default;
+}
+
+/* Mobile: PhotoSwipe already auto-fades top bar; here we just hide arrows
+   when configured to do so (default, matches Immich mobile). */
+html.pswp-no-arrows .pswp__button--arrow {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  html.pswp-no-mobile-arrows .pswp__button--arrow {
+    display: none !important;
+  }
+  /* Mobile top bar is shorter and translucent */
+  .pswp__top-bar {
+    height: 48px;
+  }
+}
+
+/* Video slide content */
+.pswp__video-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none; /* let PhotoSwipe handle gestures except on the video */
+}
+
+.pswp__video-wrap video {
+  max-width: 100%;
+  max-height: 100%;
+  outline: none;
+  pointer-events: auto;
+  background: #000;
+}
+
+/* Smooth backdrop fade in/out to match Immich's open/close feel */
+.pswp__bg {
+  transition: opacity var(--pswp-transition-duration);
+}
+
+/* Image caption (from EXIF description) - centered in the 56px bottom margin
+   carved out by the lightbox `padding.bottom` setting. */
+.pswp__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 56px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+  pointer-events: none;
+}
+
+.pswp__caption[hidden] {
+  display: none;
+}

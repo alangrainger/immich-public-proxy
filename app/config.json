@@ -4,28 +4,27 @@
       "Cache-Control": "public, max-age=2592000",
       "Access-Control-Allow-Origin":  "*"
     },
-    "singleImageGallery": false,
-    "singleItemAutoOpen": true,
     "downloadOriginalPhoto": true,
     "downloadedFilename": 0,
     "allowDownloadAll": 0,
+    "downloadFromImmichConcurrencyLimit": 20,
     "allowSlugLinks": true,
     "showHomePage": true,
-    "showGalleryTitle": false,
-    "showGalleryDescription": false,
     "showMetadata": {
       "description": false
     },
-    "customInvalidResponse": false
-  },
-  "lightGallery": {
-    "controls": true,
-    "download": true,
-    "customSlideName": true,
-    "mobileSettings": {
-      "controls": false,
-      "showCloseIcon": true,
-      "download": true
+    "customInvalidResponse": false,
+    "gallery": {
+      "singleImage": false,
+      "singleItemAutoOpen": true,
+      "showTitle": true,
+      "showDescription": false,
+      "groupByDate": false
+    },
+    "lightbox": {
+      "showArrows": true,
+      "showDownload": true,
+      "mobileArrows": false
     }
   }
 }

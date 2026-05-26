@@ -8,9 +8,12 @@ import render from './render'
 import dayjs from 'dayjs'
 import { NextFunction, Request, Response } from 'express-serve-static-core'
 import { Asset, AssetType, ImageSize, KeyType } from './types'
-import { addResponseHeaders, getConfigOption, toString } from './functions'
+import { addResponseHeaders, canDownload, getConfigOption, toString } from './functions'
 import { decrypt, encrypt } from './encrypt'
 import { respondToInvalidRequest } from './invalidRequestHandler'
+import { h } from 'preact'
+import { renderPage } from './views/_render'
+import { Home } from './views/home'
 
 // Extend the Request type with a `password` property
 declare module 'express-serve-static-core' {
@@ -28,10 +31,10 @@ app.use(cookieSession({
   sameSite: 'strict',
   secret: crypto.randomBytes(32).toString('base64url')
 }))
-// Add the EJS view engine, to render the gallery page
-app.set('view engine', 'ejs')
-// For parsing the password unlock form
+// For parsing the password unlock form and POSTed JSON payloads
 app.use(express.json())
+// For parsing the selective-download form POST (form-encoded body)
+app.use(express.urlencoded({ extended: false, limit: '1mb' }))
 // Serve static assets from the 'public' folder as /share/static
 app.use('/share/static', express.static('public', { setHeaders: addResponseHeaders }))
 // Serve the same assets on /, to allow for /robots.txt and /favicon.ico
@@ -111,7 +114,51 @@ app.post('/share/unlock', async (req, res) => {
 })
 
 /*
- * [ROUTE] Catch accidental POST requests to share URLs (e.g. from browser history 
+ * [ROUTE] Selective download - POST a list of asset IDs, get a zip of just those.
+ * The list arrives as a single "assets" form field containing a JSON array.
+ * Validates each ID against share.assets so the request can't pull anything
+ * outside the share.
+ */
+app.post('/:shareType(share|s)/:key/download', decodeCookie, async (req, res) => {
+  const keyType = immich.getKeyTypeFromShare(req.params.shareType)
+  let requestedIds: unknown
+  try {
+    requestedIds = JSON.parse(String(req.body?.assets ?? '[]'))
+  } catch (e) {
+    respondToInvalidRequest(res, 400, 'Malformed assets list')
+    return
+  }
+  if (!Array.isArray(requestedIds) || requestedIds.length === 0) {
+    respondToInvalidRequest(res, 400, 'No assets selected')
+    return
+  }
+
+  const result = await immich.getShareByKey(req.params.key, req.password, keyType)
+  if (!result?.valid || !result.link) {
+    respondToInvalidRequest(res, 404, 'Invalid share link')
+    return
+  }
+  if (result.passwordRequired) {
+    respondToInvalidRequest(res, 401, 'Password required')
+    return
+  }
+  if (!canDownload(result.link)) {
+    respondToInvalidRequest(res, 403, 'Downloads disabled for this share')
+    return
+  }
+
+  const requested = new Set(requestedIds.map(String))
+  const validAssets = result.link.assets.filter(a => requested.has(a.id))
+  if (validAssets.length === 0) {
+    respondToInvalidRequest(res, 400, 'No valid assets in selection')
+    return
+  }
+
+  await render.downloadAssets(res, result.link, validAssets)
+})
+
+/*
+ * [ROUTE] Catch accidental POST requests to share URLs (e.g. from browser history
  * state issues) and force a clean GET redirect.
  * See https://github.com/alangrainger/immich-public-proxy/pull/205
  */
@@ -185,7 +232,7 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
 if (getConfigOption('ipp.showHomePage', true)) {
   app.get(/^\/(|share)\/*$/, (_req, res) => {
     addResponseHeaders(res)
-    res.render('home')
+    res.send(renderPage(h(Home, {})))
   })
 }
 

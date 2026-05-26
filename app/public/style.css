@@ -1,118 +1,384 @@
-html {
-    background: #191919;
+/*
+  Tokens ported from immich-app/immich v2.7.5 (web/src/app.css, 2026-05-23).
+  Re-check approximately once a year for visual drift.
+
+  Font note: Immich uses "GoogleSans" (Google's proprietary font, not freely
+  distributed). We use a system font stack with Inter from Google Fonts as a
+  visually-close substitute. Same approach Immich's open-source consumers use.
+*/
+
+/* Inter (OFL-1.1, see fonts/Inter-LICENSE.txt). Single variable WOFF2 covers
+   all weights from 100-900, so we can use any weight in CSS without an extra
+   network request. Vendored locally so IPP runs cleanly air-gapped. */
+@font-face {
+  font-family: 'Inter';
+  src: url('/share/static/fonts/inter-latin-wght-normal.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
 }
 
-#lightgallery a {
-    position: relative;
-    display: inline-block;
-    text-decoration: none;
+:root {
+  /* Immich light-mode tokens (RGB triplets so they compose via rgb(var(...))) */
+  --immich-primary: 66 80 175;
+  --immich-bg: 255 255 255;
+  --immich-fg: 0 0 0;
+  --immich-gray: 235 235 235;
+
+  /* Immich dark-mode tokens */
+  --immich-dark-primary: 172 203 250;
+  --immich-dark-bg: 10 10 10;
+  --immich-dark-fg: 229 231 235;
+  --immich-dark-gray: 33 33 33;
+
+  /* Active palette - light by default; html.dark overrides below */
+  --color-bg: rgb(var(--immich-bg));
+  --color-fg: rgb(var(--immich-fg));
+  --color-primary: rgb(var(--immich-primary));
+  --color-gray: rgb(var(--immich-gray));
+
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Horizontal inset for textual page content (title, description, group
+     headers). The grid itself goes edge-to-edge on mobile so it doesn't use
+     this value. */
+  --gutter: 32px;
+
+  color-scheme: light;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --gutter: 8px;
+  }
+}
+
+html.dark {
+  --color-bg: rgb(var(--immich-dark-bg));
+  --color-fg: rgb(var(--immich-dark-fg));
+  --color-primary: rgb(var(--immich-dark-primary));
+  --color-gray: rgb(var(--immich-dark-gray));
+
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+}
+
+/* ===== Justified-rows / square-grid gallery (tiles are absolute-positioned by JS) ===== */
+
+#gallery {
+  /* Container is a positioned box; tiles are absolute-positioned by JS.
+     Container height is set explicitly so the scrollbar reflects the full
+     virtualized layout. */
+  position: relative;
+  margin: 0 var(--gutter) var(--gutter);
+}
+
+@media (max-width: 640px) {
+  /* Tiles go edge-to-edge on mobile, so the gallery doesn't use --gutter */
+  #gallery {
     margin: 0;
-    padding: 0;
-    cursor: pointer;
+  }
 }
 
-#lightgallery img {
-    max-height: 250px;
-    margin: 4px;
+#gallery a {
+  position: absolute;
+  display: block;
+  overflow: hidden;
+  text-decoration: none;
+  cursor: pointer;
+  background-color: var(--color-gray);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  /* left / top / width / height set per-tile by layoutGrid() in web.js;
+     background-image is the decoded thumbhash placeholder, set by web.js. */
 }
 
-@media (max-width: 800px) {
-    #lightgallery a {
-        width: calc(100vw / 3 - 10px);
-        height: calc(100vw / 3 - 10px);
-        overflow: hidden;
-    }
-
-    #lightgallery img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center;
-    }
-}
-@media (min-width: 801px) {
-    #lightgallery a.thumb-error {
-        width: 250px;
-        height: 250px;
-        margin: 4px;
-    }
+#gallery img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
-#lightgallery a.thumb-error {
-    background: #2a2a2a;
+/* Hide the <img> until JS sets its src - otherwise Chrome renders its default
+   broken-image glyph for img elements with explicit dimensions but no src
+   (e.g. tiles awaiting load, or tiles whose in-flight fetch was cancelled
+   when the user scrolled past). The <a>'s gray background shows through. */
+#gallery img:not([src]) {
+  visibility: hidden;
 }
-#lightgallery a.thumb-error img {
-    display: none;
+
+#gallery a.thumb-error img {
+  display: none;
+}
+
+/* ===== Group headers (visible when ipp.groupGalleryByDate is enabled) ===== */
+
+.group-header {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 16px 0 8px;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--color-fg);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  /* On mobile the gallery itself goes edge-to-edge, so the headers need
+     their own left padding to keep the text away from the screen edge. */
+  .group-header {
+    padding-left: var(--gutter);
+  }
+}
+
+/* ===== Selection mode (checkmark + selected state) ===== */
+
+.tile-check {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  background-color: rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  transition: opacity 0.15s, background-color 0.15s, border-color 0.15s;
+  z-index: 2;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#gallery a:hover .tile-check,
+#gallery.select-mode .tile-check {
+  opacity: 1;
+}
+
+.tile-check svg {
+  width: 16px;
+  height: 16px;
+  color: #fff;
+  display: none;
+}
+
+#gallery a.selected .tile-check {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  opacity: 1;
+}
+
+#gallery a.selected .tile-check svg {
+  display: block;
+}
+
+#gallery a.selected {
+  outline: 3px solid var(--color-primary);
+  outline-offset: -3px;
 }
 
 .play-icon {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 50px;
-    height: 50px;
-    background-image: url('/share/static/images/play.png');
-    background-size: contain;
-    background-repeat: no-repeat;
-    opacity: 0.5;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50px;
+  height: 50px;
+  background-image: url('/share/static/images/play.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: 0.5;
 }
 
-#lightgallery a:has(.play-icon):hover .play-icon {
-    opacity: 1;
+#gallery a:has(.play-icon):hover .play-icon {
+  opacity: 1;
 }
 
-#password {
-    color: white;
-}
-
-#header, #album-description {
-    font-family: system-ui, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, Helvetica, Arial, "Helvetica Neue", sans-serif;
-    color: white;
-}
+/* ===== Header (title + asset count + download action) ===== */
 
 #header {
-    width: 100%;
-    display: flex;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 28px var(--gutter) 12px;
+  color: var(--color-fg);
+}
+
+.header-text {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 #header h1 {
-    font-size: 18pt;
-    font-weight: bold;
-    margin: 4px;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  overflow-wrap: break-word;
 }
 
-#album-description h2 {
-    font-size: 12pt;
-    font-weight: normal;
-    font-style: italic;
-    margin: 4px;
-    white-space: pre-wrap;
+#header .subtitle {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 400;
+  opacity: 0.55;
 }
 
 #download-all {
-    margin: auto 4px auto auto;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  text-decoration: none;
+  color: var(--color-fg);
+  transition: background-color 0.15s;
 }
 
-#loading-spinner {
-    text-align: center;
-    margin: 75px 0;
+#download-all:hover,
+#download-all:focus-visible {
+  background-color: color-mix(in srgb, var(--color-fg) 10%, transparent);
+  outline: none;
 }
-.loader {
-    width: 48px;
+
+#download-all svg {
+  width: 22px;
+  height: 22px;
+}
+
+#album-description {
+  margin: 0;
+  padding: 0 var(--gutter) 16px;
+  color: var(--color-fg);
+  opacity: 0.7;
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 640px) {
+  #header {
+    padding-top: 16px;
+    padding-bottom: 8px;
+  }
+  #header h1 {
+    font-size: 22px;
+  }
+  #album-description {
+    padding-bottom: 12px;
+    font-size: 14px;
+  }
+}
+
+/* ===== Selection toolbar (fixed at top while select-mode is active) ===== */
+
+#select-toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: var(--color-bg);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  z-index: 100;
+  box-shadow: 0 1px 6px color-mix(in srgb, var(--color-fg) 6%, transparent);
+}
+
+/* The display rule above is more specific than the browser's default
+   [hidden] { display: none } - explicitly override so the toolbar honors
+   the hidden attribute. */
+#select-toolbar[hidden] {
+  display: none;
+}
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--color-fg);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.toolbar-btn:hover,
+.toolbar-btn:focus-visible {
+  background-color: color-mix(in srgb, var(--color-fg) 10%, transparent);
+  outline: none;
+}
+
+.toolbar-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+#select-count {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 12px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-fg);
+}
+
+.toolbar-btn-text {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  color: var(--color-fg);
+  cursor: pointer;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.15s;
+}
+
+.toolbar-btn-text:hover,
+.toolbar-btn-text:focus-visible {
+  background-color: color-mix(in srgb, var(--color-fg) 10%, transparent);
+  outline: none;
+}
+
+@media (max-width: 640px) {
+  #select-toolbar {
     height: 48px;
-    border: 5px solid #888;
-    border-bottom-color: transparent;
-    border-radius: 50%;
-    display: inline-block;
-    box-sizing: border-box;
-    animation: rotation 1s linear infinite;
-}
-@keyframes rotation {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
+  }
+  #select-count {
+    font-size: 15px;
+    padding: 0 8px;
+  }
+  .toolbar-btn-text {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
 }

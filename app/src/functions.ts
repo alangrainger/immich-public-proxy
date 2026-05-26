@@ -2,7 +2,7 @@ import dayjs from 'dayjs'
 import { Response } from 'express-serve-static-core'
 import { DownloadAll, SharedLink } from './types'
 
-let config = {}
+let config: { [key: string]: unknown } = {}
 try {
   if (process.env.CONFIG) {
     // Attempt to parse docker-compose config string into JSON (if specified)
@@ -15,6 +15,56 @@ try {
   console.log(e)
 }
 
+// Backward-compatability shim for 1.x users with a legacy `lightGallery.*` config section
+if (config.lightGallery && typeof config.lightGallery === 'object') {
+  const lg = config.lightGallery as Record<string, unknown>
+  const mobile = (lg.mobileSettings || {}) as Record<string, unknown>
+  const ipp = (config.ipp || (config.ipp = {})) as Record<string, unknown>
+  const lightbox = (ipp.lightbox || (ipp.lightbox = {})) as Record<string, unknown>
+  // Only fill in fields the user hasn't already set on ipp.lightbox.
+  if (lightbox.showArrows === undefined && lg.controls !== undefined) {
+    lightbox.showArrows = !!lg.controls
+  }
+  if (lightbox.showDownload === undefined && lg.download !== undefined) {
+    lightbox.showDownload = !!lg.download
+  }
+  if (lightbox.mobileArrows === undefined && mobile.controls !== undefined) {
+    lightbox.mobileArrows = !!mobile.controls
+  }
+  console.log(
+    '[IPP] The `lightGallery` config section is deprecated; relevant keys ' +
+    'have been mapped to `ipp.lightbox.*`. See README for the current options.'
+  )
+}
+
+// Backward-compat shim: gallery-related keys that used to live directly on
+// `ipp` now live under `ipp.gallery`. Map legacy keys forward, only filling
+// in fields the user hasn't already set on the new path.
+{
+  const ipp = (config.ipp || (config.ipp = {})) as Record<string, unknown>
+  const galleryKeyMigrations: Array<[string, string]> = [
+    ['singleImageGallery', 'singleImage'],
+    ['singleItemAutoOpen', 'singleItemAutoOpen'],
+    ['showGalleryTitle', 'showTitle'],
+    ['showGalleryDescription', 'showDescription'],
+    ['groupGalleryByDate', 'groupByDate']
+  ]
+  const legacyPresent = galleryKeyMigrations.some(([oldKey]) => ipp[oldKey] !== undefined)
+  if (legacyPresent) {
+    const gallery = (ipp.gallery || (ipp.gallery = {})) as Record<string, unknown>
+    for (const [oldKey, newKey] of galleryKeyMigrations) {
+      if (ipp[oldKey] !== undefined && gallery[newKey] === undefined) {
+        gallery[newKey] = ipp[oldKey]
+      }
+    }
+    console.log(
+      '[IPP] Top-level gallery keys (singleImageGallery, singleItemAutoOpen, ' +
+      'showGalleryTitle, showGalleryDescription, groupGalleryByDate) are ' +
+      'deprecated; please move them under `ipp.gallery.*`. See README.'
+    )
+  }
+}
+
 /**
  * Get a configuration option fron config.json using dotted notation.
  *
@@ -22,7 +72,7 @@ try {
  * @param [defaultOption] - Specify a default option to return if no configuation value is found
  *
  * @example
- * getConfigOption('ipp.singleImageGallery')
+ * getConfigOption('ipp.gallery.singleImage')
  */
 export const getConfigOption = (path: string, defaultOption?: unknown) => {
   const value = path.split('.').reduce((obj: { [key: string]: unknown }, key) => (obj || {})[key], config)
