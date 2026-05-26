@@ -7,6 +7,7 @@
     "downloadOriginalPhoto": true,
     "downloadedFilename": 0,
     "allowDownloadAll": 0,
+    "downloadFromImmichConcurrencyLimit": 20,
     "allowSlugLinks": true,
     "showHomePage": true,
     "showMetadata": {
