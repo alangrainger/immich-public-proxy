@@ -19,6 +19,23 @@ import { Password } from './views/password'
 import { respondToInvalidRequest } from './invalidRequestHandler'
 import { encrypt } from './encrypt'
 
+// In-process cache for share-link lookups. Each direct-asset request (e.g.
+// `/share/photo/:key/:id/thumbnail`) re-validates the share by calling
+// getShareByKey, which for album shares also pulls the entire album asset
+// list from Immich. Without this cache, a gallery view of N tiles fans out
+// into N concurrent full-album fetches against Immich and serializes there,
+// pushing per-thumbnail latency into seconds. The cache holds Promises
+// (not resolved values) so concurrent cold misses coalesce into one upstream
+// call instead of stampeding.
+type ShareCacheEntry = { promise: Promise<SharedLinkResult>; expiresAt: number }
+const shareCache = new Map<string, ShareCacheEntry>()
+const shareCacheTtlMs = 120_000
+// Each entry can hold a SharedLink with thousands of assets, so cap entries
+// to keep memory bounded on a public-facing proxy. Eviction is FIFO by
+// insertion order (Map iteration order), which is good enough — TTL handles
+// freshness.
+const shareCacheMax = 100
+
 class Immich {
   /**
    * Make a request to Immich API. We're not using the SDK to limit
@@ -141,10 +158,41 @@ class Immich {
   }
 
   /**
-   * Query Immich for the SharedLink metadata for a given key.
-   * The key is what is returned in the URL when you create a share in Immich.
+   * Query Immich for the SharedLink metadata for a given key, with a short
+   * in-process cache + in-flight de-duplication. See the cache notes at the
+   * top of this file for the why.
+   *
+   * The cache holds the full post-album-population SharedLinkResult, so warm
+   * hits skip both the `/shared-links/me` and `/albums/:id` round trips.
+   * Negative results (`valid: false`) and rejections are dropped from the
+   * cache immediately so a transient Immich blip doesn't poison the cache.
    */
   async getShareByKey (key: string, password?: string, keyType: KeyType = KeyType.key): Promise<SharedLinkResult> {
+    const cacheKey = `${keyType}:${key}:${password ?? ''}`
+    const now = Date.now()
+    const cached = shareCache.get(cacheKey)
+    if (cached && cached.expiresAt > now) return cached.promise
+
+    const promise = this.fetchShareByKey(key, password, keyType)
+    shareCache.set(cacheKey, { promise, expiresAt: now + shareCacheTtlMs })
+    if (shareCache.size > shareCacheMax) {
+      const oldest = shareCache.keys().next().value
+      if (oldest !== undefined && oldest !== cacheKey) shareCache.delete(oldest)
+    }
+    promise.then(
+      (result) => { if (!result?.valid) shareCache.delete(cacheKey) },
+      () => { shareCache.delete(cacheKey) }
+    )
+    return promise
+  }
+
+  /**
+   * Underlying fetch for getShareByKey. Always hits Immich; the public
+   * getShareByKey wraps this with the cache. Don't call this directly from
+   * outside the class — going through getShareByKey is what gives us the
+   * coalescing on cold misses.
+   */
+  private async fetchShareByKey (key: string, password?: string, keyType: KeyType = KeyType.key): Promise<SharedLinkResult> {
     let link
     const url = this.buildUrl(this.apiUrl() + '/shared-links/me', {
       [keyType]: key,
