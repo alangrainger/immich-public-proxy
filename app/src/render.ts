@@ -226,8 +226,8 @@ class Render {
    * instead of a zip that's quietly missing files.
    */
   async downloadAssets (res: Response, share: SharedLink, assets: Asset[]) {
-    const downloadOriginalAsset = getConfigOption('ipp.downloadOriginalPhoto', true)
     const concurrency = Math.max(1, getConfigOption('ipp.downloadFromImmichConcurrencyLimit', 8) as number)
+    const endpoint = this.resolveImageEndpoint(ImageSize.original)
     res.setHeader('Content-Type', 'application/zip')
     let filename = (sanitize(this.title(share)) || 'photos') + '.zip'
     filename = encodeURI(filename)
@@ -251,11 +251,10 @@ class Render {
         if (aborted) return
         const asset = queue.shift()
         if (!asset) return
-        const endpoint = downloadOriginalAsset ? 'original' : 'thumbnail'
-        const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + '/' + endpoint, {
+        const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + endpoint.subpath, {
           key: asset.key,
           password: asset.password,
-          size: downloadOriginalAsset ? '' : 'preview'
+          size: endpoint.sizeQueryParam
         })
 
         let buffer: Buffer | undefined
@@ -264,7 +263,7 @@ class Render {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           if (aborted) return
           try {
-            const data = await fetch(url)
+            const data = await fetch(url, { signal: AbortSignal.timeout(20_000) })
             if (data.ok) {
               buffer = Buffer.from(await data.arrayBuffer())
               break
