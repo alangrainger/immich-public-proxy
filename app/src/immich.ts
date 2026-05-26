@@ -19,21 +19,30 @@ import { Password } from './views/password'
 import { respondToInvalidRequest } from './invalidRequestHandler'
 import { encrypt } from './encrypt'
 
-// In-process cache for share-link lookups. Each direct-asset request (e.g.
-// `/share/photo/:key/:id/thumbnail`) re-validates the share by calling
-// getShareByKey, which for album shares also pulls the entire album asset
-// list from Immich. Without this cache, a gallery view of N tiles fans out
-// into N concurrent full-album fetches against Immich and serializes there,
-// pushing per-thumbnail latency into seconds. The cache holds Promises
-// (not resolved values) so concurrent cold misses coalesce into one upstream
-// call instead of stampeding.
+/*
+  In-process cache for share-link lookups. Each direct-asset request (e.g.
+  `/share/photo/:key/:id/thumbnail`) re-validates the share by calling
+  getShareByKey, which for album shares also pulls the entire album asset
+  list from Immich. Without this cache, a gallery view of N tiles fans out
+  into N concurrent full-album fetches against Immich and serializes there,
+  pushing per-thumbnail latency into seconds. The cache holds Promises
+  (not resolved values) so concurrent cold misses coalesce into one upstream
+  call instead of stampeding.
+
+  CAUTION: a cache hit returns the SAME SharedLinkResult reference across
+  requests. Callers MUST treat the result (and its `link.assets`) as
+  read-only. In-place mutation persists for the cache lifetime and leaks
+  across concurrent requests. Current callers (notably the in-place
+  `share.assets.sort(...)` in render.ts) happen to be idempotent so this is
+  safe today, but new callers should clone before mutating.
+
+  Eviction is LRU: each cache hit moves the entry to the end of the Map's
+  insertion order, and overflow drops the oldest (least-recently-used)
+  entry. TTL handles freshness; size cap handles memory.
+*/
 type ShareCacheEntry = { promise: Promise<SharedLinkResult>; expiresAt: number }
 const shareCache = new Map<string, ShareCacheEntry>()
 const shareCacheTtlMs = 120_000
-// Each entry can hold a SharedLink with thousands of assets, so cap entries
-// to keep memory bounded on a public-facing proxy. Eviction is FIFO by
-// insertion order (Map iteration order), which is good enough — TTL handles
-// freshness.
 const shareCacheMax = 100
 
 class Immich {
@@ -171,10 +180,18 @@ class Immich {
     const cacheKey = `${keyType}:${key}:${password ?? ''}`
     const now = Date.now()
     const cached = shareCache.get(cacheKey)
-    if (cached && cached.expiresAt > now) return cached.promise
+    if (cached && cached.expiresAt > now) {
+      // Move-to-end to mark this entry as most-recently-used for LRU eviction
+      shareCache.delete(cacheKey)
+      shareCache.set(cacheKey, cached)
+      return cached.promise
+    }
 
     const promise = this.fetchShareByKey(key, password, keyType)
-    shareCache.set(cacheKey, { promise, expiresAt: now + shareCacheTtlMs })
+    shareCache.set(cacheKey, {
+      promise,
+      expiresAt: now + shareCacheTtlMs
+    })
     if (shareCache.size > shareCacheMax) {
       const oldest = shareCache.keys().next().value
       if (oldest !== undefined && oldest !== cacheKey) shareCache.delete(oldest)
