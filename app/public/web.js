@@ -102,6 +102,10 @@ let container = null
 let lightbox = null
 /** @type {LightboxConfig} */
 let lightboxConfig = {}
+/** @type {boolean} - true while our pushed history entry is live */
+let lightboxPushedHistory = false
+/** @type {boolean} - guards against re-entering the popstate handler during our own history.back() */
+let closingFromHistory = false
 /** @type {Map<number, HTMLAnchorElement>} */
 const renderedTiles = new Map()
 /** @type {Map<string, HTMLElement>} */
@@ -762,17 +766,48 @@ function initLightbox () {
     })
   })
 
-  // Hash navigation: sync window.location.hash with the open slide
+  // Hash navigation + back-button handling: push a history entry on open so
+  // the mobile back gesture closes the lightbox; sync the hash with the
+  // current slide as the user pages through.
   lightbox.on('uiRegister', () => {
     const pswp = lightbox.pswp
+    const item = items[pswp.currIndex]
+    if (item) {
+      history.pushState({ pswp: true }, '', '#' + item.id)
+      lightboxPushedHistory = true
+    }
     pswp.on('change', () => {
-      const item = items[pswp.currIndex]
-      if (item) history.replaceState(null, '', '#' + item.id)
+      const it = items[pswp.currIndex]
+      if (it) history.replaceState({ pswp: lightboxPushedHistory }, '', '#' + it.id)
     })
     pswp.on('close', () => {
-      history.replaceState(null, '', window.location.pathname + window.location.search)
       scrollToCurrentSlide(pswp.currIndex)
+      const wasFromHistory = closingFromHistory
+      closingFromHistory = false
+      if (wasFromHistory) {
+        // popstate already moved us back; nothing more to do
+        lightboxPushedHistory = false
+      } else if (lightboxPushedHistory) {
+        // UI close (button / Esc / swipe-down): consume our pushed entry
+        closingFromHistory = true
+        lightboxPushedHistory = false
+        history.back()
+      } else {
+        history.replaceState(null, '', window.location.pathname + window.location.search)
+      }
     })
+  })
+
+  window.addEventListener('popstate', () => {
+    if (closingFromHistory) {
+      // Our own history.back() during a UI-driven close
+      closingFromHistory = false
+      return
+    }
+    if (lightbox && lightbox.pswp && lightboxPushedHistory) {
+      closingFromHistory = true
+      lightbox.pswp.close()
+    }
   })
 
   // Optional control hiding (defaults match Immich's behavior)
