@@ -82,8 +82,10 @@ const HEADER_HEIGHT = 48
 // Vertical gap between groups
 const GROUP_GAP = 16
 
-// MDI download icon (Apache 2.0). Same icon set Immich uses for its viewer.
+// MDI icons (Apache 2.0). Same icon set Immich uses for its viewer.
 const ICON_DOWNLOAD = '<svg class="pswp__icn" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>'
+const ICON_FULLSCREEN = '<svg class="pswp__icn" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5,5H10V7H7V10H5V5M14,5H19V10H17V7H14V5M17,14H19V19H14V17H17V14M10,17V19H5V14H7V17H10Z"/></svg>'
+const ICON_FULLSCREEN_EXIT = '<svg class="pswp__icn" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14,14H19V16H16V19H14V14M5,14H10V19H8V16H5V14M8,5H10V10H5V8H8V5M19,8V10H14V5H16V8H19Z"/></svg>'
 
 // ----- module state ---------------------------------------------------------
 
@@ -696,6 +698,42 @@ function initLightbox () {
           }
           update()
           pswp.on('change', update)
+        }
+      })
+    })
+  }
+
+  // Fullscreen toggle. Skipped on browsers without Fullscreen API support
+  // for arbitrary elements (notably iOS Safari on iPhone).
+  if (document.fullscreenEnabled) {
+    lightbox.on('uiRegister', () => {
+      lightbox.pswp.ui.registerElement({
+        name: 'fullscreen-button',
+        order: 9,
+        isButton: true,
+        html: ICON_FULLSCREEN,
+        onInit: (el, pswp) => {
+          const update = () => {
+            const active = document.fullscreenElement === pswp.element
+            el.innerHTML = active ? ICON_FULLSCREEN_EXIT : ICON_FULLSCREEN
+            el.setAttribute('aria-label', active ? 'Exit fullscreen' : 'Fullscreen')
+            el.setAttribute('title', active ? 'Exit fullscreen' : 'Fullscreen')
+          }
+          update()
+          el.addEventListener('click', () => {
+            if (document.fullscreenElement) {
+              document.exitFullscreen().catch(() => {})
+            } else {
+              pswp.element.requestFullscreen().catch(() => {})
+            }
+          })
+          document.addEventListener('fullscreenchange', update)
+          pswp.on('destroy', () => {
+            document.removeEventListener('fullscreenchange', update)
+            if (document.fullscreenElement === pswp.element) {
+              document.exitFullscreen().catch(() => {})
+            }
+          })
         }
       })
     })
