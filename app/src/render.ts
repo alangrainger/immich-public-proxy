@@ -209,11 +209,10 @@ class Render {
   }
 
   /**
-   * Stream the given assets back as a zip file. Caller is responsible for
-   * checking that every asset belongs to the share (security boundary).
+   * Stream the given assets back as a zip file.
    *
    * Assets are fetched from Immich with a bounded concurrency (configurable via
-   * `ipp.downloadFromImmichConcurrencyLimit`, default 20) rather than all at once.
+   * `ipp.downloadFromImmichConcurrencyLimit`, default 8) rather than all at once.
    * Fetching every asset in parallel overwhelms the Immich server on large albums
    * and causes the client download to time out before the first bytes are sent.
    *
@@ -228,7 +227,7 @@ class Render {
    */
   async downloadAssets (res: Response, share: SharedLink, assets: Asset[]) {
     const downloadOriginalAsset = getConfigOption('ipp.downloadOriginalPhoto', true)
-    const concurrency = Math.max(1, getConfigOption('ipp.downloadFromImmichConcurrencyLimit', 20) as number)
+    const concurrency = Math.max(1, getConfigOption('ipp.downloadFromImmichConcurrencyLimit', 8) as number)
     res.setHeader('Content-Type', 'application/zip')
     let filename = (sanitize(this.title(share)) || 'photos') + '.zip'
     filename = encodeURI(filename)
