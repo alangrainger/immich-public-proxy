@@ -144,8 +144,8 @@ class Render {
    */
   async gallery (res: Response, share: SharedLink, openItem?: number) {
     // publicBaseUrl is used for the og:image, which requires a fully qualified URL.
-    // You can specify this in your docker-compose file, or send it dynamically as a `publicBaseUrl` header
-    const publicBaseUrl = process.env.PUBLIC_BASE_URL || res.req.headers.publicBaseUrl || (res.req.protocol + '://' + res.req.headers.host)
+    // You can specify this in your docker-compose file via the PUBLIC_BASE_URL env var.
+    const publicBaseUrl = process.env.PUBLIC_BASE_URL || (res.req.protocol + '://' + res.req.headers.host)
 
     // Date grouping needs chronological order; sort newest-first when enabled
     // (overrides any album.order the upstream applied).

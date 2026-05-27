@@ -253,14 +253,6 @@ You can customise the responses that IPP sends for invalid requests. For example
 
 See [Custom responses](docs/custom-responses.md) for more details.
 
-### Serving from multiple domains
-
-If you're serving the same IPP from multiple domains, instead of setting the public URL in your docker-compose file, you can set it dynamically via a HTTP header in the request from your reverse proxy to IPP.
-
-1. Remove the `PUBLIC_BASE_URL` environment variable from your docker-compose file.
-
-2. Set a custom `publicBaseUrl` header on each request with the value of your public base URL (example `https://your-proxy-url.com`).
-
 ## Troubleshooting
 
 ### Video playback
