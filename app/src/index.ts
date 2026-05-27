@@ -28,7 +28,7 @@ const app = express()
 app.use(cookieSession({
   name: 'session',
   httpOnly: true,
-  sameSite: 'strict',
+  sameSite: 'lax',
   secret: crypto.randomBytes(32).toString('base64url')
 }))
 // For parsing the password unlock form and POSTed JSON payloads
