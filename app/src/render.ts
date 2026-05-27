@@ -24,6 +24,7 @@ class Render {
     let subpath: string
     let sizeQueryParam: string | undefined
     let attachment = false
+    let servedSize: ImageSize | undefined
 
     if (asset.type === AssetType.video) {
       subpath = '/video/playback'
@@ -36,10 +37,11 @@ class Render {
       res.setHeader('accept-ranges', 'bytes')
       res.status(206) // Partial Content
     } else {
-      const endpoint = this.resolveImageEndpoint(immich.validateImageSize(size))
+      const endpoint = this.resolveImageEndpoint(immich.validateImageSize(size), asset)
       subpath = endpoint.subpath
       sizeQueryParam = endpoint.sizeQueryParam
       attachment = endpoint.attachment
+      servedSize = endpoint.servedSize
     }
 
     const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + subpath, {
@@ -60,7 +62,7 @@ class Render {
     }
 
     if (attachment && asset.originalFileName) {
-      res.setHeader('Content-Disposition', `attachment; filename="${this.getFilename(asset)}"`)
+      res.setHeader('Content-Disposition', `attachment; filename="${this.getFilename(asset, servedSize)}"`)
     }
     headerList.forEach(header => {
       const value = data.headers.get(header)
@@ -81,17 +83,56 @@ class Render {
    * image are silently downgraded to preview — the operator has opted out of
    * serving full-resolution files. (The original may also be a RAW/HEIC file
    * the browser can't render.)
+   *
+   * The downgrade is bypassed for assets where `immich.requiresOriginal` is
+   * true (videos, animated images), because for those formats the preview is
+   * an entirely different artifact (still poster / static JPEG) rather than a
+   * lower-res version of the same content.
+   *
+   * `servedSize` reflects what Immich will actually return after the downgrade,
+   * which may differ from the requested `size`. Callers use it to derive a
+   * filename whose extension matches the bytes (see getFilename).
    */
-  private resolveImageEndpoint (size: ImageSize): { subpath: string; sizeQueryParam?: string; attachment: boolean } {
-    const allowOriginal = getConfigOption('ipp.downloadOriginalPhoto', true)
+  private resolveImageEndpoint (size: ImageSize, asset: Asset): { subpath: string; sizeQueryParam?: string; attachment: boolean; servedSize: ImageSize } {
+    const allowOriginal = getConfigOption('ipp.downloadOriginalPhoto', true) || immich.requiresOriginal(asset)
     if (size === ImageSize.original && allowOriginal) {
-      return { subpath: '/original', attachment: true }
+      return { subpath: '/original', attachment: true, servedSize: ImageSize.original }
     }
     if (size === ImageSize.thumbnail) {
-      return { subpath: '/thumbnail', attachment: false }
+      return { subpath: '/thumbnail', attachment: false, servedSize: ImageSize.thumbnail }
     }
     // preview, or original downgraded because downloadOriginalPhoto is off
-    return { subpath: '/thumbnail', sizeQueryParam: 'preview', attachment: false }
+    return { subpath: '/thumbnail', sizeQueryParam: 'preview', attachment: false, servedSize: ImageSize.preview }
+  }
+
+  /**
+   * Map an Immich asset MIME type to a file extension (including the dot).
+   *
+   * Returns '' for unknown types so callers can fall back to parsing the
+   * extension from `originalFileName`. The map only covers the formats Immich
+   * commonly serves; obscure RAW types are expected to fall through to the
+   * filename fallback (which usually has a correct extension).
+   */
+  private mimeToExt (mime: string | undefined): string {
+    if (!mime) return ''
+    const map: Record<string, string> = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+      'image/gif': '.gif',
+      'image/heic': '.heic',
+      'image/heif': '.heif',
+      'image/avif': '.avif',
+      'image/tiff': '.tiff',
+      'image/svg+xml': '.svg',
+      'image/x-adobe-dng': '.dng',
+      'video/mp4': '.mp4',
+      'video/quicktime': '.mov',
+      'video/webm': '.webm',
+      'video/x-msvideo': '.avi',
+      'video/x-matroska': '.mkv'
+    }
+    return map[mime] || ''
   }
 
   /**
@@ -130,10 +171,14 @@ class Render {
             controls: 'controls'
           }
         })
-        downloadUrl = immich.videoUrl(share.key, asset.id)
       }
-      if (getConfigOption('ipp.downloadOriginalPhoto', true)) {
-        downloadUrl = immich.photoUrl(share.key, asset.id, ImageSize.original)
+      // Download is offered when the operator allows full-resolution downloads,
+      // or when the asset is one that has to come from /original to be useful
+      // (video, animated image — see immich.requiresOriginal).
+      if (getConfigOption('ipp.downloadOriginalPhoto', true) || immich.requiresOriginal(asset)) {
+        downloadUrl = asset.type === AssetType.video
+          ? immich.videoUrl(share.key, asset.id)
+          : immich.photoUrl(share.key, asset.id, ImageSize.original)
       }
 
       const thumbnailUrl = immich.photoUrl(share.key, asset.id, ImageSize.thumbnail)
@@ -227,7 +272,6 @@ class Render {
    */
   async downloadAssets (res: Response, share: SharedLink, assets: Asset[]) {
     const concurrency = Math.max(1, getConfigOption('ipp.downloadFromImmichConcurrencyLimit', 8) as number)
-    const endpoint = this.resolveImageEndpoint(ImageSize.original)
     res.setHeader('Content-Type', 'application/zip')
     let filename = (sanitize(this.title(share)) || 'photos') + '.zip'
     filename = encodeURI(filename)
@@ -251,6 +295,7 @@ class Render {
         if (aborted) return
         const asset = queue.shift()
         if (!asset) return
+        const endpoint = this.resolveImageEndpoint(ImageSize.original, asset)
         const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + endpoint.subpath, {
           key: asset.key,
           password: asset.password,
@@ -289,7 +334,7 @@ class Render {
           return
         }
         if (aborted) return
-        archive.append(buffer, { name: this.getFilename(asset) })
+        archive.append(buffer, { name: this.getFilename(asset, endpoint.servedSize) })
       }
     }
     await Promise.all(Array.from({ length: concurrency }, () => worker()))
@@ -309,10 +354,37 @@ class Render {
   }
 
   /**
-   * Generate a filename for the downloaded asset based on the configuration option chosen
+   * Generate a filename for the downloaded asset based on the configuration option chosen.
+   *
+   * The extension reflects what bytes the user will receive, not what the
+   * original was — when Immich downgrades an image-original to preview (see
+   * resolveImageEndpoint), the served bytes are JPEG even if the original is
+   * HEIC/DNG/RAW, and the filename must match the bytes.
+   *
+   * @param asset
+   * @param [servedSize] - what size Immich will actually serve. Defaults to
+   *   ImageSize.original (the bytes match the original asset).
    */
-  getFilename (asset: Asset) {
-    const extension = asset.originalFileName?.match(/(\.\w+)$/)?.[1] || ''
+  getFilename (asset: Asset, servedSize: ImageSize = ImageSize.original) {
+    let extension: string
+    if (servedSize === ImageSize.original) {
+      // Bytes match the original asset (image as-is, or video container from
+      // /video/playback). Prefer the MIME type since `originalFileName` may
+      // be missing an extension; fall back to the filename for MIME types
+      // not in our map (uncommon RAW formats etc.).
+      extension = this.mimeToExt(asset.originalMimeType) ||
+        asset.originalFileName?.match(/(\.\w+)$/)?.[1] || ''
+    } else if (servedSize === ImageSize.thumbnail) {
+      // Immich currently returns thumbnails as image/webp (verified against
+      // the live API). If Immich changes thumbnail format, update here.
+      extension = '.webp'
+    } else {
+      // Preview. Immich currently returns image/jpeg for `?size=preview`
+      // (verified against the live API), including for video posters. If
+      // Immich changes preview format, update here.
+      extension = '.jpg'
+    }
+
     switch (getConfigOption('ipp.downloadedFilename')) {
       case 1:
         // Immich's ID number for this asset
@@ -321,8 +393,14 @@ class Render {
         // A sanitised version of the ID number
         return 'img_' + asset.id.slice(0, 8) + extension
       default:
-        // By default, it will choose the asset's original filename
-        return asset.originalFileName || (asset.id + extension)
+        // By default, use the asset's original filename. When we're serving
+        // a downgraded preview/thumbnail, swap the extension so it matches
+        // the actual bytes (e.g. photo.heic original → photo.jpg preview).
+        if (!asset.originalFileName) return asset.id + extension
+        if (servedSize !== ImageSize.original) {
+          return asset.originalFileName.replace(/\.[^.]+$/, '') + extension
+        }
+        return asset.originalFileName
     }
   }
 }

@@ -329,15 +329,32 @@ class Immich {
   }
 
   /**
+   * Whether this asset must be served from `/original` to remain useful, bypassing
+   * the `ipp.downloadOriginalPhoto` downgrade.
+   *
+   * - Videos: Immich's preview/thumbnail endpoints return a poster JPEG, not the
+   *   video, so the downgrade would replace a video file with a still image.
+   * - Animated images (currently just GIF): Immich's preview is a static JPEG,
+   *   so the downgrade silently strips the animation. APNG/animated-WebP aren't
+   *   listed because Immich doesn't expose a distinct MIME type for them — they
+   *   share `image/png` / `image/webp` with their static counterparts.
+   *
+   * Used by both the display path (lightbox preview URL) and the download path
+   * (single-asset download + zip), so the lightbox shows the same bytes the
+   * user gets when they hit "download".
+   */
+  requiresOriginal (asset: Asset): boolean {
+    return asset.type === AssetType.video ||
+      asset.originalMimeType === 'image/gif'
+  }
+
+  /**
    * Return the correct preview size, depending on the image MIME type
    */
   getPreviewImageSize (asset: Asset) {
-    // For certain media types, use the original file rather than the preview
-    if (['image/gif'].includes(asset.originalMimeType || '')) {
-      return ImageSize.original
-    } else {
-      return ImageSize.preview
-    }
+    // For animated formats, use the original file rather than the preview so
+    // animation is preserved (Immich's preview is a static JPEG frame).
+    return this.requiresOriginal(asset) ? ImageSize.original : ImageSize.preview
   }
 
   /**
