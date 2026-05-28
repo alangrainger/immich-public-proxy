@@ -344,8 +344,14 @@ class Immich {
    * user gets when they hit "download".
    */
   requiresOriginal (asset: Asset): boolean {
-    return asset.type === AssetType.video ||
-      asset.originalMimeType === 'image/gif'
+    if (asset.type === AssetType.video) {
+      return true
+    } else if (asset.originalMimeType?.startsWith('video/')) {
+      return true
+    } else if (asset.originalMimeType === 'image/gif') {
+      return true
+    }
+    return false
   }
 
   /**

@@ -200,11 +200,18 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
     return
   }
 
-  // Verify the requested asset belongs to this share link
-  const assetBelongsToShare = share.link?.assets?.some(a => a.id === req.params.id)
-  if (!assetBelongsToShare) {
+  // Find the real asset on the share so assetBuffer has access to
+  // originalMimeType and originalFileName (needed for Content-Disposition and
+  // for requiresOriginal to recognise videos/animated images and bypass the
+  // preview downgrade). Doubles as the "belongs to this share" check.
+  const realAsset = share.link?.assets?.find(a => a.id === req.params.id)
+  if (!realAsset) {
     respondToInvalidRequest(res, 404, 'Asset not found in share')
     return
+  }
+  const asset: Asset = {
+    ...realAsset,
+    type: req.params.type === 'video' ? AssetType.video : AssetType.image
   }
 
   const request = {
@@ -212,11 +219,6 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
     key: req.params.key,
     range: req.headers.range || ''
   }
-  const asset = {
-    id: req.params.id,
-    key: req.params.key,
-    type: req.params.type === 'video' ? AssetType.video : AssetType.image
-  } as Asset
   render.assetBuffer(request, res, asset, req.params.size).then()
 })
 

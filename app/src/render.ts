@@ -209,7 +209,6 @@ class Render {
     // Build structured items in parallel
     const items: GalleryItem[] = await Promise.all(share.assets.map(async (asset): Promise<GalleryItem> => {
       let videoData: string | undefined
-      let downloadUrl: string | undefined
       if (asset.type === AssetType.video) {
         videoData = JSON.stringify({
           source: [
@@ -224,14 +223,15 @@ class Render {
           }
         })
       }
-      // Download is offered when the operator allows full-resolution downloads,
-      // or when the asset is one that has to come from /original to be useful
-      // (video, animated image — see immich.requiresOriginal).
-      if (getConfigOption('ipp.downloadOriginalPhoto', true) || immich.requiresOriginal(asset)) {
-        downloadUrl = asset.type === AssetType.video
-          ? immich.videoUrl(share.key, asset.id)
-          : immich.photoUrl(share.key, asset.id, ImageSize.original)
-      }
+
+      // Compute the filename so the client-side `<a download="...">` attribute
+      // matches the bytes the server will return. Without this, a HEIC
+      // original served as a preview JPEG would download as "photo.heic"
+      // with JPEG bytes inside.
+      const downloadUrl = immich.photoUrl(share.key, asset.id, ImageSize.original)
+      const downloadServedSize = (getConfigOption('ipp.downloadOriginalPhoto', true) || immich.requiresOriginal(asset))
+        ? ImageSize.original
+        : ImageSize.preview
 
       const thumbnailUrl = immich.photoUrl(share.key, asset.id, ImageSize.thumbnail)
       const previewUrl = immich.photoUrl(share.key, asset.id, immich.getPreviewImageSize(asset))
@@ -254,7 +254,7 @@ class Render {
         downloadUrl,
         videoData,
         description: description || undefined,
-        downloadFilename: this.getFilename(asset),
+        downloadFilename: this.getFilename(asset, downloadServedSize),
         width,
         height,
         thumbhash: asset.thumbhash,
