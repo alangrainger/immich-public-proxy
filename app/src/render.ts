@@ -159,11 +159,9 @@ class Render {
 
   /**
    * Map an Immich asset MIME type to a file extension (including the dot).
-   *
-   * Returns '' for unknown types so callers can fall back to parsing the
-   * extension from `originalFileName`. The map only covers the formats Immich
-   * commonly serves; obscure RAW types are expected to fall through to the
-   * filename fallback (which usually has a correct extension).
+   * Returns '' for unknown types; obscure RAW types fall through to '' so
+   * the original filename (which usually has the correct extension) is
+   * preserved by `withMimeExtension`.
    */
   private mimeToExt (mime: string | undefined): string {
     if (!mime) return ''
@@ -185,6 +183,25 @@ class Render {
       'video/x-matroska': '.mkv'
     }
     return map[mime] || ''
+  }
+
+  /**
+   * Append the MIME-derived extension to `filename` if it isn't already
+   * present (case-insensitive). Returns the filename unchanged when the
+   * MIME isn't in our map. Aliases that share a MIME type (`.jpg`/`.jpeg`,
+   * `.tif`/`.tiff`) are accepted as already-present so we don't produce
+   * `IMG.jpeg.jpg` for an `image/jpeg` asset.
+   */
+  private withMimeExtension (filename: string, mime: string | undefined): string {
+    const ext = this.mimeToExt(mime)
+    if (!ext) return filename
+    const aliases: Record<string, string[]> = {
+      '.jpg': ['.jpg', '.jpeg'],
+      '.tiff': ['.tif', '.tiff']
+    }
+    const acceptable = aliases[ext] ?? [ext]
+    const lower = filename.toLowerCase()
+    return acceptable.some(a => lower.endsWith(a)) ? filename : filename + ext
   }
 
   /**
@@ -473,42 +490,32 @@ class Render {
    * @param [servedSize] - what size Immich will actually serve. Defaults to
    *   ImageSize.original (the bytes match the original asset).
    */
-  getFilename (asset: Asset, servedSize: ImageSize = ImageSize.original) {
-    let extension: string
+  getFilename (asset: Asset, servedSize: ImageSize = ImageSize.original): string {
+    let servedMime: string | undefined
     if (servedSize === ImageSize.original) {
-      // Bytes match the original asset (image as-is, or video container from
-      // /video/playback). Prefer the MIME type since `originalFileName` may
-      // be missing an extension; fall back to the filename for MIME types
-      // not in our map (uncommon RAW formats etc.).
-      extension = this.mimeToExt(asset.originalMimeType) ||
-        asset.originalFileName?.match(/(\.\w+)$/)?.[1] || ''
+      servedMime = asset.originalMimeType
     } else if (servedSize === ImageSize.thumbnail) {
-      // Immich currently returns thumbnails as image/webp (verified against
-      // the live API). If Immich changes thumbnail format, update here.
-      extension = '.webp'
+      servedMime = 'image/webp'
     } else {
-      // Preview. Immich currently returns image/jpeg for `?size=preview`
-      // (verified against the live API), including for video posters. If
-      // Immich changes preview format, update here.
-      extension = '.jpg'
+      servedMime = 'image/jpeg'
     }
 
     switch (getConfigOption('ipp.downloadedFilename')) {
       case 1:
         // Immich's ID number for this asset
-        return asset.id + extension
+        return this.withMimeExtension(asset.id, servedMime)
       case 2:
         // A sanitised version of the ID number
-        return 'img_' + asset.id.slice(0, 8) + extension
-      default:
-        // By default, use the asset's original filename. When we're serving
-        // a downgraded preview/thumbnail, swap the extension so it matches
-        // the actual bytes (e.g. photo.heic original → photo.jpg preview).
-        if (!asset.originalFileName) return asset.id + extension
-        if (servedSize !== ImageSize.original) {
-          return asset.originalFileName.replace(/\.[^.]+$/, '') + extension
-        }
-        return asset.originalFileName
+        return this.withMimeExtension('img_' + asset.id.slice(0, 8), servedMime)
+      default: {
+        // By default, use the asset's original filename
+        const cleanName = asset.originalFileName ? sanitize(asset.originalFileName) : ''
+        if (!cleanName) return this.withMimeExtension(asset.id, servedMime)
+        const stem = servedSize === ImageSize.original
+          ? cleanName
+          : cleanName.replace(/\.[a-zA-Z0-9]{2,5}$/, '')
+        return this.withMimeExtension(stem, servedMime)
+      }
     }
   }
 }
