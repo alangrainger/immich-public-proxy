@@ -311,36 +311,12 @@ class Render {
    * Pattern adapted from Immich's own download service:
    *   https://github.com/immich-app/immich/blob/main/server/src/services/download.service.ts
    *
-   * Immich's server reads originals directly off disk via `archive.file(path)`,
-   * which lets archiver lazily open and read each entry at its own pace —
-   * decoupled from the rate at which the client consumes the response. IPP
-   * doesn't have that disk access (we're a proxy), but we can match the shape
-   * by staging each asset to a local temp file first, then handing the path to
-   * `archive.file()`. The upstream HTTP fetch finishes into local disk before
-   * the archive starts reading, which means:
-   *   - a slow client doesn't backpressure-pause our upstream fetches (which
-   *     would have falsely tripped the per-chunk idle timeout),
-   *   - the idle timer guards only the actual Immich → IPP read, where it
-   *     belongs,
-   *   - archive entries are read from local disk at archiver's natural pace.
-   *
    * Per asset, the upstream fetch is two phases:
    *   1. Get the response headers (retried up to 3 times with linear backoff,
    *      bounded by a 20s header-receipt timeout).
    *   2. Stream the body to a temp file, guarded by an idle timeout that
    *      resets on every chunk. A genuinely stalled connection fails fast; a
    *      slow-but-steady transfer (large video over a slow link) completes.
-   *
-   * We use `{ store: true }` (zip method STORE, no deflate) like Immich does —
-   * photos and videos are already compressed, so deflate is pure CPU cost for
-   * effectively zero savings.
-   *
-   * Up to `ipp.downloadFromImmichConcurrencyLimit` (default 8) assets are
-   * staged in parallel — Immich's per-request overhead (auth, DB lookup, asset
-   * resolution) is high enough that running fetches concurrently dramatically
-   * outperforms serial, even when IPP and Immich are co-located. Archive
-   * entries are queued in the input order regardless of which stage completes
-   * first, since the consumer for-loop awaits each promise in order.
    *
    * If any asset ultimately fails, the in-flight download is aborted mid-stream:
    * the archive is aborted, the HTTP response socket is destroyed, and the
@@ -355,6 +331,10 @@ class Render {
     let filename = (sanitize(this.title(share)) || 'photos') + '.zip'
     filename = encodeURI(filename)
     res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${filename}`)
+    // Hint to intermediate proxies (Nginx, etc.) not to buffer this response.
+    res.setHeader('X-Accel-Buffering', 'no')
+    // STORE rather than deflate — photos and videos are already compressed,
+    // this is the same as Immich does
     const archive = archiver('zip', { store: true })
     archive.pipe(res)
 
@@ -381,13 +361,22 @@ class Render {
       })
 
       // Phase 1: get response headers, retrying on transient failure.
+      // We use AbortController + a clearable timer rather than
+      // `AbortSignal.timeout` because the signal we pass to fetch stays bound
+      // to the response body — if the timeout fires after headers arrive but
+      // while the body is still streaming, the body read errors out. The
+      // header timer is cleared as soon as we have a response; from there the
+      // idle-timeout transform downstream guards against stalled bodies.
       let response: globalThis.Response | undefined
       let lastStatus: number | undefined
       let lastError: unknown
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         if (aborted) return null
+        const controller = new AbortController()
+        const headerTimer = setTimeout(() => controller.abort(new Error(`No response headers within ${headerTimeoutMs}ms`)), headerTimeoutMs)
         try {
-          const data = await fetch(url, { signal: AbortSignal.timeout(headerTimeoutMs) })
+          const data = await fetch(url, { signal: controller.signal })
+          clearTimeout(headerTimer)
           if (data.ok) {
             response = data
             break
@@ -396,6 +385,7 @@ class Render {
           lastStatus = data.status
           lastError = undefined
         } catch (e) {
+          clearTimeout(headerTimer)
           lastError = e
           lastStatus = undefined
         }
