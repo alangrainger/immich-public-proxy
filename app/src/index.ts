@@ -2,6 +2,7 @@
 
 import express from 'express'
 import cookieSession from 'cookie-session'
+import rateLimit from 'express-rate-limit'
 import immich from './immich'
 import crypto from 'crypto'
 import render from './render'
@@ -95,6 +96,23 @@ app.get('/:shareType(share|s)/:key/:mode(download)?', decodeCookie, async (req, 
 })
 
 /*
+ * Rate-limit incorrect password attempts per share key. Correct passwords
+ * (HTTP 200) are not counted, so a link sent to many legitimate recipients
+ * is unaffected — only failed attempts count against the per-key cap. We
+ * key on the share key, not req.ip, because IPP usually sits behind a
+ * reverse proxy where every visitor would otherwise share one bucket.
+ */
+const unlockLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 10,
+  keyGenerator: (req) => String(req.body?.key || ''),
+  skipSuccessfulRequests: true,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  validate: { trustProxy: false, xForwardedForHeader: false, keyGeneratorIpFallback: false }
+})
+
+/*
  * [ROUTE] Receive an unlock request from the password page
  * Stores a cookie with an encrypted payload which expires in 1 hour.
  * After that time, the visitor will need to provide the password again.
@@ -103,12 +121,33 @@ app.get('/:shareType(share|s)/:key/:mode(download)?', decodeCookie, async (req, 
  * managing user session data. The data is provided to the server by the
  * user's browser in its encrypted state.
  */
-app.post('/share/unlock', async (req, res) => {
-  if (req.session && req.body.key) {
-    req.session[req.body.key] = encrypt(JSON.stringify({
-      password: req.body.password,
-      expires: dayjs().add(1, 'hour').format()
-    }))
+app.post('/share/unlock', unlockLimiter, async (req, res) => {
+  if (!req.session || !req.body.key) {
+    res.send()
+    return
+  }
+  // Keep the cookie even on a wrong password so the reload that follows can
+  // render the "Invalid password" notice via the existing handleShareRequest
+  // flow (which clears the cookie itself).
+  req.session[req.body.key] = encrypt(JSON.stringify({
+    password: req.body.password,
+    expires: dayjs().add(1, 'hour').format()
+  }))
+  // Verify against Immich now so the rate limiter only counts failures.
+  // The result is cached, so the reload that follows reuses this call.
+  let result
+  try {
+    result = await immich.getShareByKey(req.body.key, req.body.password, KeyType.key)
+    if (!result.valid) {
+      result = await immich.getShareByKey(req.body.key, req.body.password, KeyType.slug)
+    }
+  } catch (e) {
+    res.status(503).send()
+    return
+  }
+  if (!result.valid || result.passwordRequired) {
+    res.status(401).send()
+    return
   }
   res.send()
 })

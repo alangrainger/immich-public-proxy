@@ -12,7 +12,17 @@ const submitScript = `
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(Object.fromEntries(formData.entries()))
       })
-      if (res.status === 200) {
+      if (res.status === 429) {
+        const existing = document.getElementById('rate-limit-msg')
+        if (existing) existing.remove()
+        const msg = document.createElement('small')
+        msg.id = 'rate-limit-msg'
+        msg.textContent = 'Too many invalid attempts. Please wait and try again.'
+        const pw = formElement.querySelector('input[type=password]')
+        pw.insertAdjacentElement('afterend', msg)
+      } else {
+        // 200 (success) reloads into the gallery; 401 (wrong password) reloads
+        // into the password page with the "Invalid password" notice.
         window.location.reload()
       }
     } catch (e) { }
