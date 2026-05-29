@@ -50,7 +50,11 @@ export function Gallery (props: GalleryProps) {
     groupByDate: props.groupByDate
   })
   const firstItem = props.items[0]
-  const ogImageUrl = firstItem ? props.publicBaseUrl + firstItem.previewUrl : ''
+  // For videos, previewUrl points to the .mp4; use thumbnailUrl so og:image is always a still JPEG.
+  const ogImageAsset = firstItem
+    ? (firstItem.type === AssetType.video ? firstItem.thumbnailUrl : firstItem.previewUrl)
+    : ''
+  const ogImageUrl = firstItem ? props.publicBaseUrl + ogImageAsset : ''
 
   return (
     <html lang="en">
