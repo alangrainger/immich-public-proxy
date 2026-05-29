@@ -35,9 +35,11 @@ export interface GalleryProps {
   description: string
   publicBaseUrl: string
   path: string
+  shareKey: string
   showDownload: boolean
   showTitle: boolean
   openItem?: number
+  ogImageAssetId?: string
   lightboxConfig: LightboxConfig
   groupByDate: boolean
 }
@@ -49,12 +51,29 @@ export function Gallery (props: GalleryProps) {
     lightboxConfig: props.lightboxConfig,
     groupByDate: props.groupByDate
   })
-  const firstItem = props.items[0]
-  // For videos, previewUrl points to the .mp4; use thumbnailUrl so og:image is always a still JPEG.
-  const ogImageAsset = firstItem
-    ? (firstItem.type === AssetType.video ? firstItem.thumbnailUrl : firstItem.previewUrl)
-    : ''
-  const ogImageUrl = firstItem ? props.publicBaseUrl + ogImageAsset : ''
+
+  // Determine the og:image asset
+  let ogImageUrl = ''
+  if (props.ogImageAssetId) {
+    // Find the asset in items that matches the album thumbnail ID
+    const ogImageAsset = props.items.find(item => item.id === props.ogImageAssetId)
+    if (ogImageAsset) {
+      // For videos, use thumbnailUrl; for images use previewUrl
+      const ogImagePath = ogImageAsset.type === AssetType.video 
+        ? ogImageAsset.thumbnailUrl 
+        : ogImageAsset.previewUrl
+      ogImageUrl = props.publicBaseUrl + ogImagePath
+    }
+  } else if (props.items.length > 0) {
+    // Fallback to first item if no album thumbnail is set
+    const firstItem = props.items[0]
+    const ogImagePath = firstItem.type === AssetType.video 
+      ? firstItem.thumbnailUrl 
+      : firstItem.previewUrl
+    ogImageUrl = props.publicBaseUrl + ogImagePath
+  }
+
+  const hasOgImage = !!ogImageUrl
 
   return (
     <html lang="en">
@@ -69,7 +88,7 @@ export function Gallery (props: GalleryProps) {
           <meta property="og:description" content={props.description}/>
           <meta property="twitter:description" content={props.description}/>
         </>}
-        {firstItem && <>
+        {hasOgImage && <>
           <meta property="og:image" content={ogImageUrl}/>
           <meta name="twitter:image" content={ogImageUrl}/>
           <meta name="twitter:card" content="summary_large_image"/>

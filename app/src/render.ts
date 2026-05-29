@@ -280,15 +280,27 @@ class Render {
     }))
 
     const downloadAllowed = canDownload(share)
+
+    // Determine which asset to use for og:image metadata
+    let ogImageAssetId: string | undefined
+    // Use album thumbnail if available, otherwise fall back to first item
+    if (share?.album?.albumThumbnailAssetId) {
+      ogImageAssetId = share.album.albumThumbnailAssetId
+    } else if (items.length > 0) {
+      ogImageAssetId = items[0].id
+    }
+
     const props: GalleryProps = {
       items,
       title: this.title(share),
       description: getConfigOption('ipp.gallery.showDescription', false) ? this.description(share) : '',
       publicBaseUrl: toString(publicBaseUrl),
       path: '/share/' + share.key,
+      shareKey: share.key,
       showDownload: downloadAllowed,
       showTitle: !!getConfigOption('ipp.gallery.showTitle', true),
       openItem,
+      ogImageAssetId,
       lightboxConfig: {
         // Show download button only if downloading is allowed AND configured.
         showDownload: downloadAllowed && !!getConfigOption('ipp.lightbox.showDownload', true),
