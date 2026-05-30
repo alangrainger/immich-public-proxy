@@ -188,12 +188,12 @@ For example, to disable the home page at `/` and at `/share` you need to change 
 
 Options that control how the gallery page is rendered. Configured under `ipp.gallery`.
 
-| Option               | Type   | Description                                                                                                                                                                                                          |
-|----------------------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `singleImage`        | `bool` | By default a link to a single image will directly open the image file. Set to `true` if you want to show a gallery page instead for a single item.                                                                   |
-| `singleItemAutoOpen` | `bool` | When a share contains a single item and is opened on its gallery page, automatically open the lightbox on the asset. Default `true`.                                                                                 |
-| `showTitle`          | `bool` | Show a title on the gallery page. This is taken from the album title if it is an album being shared, otherwise the "Description" from the shared link will be used.                                                  |
-| `showDescription`    | `bool` | Show the album description below the title. This only applies if it is an album which is being shared.                                                                                                               |
+| Option               | Type   | Description                                                                                                                                                                                                         |
+|----------------------|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `singleImage`        | `bool` | By default a link to a single image will directly open the image file. Set to `true` if you want to show a gallery page instead for a single item.                                                                  |
+| `singleItemAutoOpen` | `bool` | When a share contains a single item and is opened on its gallery page, automatically open the lightbox on the asset. Default `true`.                                                                                |
+| `showTitle`          | `bool` | Show a title on the gallery page. This is taken from the album title if it is an album being shared, otherwise the "Description" from the shared link will be used.                                                 |
+| `showDescription`    | `bool` | Show the album description below the title. This only applies if it is an album which is being shared.                                                                                                              |
 | `groupByDate`        | `bool` | Group the gallery's thumbnails by month, with headers like "December 2024" above each group. Sorts photos newest-first. Items missing a creation date end up under an "Undated" bucket at the end. Default `false`. |
 
 Example: show the gallery title and group photos by month:
@@ -215,12 +215,12 @@ Example: show the gallery title and group photos by month:
 
 The gallery's lightbox is powered by [PhotoSwipe](https://photoswipe.com/). Configured under `ipp.lightbox`.
 
-| Option         | Type   | Description                                                                                                                              |
-|----------------|--------|------------------------------------------------------------------------------------------------------------------------------------------|
-| `showArrows`   | `bool` | Show the prev/next arrows on desktop. They appear when the user hovers the lightbox. Default `true`.                                     |
-| `showDownload` | `bool` | Show a download button in the lightbox toolbar. Only takes effect when downloads are also allowed by `allowDownloadAll`. Default `true`. |
-| `mobileArrows` | `bool` | Show prev/next arrows on mobile (under 640px viewport). Off by default since swipe is the natural mobile navigation.                     |
-| `options`      | `object` | Custom [PhotoSwipe options](https://photoswipe.com/options/) to override defaults (e.g. `{"wheelToZoom": true}`).                      |
+| Option         | Type     | Description                                                                                                                              |
+|----------------|----------|------------------------------------------------------------------------------------------------------------------------------------------|
+| `showArrows`   | `bool`   | Show the prev/next arrows on desktop. They appear when the user hovers the lightbox. Default `true`.                                     |
+| `showDownload` | `bool`   | Show a download button in the lightbox toolbar. Only takes effect when downloads are also allowed by `allowDownloadAll`. Default `true`. |
+| `mobileArrows` | `bool`   | Show prev/next arrows on mobile (under 640px viewport). Off by default since swipe is the natural mobile navigation.                     |
+| `options`      | `object` | Custom [PhotoSwipe options](https://photoswipe.com/options/) to override defaults (e.g. `{"wheelToZoom": true}`).                        |
 
 Example: hide the download button inside the lightbox even though zip downloads are otherwise allowed:
 
