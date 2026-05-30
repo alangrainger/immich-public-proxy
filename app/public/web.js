@@ -37,6 +37,7 @@ import { thumbHashToDataURL } from '/share/static/thumbhash/thumbhash.js'
  * @property {boolean} [showArrows]
  * @property {boolean} [showDownload]
  * @property {boolean} [mobileArrows]
+ * @property {Record<string, any>} [options]
  */
 
 /**
@@ -667,15 +668,18 @@ function buildDataSource () {
 }
 
 function initLightbox () {
+  const { options = {} } = lightboxConfig;
+
   lightbox = new PhotoSwipeLightbox({
-    dataSource: buildDataSource(),
-    pswpModule: () => import('/share/static/photoswipe/photoswipe.esm.js'),
     bgOpacity: 1,
     showHideAnimationType: 'fade',
     closeOnVerticalDrag: true,
     arrowKeys: true,
     loop: false,
-    padding: { top: 56, bottom: 56, left: 16, right: 16 }
+    padding: { top: 56, bottom: 56, left: 16, right: 16 },
+    ...options,
+    dataSource: buildDataSource(),
+    pswpModule: () => import('/share/static/photoswipe/photoswipe.esm.js')
   })
 
   // Download button (only registered if config enables it)
