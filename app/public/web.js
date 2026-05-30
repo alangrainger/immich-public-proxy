@@ -316,6 +316,11 @@ function createTile (index) {
   img.alt = ''
   img.dataset.src = item.thumbnailUrl
   img.onerror = onThumbError
+  // Mark the image as drawable once its bytes are decoded; the CSS rule
+  // `#gallery img.loaded` fades opacity from 0 to 1 so the thumbhash blurs
+  // into the sharp image instead of snapping (and masks Chrome/Edge's brief
+  // white flash between `img.src` being set and the bytes actually painting).
+  img.onload = () => img.classList.add('loaded')
   a.appendChild(img)
 
   if (item.type === 'VIDEO') {
