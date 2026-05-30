@@ -1,6 +1,6 @@
 import immich from './immich'
 import { Response } from 'express-serve-static-core'
-import { Asset, AssetType, ImageSize, IncomingShareRequest, SharedLink } from './types'
+import { Asset, AssetType, ImageSize, IncomingShareRequest, KeyType, SharedLink } from './types'
 import { canDownload, escapeHtml, getConfigOption, log, toString } from './functions'
 import archiver from 'archiver'
 import { respondToInvalidRequest } from './invalidRequestHandler'
@@ -98,10 +98,10 @@ class Render {
 
     const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + subpath, {
       [asset.keyType || 'key']: asset.key,
-      size: sizeQueryParam,
-      password: asset.password
+      size: sizeQueryParam
     })
-    const data = await fetch(url, { headers: fetchHeaders })
+    const authHeaders = await immich.authHeaders(asset.keyType || KeyType.key, asset.key, asset.password)
+    const data = await fetch(url, { headers: { ...fetchHeaders, ...authHeaders } })
 
     if (data.status < 200 || data.status >= 300) {
       let immichMessage = ''
@@ -385,9 +385,9 @@ class Render {
       const endpoint = this.resolveImageEndpoint(ImageSize.original, asset)
       const url = immich.buildUrl(immich.apiUrl() + '/assets/' + encodeURIComponent(asset.id) + endpoint.subpath, {
         [asset.keyType || 'key']: asset.key,
-        password: asset.password,
         size: endpoint.sizeQueryParam
       })
+      const authHeaders = await immich.authHeaders(asset.keyType || KeyType.key, asset.key, asset.password)
 
       // Phase 1: get response headers, retrying on transient failure.
       // We use AbortController + a clearable timer rather than
@@ -404,7 +404,7 @@ class Render {
         const controller = new AbortController()
         const headerTimer = setTimeout(() => controller.abort(new Error(`No response headers within ${headerTimeoutMs}ms`)), headerTimeoutMs)
         try {
-          const data = await fetch(url, { signal: controller.signal })
+          const data = await fetch(url, { signal: controller.signal, headers: authHeaders })
           clearTimeout(headerTimer)
           if (data.ok) {
             response = data
