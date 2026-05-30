@@ -42,6 +42,7 @@ export interface Asset {
 export interface Album {
   id: string;
   assets: Asset[];
+  albumThumbnailAssetId?: string;
 }
 
 export interface SharedLink {
@@ -57,6 +58,7 @@ export interface SharedLink {
     albumName?: string;
     order?: string;
     description?: string;
+    albumThumbnailAssetId?: string;
   }
   expiresAt: string | null;
 }

@@ -240,6 +240,7 @@ class Immich {
             }
             // Replace the empty link.assets array with the array of assets from the album
             link.assets = album.assets
+            if (link.album) link.album.albumThumbnailAssetId = album.albumThumbnailAssetId
           }
 
           link.password = password

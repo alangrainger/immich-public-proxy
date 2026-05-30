@@ -280,6 +280,10 @@ class Render {
     }))
 
     const downloadAllowed = canDownload(share)
+    // Prefer the album's owner-chosen cover for og:image; fall back to first
+    // item if the cover asset has been filtered out (e.g. trashed).
+    const coverId = share.album?.albumThumbnailAssetId
+    const ogImageItem = (coverId && items.find(i => i.id === coverId)) || items[0]
     const props: GalleryProps = {
       items,
       title: this.title(share),
@@ -289,6 +293,7 @@ class Render {
       showDownload: downloadAllowed,
       showTitle: !!getConfigOption('ipp.gallery.showTitle', true),
       openItem,
+      ogImageItem,
       lightboxConfig: {
         // Show download button only if downloading is allowed AND configured.
         showDownload: downloadAllowed && !!getConfigOption('ipp.lightbox.showDownload', true),
