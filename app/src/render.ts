@@ -284,6 +284,12 @@ class Render {
     // item if the cover asset has been filtered out (e.g. trashed).
     const coverId = share.album?.albumThumbnailAssetId
     const ogImageItem = (coverId && items.find(i => i.id === coverId)) || items[0]
+    // Guard against an operator setting ipp.lightbox.options to a non-object;
+    // a string would otherwise spread character-by-character into PhotoSwipe.
+    const rawLightboxOptions = getConfigOption('ipp.lightbox.options', {})
+    const lightboxOptions: Record<string, unknown> = (rawLightboxOptions && typeof rawLightboxOptions === 'object' && !Array.isArray(rawLightboxOptions))
+      ? rawLightboxOptions as Record<string, unknown>
+      : {}
     const props: GalleryProps = {
       items,
       title: this.title(share),
@@ -299,7 +305,7 @@ class Render {
         showDownload: downloadAllowed && !!getConfigOption('ipp.lightbox.showDownload', true),
         showArrows: !!getConfigOption('ipp.lightbox.showArrows', true),
         mobileArrows: !!getConfigOption('ipp.lightbox.mobileArrows', false),
-        options: getConfigOption('ipp.lightbox.options', {}) as Record<string, unknown>
+        options: lightboxOptions
       },
       groupByDate
     }

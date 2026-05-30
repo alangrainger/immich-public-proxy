@@ -37,7 +37,7 @@ import { thumbHashToDataURL } from '/share/static/thumbhash/thumbhash.js'
  * @property {boolean} [showArrows]
  * @property {boolean} [showDownload]
  * @property {boolean} [mobileArrows]
- * @property {Record<string, any>} [options]
+ * @property {Record<string, unknown>} [options]
  */
 
 /**
@@ -668,7 +668,7 @@ function buildDataSource () {
 }
 
 function initLightbox () {
-  const { options = {} } = lightboxConfig;
+  const { options = {} } = lightboxConfig
 
   lightbox = new PhotoSwipeLightbox({
     bgOpacity: 1,
