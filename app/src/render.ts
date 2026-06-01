@@ -80,14 +80,20 @@ class Render {
 
     if (asset.type === AssetType.video) {
       subpath = '/video/playback'
-      // Stream videos in 2.5 MB chunks rather than the entire file
-      const range = (req.range || '').replace(/bytes=/, '').split('-')
-      const start = parseInt(range[0], 10) || 0
-      const end = parseInt(range[1], 10) || start + 2499999
-      fetchHeaders.range = `bytes=${start}-${end}`
-      headerList.push('cache-control', 'content-range')
       res.setHeader('accept-ranges', 'bytes')
-      res.status(206) // Partial Content
+      // Only chunk when the client sent a Range header. A browser <video>
+      // element does, so playback still streams in 2.5 MB chunks. Clients
+      // that don't (wget, right-click "Save As", link unfurlers) get the
+      // full file with 200 OK; otherwise they'd save a truncated 2.5 MB
+      // partial response as the whole video.
+      if (req.range) {
+        const range = req.range.replace(/bytes=/, '').split('-')
+        const start = parseInt(range[0], 10) || 0
+        const end = parseInt(range[1], 10) || start + 2499999
+        fetchHeaders.range = `bytes=${start}-${end}`
+        headerList.push('cache-control', 'content-range')
+        res.status(206) // Partial Content
+      }
     } else {
       const endpoint = this.resolveImageEndpoint(immich.validateImageSize(size), asset)
       subpath = endpoint.subpath
