@@ -12,6 +12,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+      # Required for actions/attest-build-provenance
+      id-token: write
+      attestations: write
 
     steps:
       - name: Checkout repository
@@ -53,6 +56,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push Docker image
+        id: build
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -66,3 +70,17 @@ jobs:
           annotations: ${{ steps.metadata.outputs.annotations }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Attest GHCR image
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ghcr.io/${{ github.repository }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Attest Docker Hub image
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: docker.io/${{ github.repository }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
