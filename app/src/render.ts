@@ -120,7 +120,8 @@ class Render {
     }
 
     if (attachment && asset.originalFileName) {
-      res.setHeader('Content-Disposition', `attachment; filename="${this.getFilename(asset, servedSize)}"`)
+      const filename = encodeURI(this.getFilename(asset, servedSize))
+      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${filename}`)
     }
     headerList.forEach(header => {
       const value = data.headers.get(header)
