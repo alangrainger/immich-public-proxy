@@ -788,21 +788,9 @@ function initLightbox () {
     pswp.on('change', () => {
       const it = items[pswp.currIndex]
       if (it) history.replaceState({ pswp: lightboxPushedHistory }, '', '#' + it.id)
-
-      const activeIndex = pswp.currIndex
-      const updateVideoPlayState = () => {
-        if (pswp.currIndex !== activeIndex) return
-        document.querySelectorAll('.pswp__video-wrap video').forEach(v => v.pause())
-        if (pswp.currSlide && pswp.currSlide.container) {
-          const video = pswp.currSlide.container.querySelector('video')
-          if (video) video.play().catch(() => {})
-        }
-      }
-      updateVideoPlayState()
-      setTimeout(updateVideoPlayState, 50)
     })
     pswp.on('close', () => {
-      document.querySelectorAll('.pswp__video-wrap video').forEach(v => v.pause())
+      document.querySelectorAll('.pswp__video-wrap video').forEach(v => { v.pause(); v.currentTime = 0 })
       scrollToCurrentSlide(pswp.currIndex)
       const wasFromHistory = closingFromHistory
       closingFromHistory = false
@@ -836,6 +824,28 @@ function initLightbox () {
   const docEl = document.documentElement
   if (!lightboxConfig.showArrows) docEl.classList.add('pswp-no-arrows')
   if (!lightboxConfig.mobileArrows) docEl.classList.add('pswp-no-mobile-arrows')
+
+  // Video autoplay: play the video when its slide becomes active, pause when
+  // it deactivates or the lightbox closes. contentActivate fires once the
+  // slide's HTML is in the DOM and the slide is the current one — including
+  // the very first slide on open, which the 'change' event misses.
+  lightbox.on('contentActivate', ({ content }) => {
+    const video = content && content.element && content.element.querySelector
+      ? content.element.querySelector('video')
+      : null
+    if (video) {
+      // Small delay lets the open/slide animation finish so the element is
+      // fully laid out; also keeps us within the user-gesture window on most
+      // browsers (the click that opened the lightbox counts).
+      setTimeout(() => { video.play().catch(() => {}) }, 100)
+    }
+  })
+  lightbox.on('contentDeactivate', ({ content }) => {
+    const video = content && content.element && content.element.querySelector
+      ? content.element.querySelector('video')
+      : null
+    if (video) { video.pause(); video.currentTime = 0 }
+  })
 
   lightbox.init()
 }
