@@ -826,31 +826,49 @@ function initLightbox () {
   if (!lightboxConfig.mobileArrows) docEl.classList.add('pswp-no-mobile-arrows')
 
   // Video autoplay
-  const playVideoRobustly = (content) => {
-    const video = content && content.element && content.element.querySelector
-      ? content.element.querySelector('video')
+  let autoplayInterval = null
+  let lastAutoplayIndex = -1
+
+  const tryAutoplay = () => {
+    if (!lightbox.pswp || !lightbox.pswp.currSlide || !lightbox.pswp.currSlide.isActive) return
+    const index = lightbox.pswp.currIndex
+    if (index === lastAutoplayIndex) return
+
+    const item = items[index]
+    if (!item) return
+    
+    // If it's a video, wait for the DOM element to actually exist
+    const video = lightbox.pswp.currSlide.container
+      ? lightbox.pswp.currSlide.container.querySelector('video')
       : null
-    if (!video || !video.paused) return
-    const playPromise = video.play()
-    if (playPromise !== undefined) {
-      playPromise.catch((e) => {
-        if (e.name === 'NotAllowedError') {
+      
+    if (item.type === 'VIDEO' && !video) return
+
+    // Mark this slide as processed
+    lastAutoplayIndex = index
+
+    if (video && video.paused) {
+      const playPromise = video.play()
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
           video.muted = true
           video.play().catch(() => {})
-        }
-      })
+        })
+      }
     }
   }
 
-  lightbox.on('contentActivate', ({ content }) => {
-    // Try playing immediately
-    playVideoRobustly(content)
-    // Double check after the opening animation finishes in case the browser
-    // wasn't ready to play it while the DOM was still changing
-    setTimeout(() => {
-      if (content.isActive) playVideoRobustly(content)
-    }, 300)
+  lightbox.on('uiRegister', () => {
+    // Start polling when lightbox opens
+    autoplayInterval = setInterval(tryAutoplay, 50)
+
+    lightbox.pswp.on('close', () => {
+      clearInterval(autoplayInterval)
+      lastAutoplayIndex = -1
+    })
   })
+
+  // We still use contentDeactivate to immediately pause videos when sliding away
   lightbox.on('contentDeactivate', ({ content }) => {
     const video = content && content.element && content.element.querySelector
       ? content.element.querySelector('video')
