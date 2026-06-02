@@ -825,20 +825,31 @@ function initLightbox () {
   if (!lightboxConfig.showArrows) docEl.classList.add('pswp-no-arrows')
   if (!lightboxConfig.mobileArrows) docEl.classList.add('pswp-no-mobile-arrows')
 
-  // Video autoplay: play the video when its slide becomes active, pause when
-  // it deactivates or the lightbox closes. contentActivate fires once the
-  // slide's HTML is in the DOM and the slide is the current one — including
-  // the very first slide on open, which the 'change' event misses.
-  lightbox.on('contentActivate', ({ content }) => {
+  // Video autoplay
+  const playVideoRobustly = (content) => {
     const video = content && content.element && content.element.querySelector
       ? content.element.querySelector('video')
       : null
-    if (video) {
-      // Small delay lets the open/slide animation finish so the element is
-      // fully laid out; also keeps us within the user-gesture window on most
-      // browsers (the click that opened the lightbox counts).
-      setTimeout(() => { video.play().catch(() => {}) }, 100)
+    if (!video || !video.paused) return
+    const playPromise = video.play()
+    if (playPromise !== undefined) {
+      playPromise.catch((e) => {
+        if (e.name === 'NotAllowedError') {
+          video.muted = true
+          video.play().catch(() => {})
+        }
+      })
     }
+  }
+
+  lightbox.on('contentActivate', ({ content }) => {
+    // Try playing immediately
+    playVideoRobustly(content)
+    // Double check after the opening animation finishes in case the browser
+    // wasn't ready to play it while the DOM was still changing
+    setTimeout(() => {
+      if (content.isActive) playVideoRobustly(content)
+    }, 300)
   })
   lightbox.on('contentDeactivate', ({ content }) => {
     const video = content && content.element && content.element.querySelector
