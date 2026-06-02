@@ -1,6 +1,6 @@
 {
   "name": "immich-public-proxy",
-  "version": "2.0.2",
+  "version": "2.2.1",
   "scripts": {
     "dev": "ts-node src/index.ts",
     "build": "npx tsc",

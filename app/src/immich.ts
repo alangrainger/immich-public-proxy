@@ -45,14 +45,29 @@ const shareCache = new Map<string, ShareCacheEntry>()
 const shareCacheTtlMs = 120_000
 const shareCacheMax = 100
 
+/*
+  Immich replaced the deprecated `?password=...` query-param auth for shared
+  links with `POST /shared-links/login`, which returns an
+  `immich_shared_link_token` cookie used on subsequent calls. This cache holds
+  one such token per (keyType, key, password) so the gallery's many asset
+  requests reuse a single login round-trip. Keying by password is load-bearing
+  for security: a request without the correct password produces a different
+  cache key (often empty) and falls through to a fresh login that Immich will
+  reject — IPP never serves cached tokens to unauthenticated visitors.
+*/
+type TokenCacheEntry = { promise: Promise<string | null>; expiresAt: number }
+const tokenCache = new Map<string, TokenCacheEntry>()
+const tokenCacheTtlMs = 120_000
+const tokenCacheMax = 100
+
 class Immich {
   /**
    * Make a request to Immich API. We're not using the SDK to limit
    * the possible attack surface of this app.
    */
-  async request (endpoint: string) {
+  async request (endpoint: string, init?: RequestInit) {
     try {
-      const res = await fetch(this.apiUrl() + endpoint)
+      const res = await fetch(this.apiUrl() + endpoint, init)
       if (res.status === 200) {
         const contentType = res.headers.get('Content-Type') || ''
         if (contentType.includes('application/json')) {
@@ -212,10 +227,10 @@ class Immich {
   private async fetchShareByKey (key: string, password?: string, keyType: KeyType = KeyType.key): Promise<SharedLinkResult> {
     let link
     const url = this.buildUrl(this.apiUrl() + '/shared-links/me', {
-      [keyType]: key,
-      password
+      [keyType]: key
     })
-    const res = await fetch(url)
+    const headers = await this.authHeaders(keyType, key, password)
+    const res = await fetch(url, { headers })
     if ((res.headers.get('Content-Type') || '').toLowerCase().includes('application/json')) {
       const jsonBody = await res.json()
       if (jsonBody) {
@@ -228,9 +243,8 @@ class Immich {
           // the array of assets
           if (link.type === AlbumType.album) {
             const albumRes = await fetch(this.buildUrl(this.apiUrl() + '/albums/' + link?.album?.id, {
-              [keyType]: key,
-              password
-            }))
+              [keyType]: key
+            }), { headers })
             const album = await albumRes.json() as Album
             if (!album?.id) {
               log('Invalid album ID - ' + link?.album?.id)
@@ -240,6 +254,7 @@ class Immich {
             }
             // Replace the empty link.assets array with the array of assets from the album
             link.assets = album.assets
+            if (link.album) link.album.albumThumbnailAssetId = album.albumThumbnailAssetId
           }
 
           link.password = password
@@ -305,11 +320,77 @@ class Immich {
    * Get the content-type of a video, for the lightbox <video> element
    */
   async getVideoContentType (asset: Asset) {
+    const headers = await this.authHeaders(asset.keyType, asset.key, asset.password)
     const data = await this.request(this.buildUrl('/assets/' + encodeURIComponent(asset.id) + '/video/playback', {
-      [asset.keyType]: asset.key,
-      password: asset.password
-    }))
+      [asset.keyType]: asset.key
+    }), { headers })
     return data.headers.get('Content-Type')
+  }
+
+  /**
+   * Build the `Cookie` header that authenticates to Immich for a
+   * password-protected share. Returns `{}` (no Cookie header) when the share
+   * has no password or login failed; in those cases Immich will respond 401
+   * for protected resources, which the caller handles as "password required".
+   */
+  async authHeaders (keyType: KeyType, key: string, password?: string): Promise<Record<string, string>> {
+    if (!password) return {}
+    const token = await this.getSharedLinkToken(key, password, keyType)
+    return token ? { Cookie: `immich_shared_link_token=${token}` } : {}
+  }
+
+  /**
+   * Cached login: fetch an `immich_shared_link_token` for the given password,
+   * or return null on failure. The cache is per (keyType, key, password) so
+   * that a request without the correct password can't reuse another visitor's
+   * authenticated session. See `tokenCache` doc-comment for the security
+   * argument.
+   */
+  private async getSharedLinkToken (key: string, password: string, keyType: KeyType): Promise<string | null> {
+    const cacheKey = `${keyType}:${key}:${password}`
+    const now = Date.now()
+    const cached = tokenCache.get(cacheKey)
+    if (cached && cached.expiresAt > now) {
+      tokenCache.delete(cacheKey)
+      tokenCache.set(cacheKey, cached)
+      return cached.promise
+    }
+    const promise = this.sharedLinkLogin(key, password, keyType)
+    tokenCache.set(cacheKey, {
+      promise,
+      expiresAt: now + tokenCacheTtlMs
+    })
+    if (tokenCache.size > tokenCacheMax) {
+      const oldest = tokenCache.keys().next().value
+      if (oldest !== undefined && oldest !== cacheKey) tokenCache.delete(oldest)
+    }
+    promise.then(
+      (token) => { if (!token) tokenCache.delete(cacheKey) },
+      () => { tokenCache.delete(cacheKey) }
+    )
+    return promise
+  }
+
+  /**
+   * `POST /shared-links/login`. Replaces the deprecated `?password=...` query
+   * param.
+   * Returns the cookie value on success, null on any failure.
+   */
+  private async sharedLinkLogin (key: string, password: string, keyType: KeyType): Promise<string | null> {
+    const url = this.buildUrl(this.apiUrl() + '/shared-links/login', { [keyType]: key })
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      })
+      if (res.status !== 201) return null
+      const setCookie = res.headers.get('set-cookie') || ''
+      const match = setCookie.match(/immich_shared_link_token=([^;,]+)/)
+      return match ? match[1] : null
+    } catch (e) {
+      return null
+    }
   }
 
   /**
@@ -329,15 +410,38 @@ class Immich {
   }
 
   /**
+   * Whether this asset must be served from `/original` to remain useful, bypassing
+   * the `ipp.downloadOriginalPhoto` downgrade.
+   *
+   * - Videos: Immich's preview/thumbnail endpoints return a poster JPEG, not the
+   *   video, so the downgrade would replace a video file with a still image.
+   * - Animated images (currently just GIF): Immich's preview is a static JPEG,
+   *   so the downgrade silently strips the animation. APNG/animated-WebP aren't
+   *   listed because Immich doesn't expose a distinct MIME type for them — they
+   *   share `image/png` / `image/webp` with their static counterparts.
+   *
+   * Used by both the display path (lightbox preview URL) and the download path
+   * (single-asset download + zip), so the lightbox shows the same bytes the
+   * user gets when they hit "download".
+   */
+  requiresOriginal (asset: Asset): boolean {
+    if (asset.type === AssetType.video) {
+      return true
+    } else if (asset.originalMimeType?.startsWith('video/')) {
+      return true
+    } else if (asset.originalMimeType === 'image/gif') {
+      return true
+    }
+    return false
+  }
+
+  /**
    * Return the correct preview size, depending on the image MIME type
    */
   getPreviewImageSize (asset: Asset) {
-    // For certain media types, use the original file rather than the preview
-    if (['image/gif'].includes(asset.originalMimeType || '')) {
-      return ImageSize.original
-    } else {
-      return ImageSize.preview
-    }
+    // For animated formats, use the original file rather than the preview so
+    // animation is preserved (Immich's preview is a static JPEG frame).
+    return this.requiresOriginal(asset) ? ImageSize.original : ImageSize.preview
   }
 
   /**

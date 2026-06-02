@@ -108,14 +108,17 @@ html, body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
 }
 
-/* Hide the <img> until JS sets its src - otherwise Chrome renders its default
-   broken-image glyph for img elements with explicit dimensions but no src
-   (e.g. tiles awaiting load, or tiles whose in-flight fetch was cancelled
-   when the user scrolled past). The <a>'s gray background shows through. */
-#gallery img:not([src]) {
-  visibility: hidden;
+/* Fade the thumbnail in once its bytes are decoded (web.js adds .loaded on
+   the img's load event). While opacity is 0 the <a>'s thumbhash / gray
+   background shows through, so the blurred thumbhash appears to resolve into
+   the sharp image rather than snap. Also masks the brief white flash Chrome /
+   Edge paint between `img.src` being set and the bytes actually rendering. */
+#gallery img.loaded {
+  opacity: 1;
 }
 
 #gallery a.thumb-error img {

@@ -37,6 +37,7 @@ import { thumbHashToDataURL } from '/share/static/thumbhash/thumbhash.js'
  * @property {boolean} [showArrows]
  * @property {boolean} [showDownload]
  * @property {boolean} [mobileArrows]
+ * @property {Record<string, unknown>} [options]
  */
 
 /**
@@ -315,6 +316,11 @@ function createTile (index) {
   img.alt = ''
   img.dataset.src = item.thumbnailUrl
   img.onerror = onThumbError
+  // Mark the image as drawable once its bytes are decoded; the CSS rule
+  // `#gallery img.loaded` fades opacity from 0 to 1 so the thumbhash blurs
+  // into the sharp image instead of snapping (and masks Chrome/Edge's brief
+  // white flash between `img.src` being set and the bytes actually painting).
+  img.onload = () => img.classList.add('loaded')
   a.appendChild(img)
 
   if (item.type === 'VIDEO') {
@@ -667,15 +673,18 @@ function buildDataSource () {
 }
 
 function initLightbox () {
+  const { options = {} } = lightboxConfig
+
   lightbox = new PhotoSwipeLightbox({
-    dataSource: buildDataSource(),
-    pswpModule: () => import('/share/static/photoswipe/photoswipe.esm.js'),
     bgOpacity: 1,
     showHideAnimationType: 'fade',
     closeOnVerticalDrag: true,
     arrowKeys: true,
     loop: false,
-    padding: { top: 56, bottom: 56, left: 16, right: 16 }
+    padding: { top: 56, bottom: 56, left: 16, right: 16 },
+    ...options,
+    dataSource: buildDataSource(),
+    pswpModule: () => import('/share/static/photoswipe/photoswipe.esm.js')
   })
 
   // Download button (only registered if config enables it)

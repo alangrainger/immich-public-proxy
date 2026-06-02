@@ -27,6 +27,7 @@ export interface LightboxConfig {
   showArrows: boolean
   showDownload: boolean
   mobileArrows: boolean
+  options?: Record<string, unknown>
 }
 
 export interface GalleryProps {
@@ -38,6 +39,7 @@ export interface GalleryProps {
   showDownload: boolean
   showTitle: boolean
   openItem?: number
+  ogImageItem?: GalleryItem
   lightboxConfig: LightboxConfig
   groupByDate: boolean
 }
@@ -50,7 +52,13 @@ export function Gallery (props: GalleryProps) {
     groupByDate: props.groupByDate
   })
   const firstItem = props.items[0]
-  const ogImageUrl = firstItem ? props.publicBaseUrl + firstItem.previewUrl : ''
+  // og:image prefers the album cover (passed via props); for videos, previewUrl
+  // points to the .mp4, so use thumbnailUrl to keep og:image a still JPEG.
+  const ogItem = props.ogImageItem || firstItem
+  const ogImageAsset = ogItem
+    ? (ogItem.type === AssetType.video ? ogItem.thumbnailUrl : ogItem.previewUrl)
+    : ''
+  const ogImageUrl = ogItem ? props.publicBaseUrl + ogImageAsset : ''
 
   return (
     <html lang="en">
