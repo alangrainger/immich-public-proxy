@@ -654,9 +654,11 @@ function buildDataSource () {
     if (item.type === 'VIDEO') {
       const v = parseVideoData(item)
       return {
+        width: item.width || 1600,
+        height: item.height || 1200,
         html:
           '<div class="pswp__video-wrap">' +
-          '<video controls playsinline poster="' + escapeAttr(item.thumbnailUrl) + '">' +
+          '<video controls playsinline poster="' + escapeAttr(item.thumbnailUrl) + '" style="width: 100%; height: 100%; object-fit: contain;">' +
           '<source src="' + escapeAttr(v.src) + '" type="' + escapeAttr(v.type) + '">' +
           '</video>' +
           '</div>'
