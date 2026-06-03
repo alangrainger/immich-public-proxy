@@ -304,7 +304,8 @@ function renderLocation (exif: GalleryExif): HTMLElement {
       '&mlon=' + exif.longitude +
       '#map=15/' + exif.latitude + '/' + exif.longitude
     link.target = '_blank'
-    link.rel = 'noopener'
+    // noreferrer suppresses the Referer header so the share URL doesn't end up in OSM's webserver logs
+    link.rel = 'noopener noreferrer'
     link.textContent = 'Open in OpenStreetMap'
     body.appendChild(link)
   }
