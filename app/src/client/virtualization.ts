@@ -12,6 +12,13 @@ import {
 import { computeLayout } from './layout.js'
 import { createTile } from './tiles.js'
 
+/**
+ * Translate the current window viewport into container-relative coordinates
+ * (so layout entries' absolute `top` values can be compared directly) and
+ * extend by `BUFFER_VIEWPORTS` worth of viewport height in each direction.
+ * The buffer is what lets tiles fade in just before they scroll into view
+ * instead of popping in at the edge.
+ */
 function getVisibleRange () {
   if (!state.container) return { top: 0, bottom: 0 }
   const containerTop = state.container.getBoundingClientRect().top
