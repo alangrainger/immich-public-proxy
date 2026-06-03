@@ -16,11 +16,11 @@
 
 ## How to provide a config override
 
-**Note:** You only need to include the keys you're changing. Anything you omit keeps its default.
+**Note 👉** You only need to include the keys you're changing. Anything you omit keeps its default.
 
 There are two ways to supply custom config:
 
-#### Mount a file:
+### Mount a file
 
 Recommended for anything non-trivial. Make a copy of [config.json](https://github.com/alangrainger/immich-public-proxy/blob/main/app/config.json) next to your `docker-compose.yml`, edit, then add a volume:
 
@@ -31,7 +31,7 @@ Recommended for anything non-trivial. Make a copy of [config.json](https://githu
 
 Restart the container and your custom configuration becomes active.
 
-#### Inline via env var:
+### Or inline via env var
 
 For one-off or single-key overrides. See [inline configuration](inline-configuration.md).
 
