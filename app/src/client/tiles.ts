@@ -5,7 +5,8 @@
 // @ts-expect-error - browser-only ESM URL
 import { thumbHashToDataURL } from '/share/static/thumbhash/thumbhash.js' // eslint-disable-line import/no-absolute-path
 
-import { state, CHECK_SVG, LONG_PRESS_MS } from './state.js'
+import { state, LONG_PRESS_MS } from './state.js'
+import { CHECK_SVG } from './icons.js'
 import { enterSelectMode, toggleSelection } from './selection.js'
 import { openLightbox } from './lightbox.js'
 

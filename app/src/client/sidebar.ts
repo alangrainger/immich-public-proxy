@@ -4,7 +4,8 @@
 // button top-left, sections only render when their data is present. Toggled
 // by the toolbar info button or the `i` key, persisted via localStorage.
 
-import { state, ICON_INFO, ICON_CLOSE, ICON_IMAGE, ICON_CAMERA, ICON_IRIS, ICON_MAP, SIDEBAR_STORAGE_KEY } from './state.js'
+import { state, SIDEBAR_STORAGE_KEY } from './state.js'
+import { ICON_INFO, ICON_CLOSE, ICON_IMAGE, ICON_CAMERA, ICON_IRIS, ICON_MAP } from './icons.js'
 import type { GalleryItem, GalleryExif } from '../shared/types.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

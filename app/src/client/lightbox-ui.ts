@@ -2,7 +2,8 @@
 // download button, fullscreen toggle. Each is gated by config or feature
 // detection. The info sidebar lives in `sidebar.ts`.
 
-import { state, ICON_BACK, ICON_DOWNLOAD, ICON_FULLSCREEN, ICON_FULLSCREEN_EXIT } from './state.js'
+import { state } from './state.js'
+import { ICON_BACK, ICON_DOWNLOAD, ICON_FULLSCREEN, ICON_FULLSCREEN_EXIT } from './icons.js'
 
 // PhotoSwipe types are not bundled with the project. These two interfaces
 // describe just enough of the surface we touch to keep the rest of the file
