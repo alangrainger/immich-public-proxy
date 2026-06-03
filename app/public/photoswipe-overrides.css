@@ -96,6 +96,21 @@ html.pswp-no-arrows .pswp__button--arrow {
   display: none !important;
 }
 
+/* When the info sidebar is open on desktop, both the top toolbar (which is
+   absolutely positioned at right: 0) and the next-arrow button (right: 0)
+   would sit underneath the 360px sidebar. Shift them inward so they stay
+   visible inside the now-narrower slide viewport. Mobile is unaffected
+   because the sidebar there is a bottom sheet, not a right-side dock. */
+@media (min-width: 641px) {
+  html.ipp-sidebar-open .pswp__top-bar {
+    right: 360px;
+    width: auto;
+  }
+  html.ipp-sidebar-open .pswp__button--arrow--next {
+    right: 360px;
+  }
+}
+
 @media (max-width: 640px) {
   html.pswp-no-mobile-arrows .pswp__button--arrow {
     display: none !important;
