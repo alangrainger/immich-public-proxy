@@ -39,7 +39,7 @@ For one-off or single-key overrides. See [inline configuration](inline-configura
 
 All options live under `ipp.*`. Several groups follow a master-toggle plus per-field-overrides pattern (`ipp.showMetadata.exif`, `ipp.showMetadata.location`): set the group's `enabled: true` to expose the group, then turn individual fields off if you want fewer.
 
-**You only need to include the keys you're changing. Anything you omit keeps its default.**
+You only need to include the keys you're changing. Anything you omit keeps its default.
 
 ## IPP options
 
