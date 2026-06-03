@@ -5,3 +5,4 @@ app/public/js/
 .env
 .directory
 /app/config.dev.json
+.npm-cache/
