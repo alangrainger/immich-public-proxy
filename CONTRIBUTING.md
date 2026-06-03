@@ -119,7 +119,7 @@ npm run test:container  # build a podman image and run it locally
 npx eslint src/         # lint
 ```
 
-`npm test` runs the pure-function unit tests in `app/tests/`. Add tests there for any new pure logic (filename derivation, escaping, layout math, EXIF whitelisting, etc.); skip HTTP plumbing.
+`npm test` runs the pure-function unit tests in `app/tests/`. Today the suite covers `escapeHtml` only; the other shipped pure-function areas (filename derivation, layout math, EXIF whitelisting) deserve coverage too. Add tests as you touch those areas, and for any new pure logic you introduce. Skip HTTP plumbing.
 
 Beyond unit tests, exercise the gallery end-to-end against a real Immich instance: happy path plus failure paths (expired share, trashed asset, password protection, very large albums, video range requests).
 
@@ -131,6 +131,8 @@ Beyond unit tests, exercise the gallery end-to-end against a real Immich instanc
 
 **Escaping.** Any string that originates from Immich and is embedded into HTML by the SSR templates must be escaped (use `escapeHtml` from `utils/text.ts`). Strings that cross to the client via the init JSON block stay as plain text and are rendered with `textContent`, not `innerHTML` - that retired the "pre-escaped HTML over the wire" contract that the early gallery shipped with.
 
+**Third-party links.** Any anchor the client renders that points to a third-party origin (the "Open in OpenStreetMap" link is the current example) must set `rel="noopener noreferrer"`. The `noreferrer` part is the load-bearing one: without it, the browser sends the share URL as the `Referer` header, and the share URL *is* the capability token for the album - it ends up in the third party's webserver logs. `noopener` prevents the new tab from touching `window.opener`. Embedding a third-party widget (map tile, oEmbed, etc.) instead of a click-through link reintroduces the same leak silently on every render - that's a design decision that needs more than a code change.
+
 **PhotoSwipe UI.** Custom toolbar buttons, captions, and panels are registered through `lightbox.pswp.ui.registerElement`. The back button, download, fullscreen, and caption registrations live in `app/src/client/lightbox-ui.ts`; the info sidebar (a substantial UI element) lives in `app/src/client/sidebar.ts`. New small registrations join `lightbox-ui.ts`; anything panel-sized gets its own file.
 
 **Streaming.** Assets are streamed from Immich to the client without buffering to disk. Keep it that way. The `archiver` zip flow is also fully streamed (with per-asset retry, an idle-timeout transform, and abort-on-failure semantics).
@@ -139,7 +141,7 @@ Beyond unit tests, exercise the gallery end-to-end against a real Immich instanc
 
 Where to put a new function: ask what category of thing it is, not where it gets called from. Share-level policy decisions and share-derived info go in `share.ts`. Per-asset view-model transforms (filename derivation, EXIF whitelisting) go alongside `gallery/builder.ts`. HTTP response setup driven by operator config goes in `http.ts`. Streaming pipelines go in `stream/`. If a new function doesn't fit any existing category, prefer adding to the closest existing file over creating a new single-function module - revisit when a real second member of the category appears.
 
-**No client framework, no bundler.** The client is TypeScript compiled file-for-file by `tsc` into plain ES modules served by Express static. Do not introduce a frontend framework (React / Svelte / Vue / Solid) or a bundler (Webpack / Rollup / Vite / Parcel). PhotoSwipe is loaded as ESM directly. Inter-module imports inside `app/src/client/` use `.js` extensions in the source - that's required by the client's `moduleResolution: bundler` setup and matches what the browser fetches.
+**No client framework, no bundler.** The client is TypeScript compiled file-for-file by `tsc` into plain ES modules served by Express static. Do not introduce a frontend framework (React / Svelte / Vue / Solid) or a bundler (Webpack / Rollup / Vite / Parcel). PhotoSwipe is loaded as ESM directly. Inter-module imports inside `app/src/client/` use `.js` extensions in the source: with no bundler, the browser fetches the compiled `.js` files directly, so the extension has to be present in the import path at runtime. `moduleResolution: bundler` is permissive about extensions in TypeScript-land; the constraint comes from the browser, not the TS config.
 
 **Code style.** ESLint standard config. Run lint locally before opening a PR.
 
