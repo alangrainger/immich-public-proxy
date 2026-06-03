@@ -1,7 +1,5 @@
 # Configuration
 
-Immich Public Proxy runs with sane defaults; most installs never need to touch `config.json`. Override only what you need.
-
 ## Contents
 
 - [How to provide a config override](#how-to-provide-a-config-override)
