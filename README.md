@@ -27,17 +27,9 @@ Setup takes less than a minute, and you never need to touch it again as all of y
 
 - [About this project](#about-this-project)
 - [Installation](#installation)
-  - [Install with Docker](#install-with-docker--podman)
-  - [Install with Kubernetes](docs/kubernetes.md)
 - [How to use it](#how-to-use-it)
 - [How it works](#how-it-works)
-- [Additional configuration](#additional-configuration)
-  - [IPP options](#immich-public-proxy-options)
-  - [Gallery options](#gallery-options)
-  - [Lightbox options](#lightbox-options)
-  - [Metadata](#metadata)
-  - [Custom error pages](#customising-your-error-response-pages)
-  - [Serving from multiple domains](#serving-from-multiple-domains)
+- [Configuration](docs/configuration.md)
 - [Troubleshooting](#troubleshooting)
 - [Feature requests](#feature-requests)
 
@@ -92,7 +84,7 @@ Check the container console output for any error messages.
 docker-compose up -d
 ```
 
-5. Set the "External domain" in your Immich **Server Settings** to be whatever domain you use to publicly serve Immich Public Proxy:
+6. Set the "External domain" in your Immich **Server Settings** to be whatever domain you use to publicly serve Immich Public Proxy:
 
 <img src="docs/server-settings.png" width="400" height="182">
 
@@ -140,184 +132,9 @@ If the shared link has expired or any of the assets have been put in the Immich 
 
 All incoming data is validated and sanitised, and anything unexpected is simply dropped with a 404.
 
-## Additional configuration
+## Configuration
 
-There are some additional configuration options you can change, for example the way the gallery is set up.
-
-1. Make a copy of [config.json](https://github.com/alangrainger/immich-public-proxy/blob/main/app/config.json) in the same folder as your `docker-compose.yml`.
-
-2. Pass the config to your docker container by adding a volume like this:
-
-```yaml
-    volumes:
-      - ./config.json:/app/config.json
-```
-
-3. Restart your container and your custom configuration should be active.
-
-Alternatively, you can [pass the configuration inline](docs/inline-configuration.md) from your `docker-compose.yml` file.
-
-### Immich Public Proxy options
-
-| Option                                | Type     | Description                                                                                                                                                                                                                                                                                   |
-|---------------------------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `responseHeaders`                     | `object` | Change the headers sent with your web responses. By default there is `cache-control` and CORS added.                                                                                                                                                                                          |
-| `downloadOriginalPhoto`               | `bool`   | Set to `false` if you only want people to be able to download the 'preview' quality photo, rather than your original photo.                                                                                                                                                                   |
-| `downloadedFilename`                  | `int`    | The filename of the downloaded image.<br>`0` for the original filename if available, falling back to the Immich asset ID<br>`1` for the Immich asset ID number<br>`2` for a shortened version of the asset ID: `img_` plus the first 8 characters of the asset ID                             |
-| `allowDownloadAll`                    | `int`    | Allow visitors to download all files as a zip, including the selective-download flow in multi-select mode.<br>`0` disable downloads<br>`1` follow Immich setting per share ([example](https://github.com/user-attachments/assets/79ea8c08-71ce-42ab-b025-10aec384938a))<br>`2` always allowed |
-| `downloadFromImmichConcurrencyLimit`  | `int`    | Maximum number of assets IPP will fetch from your Immich server in parallel when building a "download all" zip. Defaults to `8`. Lower this if your Immich server is slow or you see download timeouts on large albums; raise it for faster downloads if your server can handle the load.     |
-| `allowSlugLinks`                      | `bool`   | Enable/disable the custom URL links.                                                                                                                                                                                                                                                          |
-| `showHomePage`                        | `bool`   | Set to `false` to remove the IPP shield page at `/` and at `/share`                                                                                                                                                                                                                           |
-| `gallery`                             | `object` | Gallery-page options, see the [Gallery options](#gallery-options) section below.                                                                                                                                                                                                              |
-| `lightbox`                            | `object` | Lightbox option, see the [Lightbox options](#lightbox-options) section below.                                                                                                                                                                                                                 |
-| `showMetadata`                        | `object` | See the [Metadata](#metadata) section below.                                                                                                                                                                                                                                                  |
-| `customInvalidResponse`               | various  | Send a custom response instead of the default 404 - see [Custom responses](docs/custom-responses.md) for more details.                                                                                                                                                                        |
-
-For example, to disable the home page at `/` and at `/share` you need to change `showHomePage` to `false`:
-
-```json
-{
-  "ipp": {
-    "showHomePage": false,
-    ...
-  }
-}
-```
-
-### Gallery options
-
-Options that control how the gallery page is rendered. Configured under `ipp.gallery`.
-
-| Option               | Type   | Description                                                                                                                                                                                                         |
-|----------------------|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `singleImage`        | `bool` | By default a link to a single image will directly open the image file. Set to `true` if you want to show a gallery page instead for a single item.                                                                  |
-| `singleItemAutoOpen` | `bool` | When a share contains a single item and is opened on its gallery page, automatically open the lightbox on the asset. Default `true`.                                                                                |
-| `showTitle`          | `bool` | Show a title on the gallery page. This is taken from the album title if it is an album being shared, otherwise the "Description" from the shared link will be used.                                                 |
-| `showDescription`    | `bool` | Show the album description below the title. This only applies if it is an album which is being shared.                                                                                                              |
-| `groupByDate`        | `bool` | Group the gallery's thumbnails by month, with headers like "December 2024" above each group. Sorts photos newest-first. Items missing a creation date end up under an "Undated" bucket at the end. Default `false`. |
-
-Example: show the gallery title and group photos by month:
-
-```json
-{
-  "ipp": {
-    "gallery": {
-      "showTitle": true,
-      "groupByDate": true
-    }
-  }
-}
-```
-
-> **Note** for upgraders from earlier versions: the keys `singleImageGallery`, `singleItemAutoOpen`, `showGalleryTitle`, `showGalleryDescription`, and `groupGalleryByDate` used to live directly under `ipp.*`. They've been renamed and moved under `ipp.gallery.*` (see the table above). Existing configs continue to work via a backward-compatibility shim, but you'll see a deprecation notice in the startup log until you migrate them.
-
-### Lightbox options
-
-The gallery's lightbox is powered by [PhotoSwipe](https://photoswipe.com/). Configured under `ipp.lightbox`.
-
-| Option         | Type     | Description                                                                                                                              |
-|----------------|----------|------------------------------------------------------------------------------------------------------------------------------------------|
-| `showArrows`   | `bool`   | Show the prev/next arrows on desktop. They appear when the user hovers the lightbox. Default `true`.                                     |
-| `showDownload` | `bool`   | Show a download button in the lightbox toolbar. Only takes effect when downloads are also allowed by `allowDownloadAll`. Default `true`. |
-| `mobileArrows` | `bool`   | Show prev/next arrows on mobile (under 640px viewport). Off by default since swipe is the natural mobile navigation.                     |
-| `options`      | `object` | Custom [PhotoSwipe options](https://photoswipe.com/options/) to override defaults (e.g. `{"wheelToZoom": true}`).                        |
-
-Example: hide the download button inside the lightbox even though zip downloads are otherwise allowed:
-
-```json
-{
-  "ipp": {
-    "lightbox": {
-      "showDownload": false
-    }
-  }
-}
-```
-
-### Metadata
-
-Configured under `ipp.showMetadata`. The lightbox includes a slide-in info sidebar (toggle with the **i** key or the info button in the toolbar) that surfaces whatever metadata you opt into here.
-
-| Option        | Type     | Description                                                                                                                                       |
-|---------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| `description` | `object` | Where to show the description. `{ "caption": bool, "sidebar": bool }`. Both default `false`. See [Description](#description).                     |
-| `exif`        | `object` | Camera / file EXIF group. Set `enabled: true` to expose any of the per-field flags below. See [EXIF group](#exif-group).                          |
-| `location`    | `object` | Location group (city / state / country / GPS). Set `enabled: true` to expose any of the per-field flags below. See [Location group](#location-group). |
-
-Within each group, the master `enabled` toggle controls whether the group's fields are sent at all. Per-field flags default to `true` once the group is enabled, so you can turn off individual fields without renaming or removing them.
-
-IPP only sends a field if **both** the group's `enabled` is true AND the field's flag is true. If Immich itself isn't exposing metadata for the share (the per-share toggle on the Immich side), no metadata is available regardless of these settings.
-
-The info sidebar (and its toolbar toggle button) only appear when there is at least one section the operator has opted into - i.e. `description.sidebar`, `exif.enabled`, or `location.enabled` is true. With all three off, the sidebar UI is suppressed.
-
-#### Description
-
-Under `ipp.showMetadata.description`:
-
-| Option    | Type   | Description                                                              |
-|-----------|--------|--------------------------------------------------------------------------|
-| `caption` | `bool` | Show the description below the photo as a lightbox caption.              |
-| `sidebar` | `bool` | Show the description at the top of the info sidebar.                     |
-
-Set both to show in both places; set neither and the description is not included at all. (Legacy `description: true` / `description: false` boolean form is still accepted and migrates to `{caption, sidebar}` of the same value with a deprecation warning.)
-
-#### EXIF group
-
-Under `ipp.showMetadata.exif`:
-
-| Option              | Type   | Description                                                              |
-|---------------------|--------|--------------------------------------------------------------------------|
-| `enabled`           | `bool` | Master switch for the EXIF group. Default `false`.                       |
-| `dateTimeOriginal`  | `bool` | Show the date the photo was taken (per EXIF).                            |
-| `fileName`          | `bool` | Show the original filename.                                              |
-| `dimensions`        | `bool` | Show width x height and megapixel count.                                 |
-| `fileSize`          | `bool` | Show the file size.                                                      |
-| `make`              | `bool` | Camera manufacturer (e.g. "Canon").                                      |
-| `model`             | `bool` | Camera model (e.g. "EOS R5").                                            |
-| `lensModel`         | `bool` | Lens model.                                                              |
-| `exposureTime`      | `bool` | Shutter speed (e.g. "1/200").                                            |
-| `iso`               | `bool` | ISO sensitivity.                                                         |
-| `fNumber`           | `bool` | Aperture f-number.                                                       |
-| `focalLength`       | `bool` | Focal length in millimetres.                                             |
-
-#### Location group
-
-Under `ipp.showMetadata.location`:
-
-| Option     | Type   | Description                                                          |
-|------------|--------|----------------------------------------------------------------------|
-| `enabled`  | `bool` | Master switch for the location group. Default `false`.               |
-| `city`     | `bool` | Show city.                                                           |
-| `state`    | `bool` | Show state / region.                                                 |
-| `country`  | `bool` | Show country.                                                        |
-| `gps`      | `bool` | Show GPS coordinates.                                                |
-| `webLink`  | `bool` | Show an "Open in OpenStreetMap" link below the coordinates. The link is rendered with `rel="noreferrer"` so the share URL is not leaked to the map provider when a viewer clicks it. Has no effect unless `gps` is also true. Default `true`. |
-
-Example: show description in the sidebar only (not as a caption), show full EXIF, and hide GPS coordinates while keeping city / state / country:
-
-```json
-{
-  "ipp": {
-    "showMetadata": {
-      "description": { "caption": false, "sidebar": true },
-      "exif": { "enabled": true },
-      "location": { "enabled": true, "gps": false }
-    }
-  }
-}
-```
-
-### Customising your error response pages
-
-You can customise the responses that IPP sends for invalid requests. For example you could:
-
-- Drop the connection entirely (no response).
-- Redirect to a new website.
-- Send a different status code.
-- Send a custom 404 page.
-- And so on...
-
-See [Custom responses](docs/custom-responses.md) for more details.
+See **[the configuration docs](docs/configuration.md)** for the full reference.
 
 ## Troubleshooting
 
