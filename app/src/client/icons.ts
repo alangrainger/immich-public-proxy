@@ -1,10 +1,15 @@
-// Inline SVG icons used across the gallery client. All paths are from
-// Material Design Icons (Apache 2.0) - the same set Immich uses for its
-// own viewer, so the UI vocabulary stays consistent with the upstream app.
-//
-// PhotoSwipe toolbar buttons need `class="pswp__icn"` for the lightbox's
-// built-in sizing; other surfaces (sidebar field rows, selection check)
-// use plain SVGs and the consumer's own CSS.
+/*
+Inline SVG icons used across the gallery client. All paths are from
+Material Design Icons (Apache 2.0) - the same set Immich uses for its
+own viewer, so the UI vocabulary stays consistent with the upstream app.
+
+PhotoSwipe toolbar buttons need `class="pswp__icn"` for the lightbox's
+built-in sizing; other surfaces (sidebar field rows, selection check)
+use plain SVGs and the consumer's own CSS.
+
+They are here as source rather than as files so that they can be
+dynamically injected into PhotoSwipe elements.
+*/
 
 export const ICON_DOWNLOAD = '<svg class="pswp__icn" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/></svg>'
 export const ICON_FULLSCREEN = '<svg class="pswp__icn" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5,5H10V7H7V10H5V5M14,5H19V10H17V7H14V5M17,14H19V19H14V17H17V14M10,17V19H5V14H7V17H10Z"/></svg>'
