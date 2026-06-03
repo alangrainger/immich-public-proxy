@@ -34,7 +34,8 @@
         "city": true,
         "state": true,
         "country": true,
-        "gps": true
+        "gps": true,
+        "webLink": true
       }
     },
     "customInvalidResponse": false,

@@ -41,6 +41,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
   const descriptionInSidebar = !!getConfigOption('ipp.showMetadata.description.sidebar', false)
   const exifGroupEnabled = !!getConfigOption('ipp.showMetadata.exif.enabled', false)
   const locationGroupEnabled = !!getConfigOption('ipp.showMetadata.location.enabled', false)
+  const locationWebLink = locationGroupEnabled && !!getConfigOption('ipp.showMetadata.location.webLink', true)
   const sidebarHasContent = descriptionInSidebar || exifGroupEnabled || locationGroupEnabled
 
   // Build structured items in parallel
@@ -134,7 +135,8 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     metadataConfig: {
       descriptionInCaption,
       descriptionInSidebar,
-      sidebarHasContent
+      sidebarHasContent,
+      locationWebLink
     },
     groupByDate
   }

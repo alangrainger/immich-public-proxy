@@ -73,6 +73,7 @@ export interface MetadataConfig {
   descriptionInCaption: boolean
   descriptionInSidebar: boolean
   sidebarHasContent: boolean
+  locationWebLink: boolean
 }
 
 /**

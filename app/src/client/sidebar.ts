@@ -298,16 +298,18 @@ function renderLocation (exif: GalleryExif): HTMLElement {
     coords.textContent = exif.latitude.toFixed(5) + ', ' + exif.longitude.toFixed(5)
     body.appendChild(coords)
 
-    const link = document.createElement('a')
-    link.className = 'ipp-sidebar-osm'
-    link.href = 'https://www.openstreetmap.org/?mlat=' + exif.latitude +
-      '&mlon=' + exif.longitude +
-      '#map=15/' + exif.latitude + '/' + exif.longitude
-    link.target = '_blank'
-    // noreferrer suppresses the Referer header so the share URL doesn't end up in OSM's webserver logs
-    link.rel = 'noopener noreferrer'
-    link.textContent = 'Open in OpenStreetMap'
-    body.appendChild(link)
+    if (state.metadataConfig.locationWebLink) {
+      const link = document.createElement('a')
+      link.className = 'ipp-sidebar-osm'
+      link.href = 'https://www.openstreetmap.org/?mlat=' + exif.latitude +
+        '&mlon=' + exif.longitude +
+        '#map=15/' + exif.latitude + '/' + exif.longitude
+      link.target = '_blank'
+      // noreferrer suppresses the Referer header so the share URL doesn't end up in the map provider's webserver logs
+      link.rel = 'noopener noreferrer'
+      link.textContent = 'Open in OpenStreetMap'
+      body.appendChild(link)
+    }
   }
 
   wrap.appendChild(body)

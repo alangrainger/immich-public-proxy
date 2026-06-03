@@ -290,7 +290,8 @@ Under `ipp.showMetadata.location`:
 | `city`     | `bool` | Show city.                                                           |
 | `state`    | `bool` | Show state / region.                                                 |
 | `country`  | `bool` | Show country.                                                        |
-| `gps`      | `bool` | Show GPS coordinates and an "Open in OpenStreetMap" link.            |
+| `gps`      | `bool` | Show GPS coordinates.                                                |
+| `webLink`  | `bool` | Show an "Open in OpenStreetMap" link below the coordinates. The link is rendered with `rel="noreferrer"` so the share URL is not leaked to the map provider when a viewer clicks it. Has no effect unless `gps` is also true. Default `true`. |
 
 Example: show description in the sidebar only (not as a caption), show full EXIF, and hide GPS coordinates while keeping city / state / country:
 
