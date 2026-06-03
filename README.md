@@ -236,11 +236,75 @@ Example: hide the download button inside the lightbox even though zip downloads 
 
 ### Metadata
 
-Configured under `ipp.showMetadata`.
+Configured under `ipp.showMetadata`. The lightbox includes a slide-in info sidebar (toggle with the **i** key or the info button in the toolbar) that surfaces whatever metadata you opt into here.
 
-| Option        | Type   | Description                                        |
-|---------------|--------|----------------------------------------------------|
-| `description` | `bool` | Show the description as a caption below the photo. |
+| Option        | Type     | Description                                                                                                                                       |
+|---------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `description` | `object` | Where to show the description. `{ "caption": bool, "sidebar": bool }`. Both default `false`. See [Description](#description).                     |
+| `exif`        | `object` | Camera / file EXIF group. Set `enabled: true` to expose any of the per-field flags below. See [EXIF group](#exif-group).                          |
+| `location`    | `object` | Location group (city / state / country / GPS). Set `enabled: true` to expose any of the per-field flags below. See [Location group](#location-group). |
+
+Within each group, the master `enabled` toggle controls whether the group's fields are sent at all. Per-field flags default to `true` once the group is enabled, so you can turn off individual fields without renaming or removing them.
+
+IPP only sends a field if **both** the group's `enabled` is true AND the field's flag is true. If Immich itself isn't exposing metadata for the share (the per-share toggle on the Immich side), no metadata is available regardless of these settings.
+
+The info sidebar (and its toolbar toggle button) only appear when there is at least one section the operator has opted into - i.e. `description.sidebar`, `exif.enabled`, or `location.enabled` is true. With all three off, the sidebar UI is suppressed.
+
+#### Description
+
+Under `ipp.showMetadata.description`:
+
+| Option    | Type   | Description                                                              |
+|-----------|--------|--------------------------------------------------------------------------|
+| `caption` | `bool` | Show the description below the photo as a lightbox caption.              |
+| `sidebar` | `bool` | Show the description at the top of the info sidebar.                     |
+
+Set both to show in both places; set neither and the description is not included at all. (Legacy `description: true` / `description: false` boolean form is still accepted and migrates to `{caption, sidebar}` of the same value with a deprecation warning.)
+
+#### EXIF group
+
+Under `ipp.showMetadata.exif`:
+
+| Option              | Type   | Description                                                              |
+|---------------------|--------|--------------------------------------------------------------------------|
+| `enabled`           | `bool` | Master switch for the EXIF group. Default `false`.                       |
+| `dateTimeOriginal`  | `bool` | Show the date the photo was taken (per EXIF).                            |
+| `fileName`          | `bool` | Show the original filename.                                              |
+| `dimensions`        | `bool` | Show width x height and megapixel count.                                 |
+| `fileSize`          | `bool` | Show the file size.                                                      |
+| `make`              | `bool` | Camera manufacturer (e.g. "Canon").                                      |
+| `model`             | `bool` | Camera model (e.g. "EOS R5").                                            |
+| `lensModel`         | `bool` | Lens model.                                                              |
+| `exposureTime`      | `bool` | Shutter speed (e.g. "1/200").                                            |
+| `iso`               | `bool` | ISO sensitivity.                                                         |
+| `fNumber`           | `bool` | Aperture f-number.                                                       |
+| `focalLength`       | `bool` | Focal length in millimetres.                                             |
+
+#### Location group
+
+Under `ipp.showMetadata.location`:
+
+| Option     | Type   | Description                                                          |
+|------------|--------|----------------------------------------------------------------------|
+| `enabled`  | `bool` | Master switch for the location group. Default `false`.               |
+| `city`     | `bool` | Show city.                                                           |
+| `state`    | `bool` | Show state / region.                                                 |
+| `country`  | `bool` | Show country.                                                        |
+| `gps`      | `bool` | Show GPS coordinates and an "Open in OpenStreetMap" link.            |
+
+Example: show description in the sidebar only (not as a caption), show full EXIF, and hide GPS coordinates while keeping city / state / country:
+
+```json
+{
+  "ipp": {
+    "showMetadata": {
+      "description": { "caption": false, "sidebar": true },
+      "exif": { "enabled": true },
+      "location": { "enabled": true, "gps": false }
+    }
+  }
+}
+```
 
 ### Customising your error response pages
 
@@ -278,8 +342,8 @@ From inside a Docker container, you can't reach another container using `localho
 You can [add feature requests here](https://github.com/alangrainger/immich-public-proxy/discussions/categories/feature-requests?discussions_q=is%3Aopen+category%3A%22Feature+Requests%22+sort%3Atop),
 however my goal with this project is to keep it as lean as possible.
 
-Due to the sensitivity of data contained within Immich, I want anyone with a bit of coding knowledge
-to be able to read this codebase and fully understand everything it is doing.
+Due to the sensitivity of data contained within Immich, this project optimises for auditability: the code 
+stays small enough that someone with coding experience can review it for security-relevant behavior.
 
 The most basic rule for this project is that it has **read-only** access to Immich.
 

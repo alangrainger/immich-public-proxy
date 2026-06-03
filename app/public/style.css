@@ -99,8 +99,8 @@ html, body {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  /* left / top / width / height set per-tile by layoutGrid() in web.js;
-     background-image is the decoded thumbhash placeholder, set by web.js. */
+  /* left / top / width / height set per-tile by the client layout module;
+     background-image is the decoded thumbhash placeholder, set by `tiles.ts`. */
 }
 
 #gallery img {
@@ -384,4 +384,163 @@ html, body {
     padding: 6px 12px;
     font-size: 13px;
   }
+}
+
+/* ============================================================================
+   Info sidebar. Docks to the right of the lightbox on desktop; becomes a
+   bottom sheet on narrow viewports.
+   ============================================================================ */
+
+.ipp-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 360px;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  border-left: 1px solid var(--color-gray);
+  z-index: 1700;
+  transform: translateX(100%);
+  transition: transform 200ms ease;
+  overflow-y: auto;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px 24px;
+}
+html.ipp-sidebar-open .ipp-sidebar {
+  transform: translateX(0);
+}
+
+/* On narrow viewports the sidebar becomes a bottom sheet so the photo isn't
+   crowded out. PhotoSwipe paddingFn skips the right-padding in this mode. */
+@media (max-width: 640px) {
+  .ipp-sidebar {
+    top: auto;
+    width: 100%;
+    height: 60vh;
+    border-left: none;
+    border-top: 1px solid var(--color-gray);
+    transform: translateY(100%);
+  }
+  html.ipp-sidebar-open .ipp-sidebar {
+    transform: translateY(0);
+  }
+}
+
+.ipp-sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 4px 8px;
+  position: sticky;
+  top: 0;
+  background: var(--color-bg);
+  z-index: 1;
+}
+
+.ipp-sidebar-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-fg);
+  cursor: pointer;
+  padding: 0;
+}
+.ipp-sidebar-close:hover {
+  background: rgba(127, 127, 127, 0.15);
+}
+.ipp-sidebar-close svg {
+  width: 22px;
+  height: 22px;
+}
+
+.ipp-sidebar-title {
+  font-size: 18px;
+}
+
+.ipp-sidebar-section {
+  padding: 8px 16px;
+}
+
+.ipp-sidebar-heading {
+  font-size: 13px;
+  opacity: 0.7;
+  margin: 8px 0 4px;
+  font-weight: 500;
+}
+
+.ipp-sidebar-description {
+  margin: 0;
+  padding: 8px 0 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.ipp-sidebar-row {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+}
+.ipp-sidebar-row-icon {
+  flex: 0 0 auto;
+  width: 24px;
+  color: var(--color-fg);
+  opacity: 0.8;
+}
+.ipp-sidebar-row-icon svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+.ipp-sidebar-row-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ipp-sidebar-row-body p {
+  margin: 0 0 4px;
+  word-break: break-word;
+}
+.ipp-sidebar-filename {
+  font-weight: 500;
+}
+.ipp-sidebar-lens {
+  font-weight: 500;
+}
+.ipp-sidebar-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.ipp-sidebar-date {
+  padding: 12px 0;
+  font-weight: 500;
+}
+
+.ipp-sidebar-coords {
+  font-size: 13px;
+  opacity: 0.7;
+  margin: 4px 0 4px;
+}
+.ipp-sidebar-osm {
+  color: var(--color-primary);
+  text-decoration: underline;
+  font-size: 13px;
+}
+
+.ipp-sidebar-empty {
+  padding: 16px;
+  opacity: 0.6;
+  text-align: center;
 }

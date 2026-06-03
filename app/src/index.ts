@@ -1,19 +1,32 @@
 #!/usr/bin/env node
 
+import 'dotenv/config'
 import express from 'express'
 import cookieSession from 'cookie-session'
-import immich from './immich'
+import {
+  accessible,
+  getKeyTypeFromShare,
+  getShareByKey,
+  handleShareRequest,
+  isId,
+  isKey
+} from './immich'
 import crypto from 'crypto'
-import render from './render'
+import { assetBuffer } from './stream/asset'
+import { downloadAssets } from './stream/download'
 import dayjs from 'dayjs'
 import { NextFunction, Request, Response } from 'express-serve-static-core'
 import { Asset, AssetType, ImageSize, KeyType } from './types'
-import { addResponseHeaders, canDownload, getConfigOption, toString } from './functions'
+import { getConfigOption } from './config/access'
+import { loadConfig } from './config/loader'
+import { addResponseHeaders } from './http'
+import { canDownload } from './share'
+import { toString } from './utils/text'
 import { decrypt, encrypt } from './encrypt'
 import { respondToInvalidRequest } from './invalidRequestHandler'
 import { h } from 'preact'
-import { renderPage } from './views/_render'
-import { Home } from './views/home'
+import { renderPage } from './view/render'
+import { Home } from './view/home'
 
 // Extend the Request type with a `password` property
 declare module 'express-serve-static-core' {
@@ -22,7 +35,9 @@ declare module 'express-serve-static-core' {
   }
 }
 
-require('dotenv').config()
+// Read config.json (or the inline CONFIG env var) and apply backward-compat
+// migrations. Must run before any code that calls getConfigOption.
+loadConfig()
 
 const app = express()
 app.use(cookieSession({
@@ -67,7 +82,7 @@ const decodeCookie = (req: Request, _res: Response, next: NextFunction) => {
  * The path matches for /share/healthcheck, and also the legacy /healthcheck
  */
 app.get(/^(|\/share)\/healthcheck$/, async (_req, res) => {
-  if (await immich.accessible()) {
+  if (await accessible()) {
     res.send('ok')
   } else {
     res.status(503).send()
@@ -78,13 +93,13 @@ app.get(/^(|\/share)\/healthcheck$/, async (_req, res) => {
  * [ROUTE] This is the main URL that someone would visit if they are opening a shared link
  */
 app.get('/:shareType(share|s)/:key/:mode(download)?', decodeCookie, async (req, res) => {
-  const keyType = immich.getKeyTypeFromShare(req.params.shareType)
+  const keyType = getKeyTypeFromShare(req.params.shareType)
 
   if (keyType === KeyType.slug && !getConfigOption('ipp.allowSlugLinks', true)) {
     // Slug type links are not allowed
     respondToInvalidRequest(res, 404, 'Slug links are disabled in config.json')
   } else {
-    await immich.handleShareRequest({
+    await handleShareRequest({
       req,
       key: req.params.key,
       keyType,
@@ -120,7 +135,7 @@ app.post('/share/unlock', async (req, res) => {
  * outside the share.
  */
 app.post('/:shareType(share|s)/:key/download', decodeCookie, async (req, res) => {
-  const keyType = immich.getKeyTypeFromShare(req.params.shareType)
+  const keyType = getKeyTypeFromShare(req.params.shareType)
   let requestedIds: unknown
   try {
     requestedIds = JSON.parse(String(req.body?.assets ?? '[]'))
@@ -133,7 +148,7 @@ app.post('/:shareType(share|s)/:key/download', decodeCookie, async (req, res) =>
     return
   }
 
-  const result = await immich.getShareByKey(req.params.key, req.password, keyType)
+  const result = await getShareByKey(req.params.key, req.password, keyType)
   if (!result?.valid || !result.link) {
     respondToInvalidRequest(res, 404, 'Invalid share link')
     return
@@ -154,7 +169,7 @@ app.post('/:shareType(share|s)/:key/download', decodeCookie, async (req, res) =>
     return
   }
 
-  await render.downloadAssets(res, result.link, validAssets)
+  await downloadAssets(res, result.link, validAssets)
 })
 
 /*
@@ -174,7 +189,7 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
   addResponseHeaders(res)
 
   // Check for valid key and ID
-  if (!immich.isKey(req.params.key) || !immich.isId(req.params.id)) {
+  if (!isKey(req.params.key) || !isId(req.params.id)) {
     respondToInvalidRequest(res, 404, 'Invalid key or ID for ' + req.path)
     return
   }
@@ -188,7 +203,7 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
   // Validate share link and check password before serving assets
   // This prevents direct URL access from bypassing password protection
   // The password is provided from the encrypted session cookie (if set)
-  const share = await immich.getShareByKey(req.params.key, req.password)
+  const share = await getShareByKey(req.params.key, req.password)
   if (!share) {
     respondToInvalidRequest(res, 404, 'Invalid share link')
     return
@@ -219,7 +234,7 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
     key: req.params.key,
     range: req.headers.range || ''
   }
-  render.assetBuffer(request, res, asset, req.params.size).then()
+  assetBuffer(request, res, asset, req.params.size).then()
 })
 
 /*
@@ -264,7 +279,7 @@ process.on('SIGTERM', () => {
 })
 
 // Start the ExpressJS server
-const port = process.env.IPP_PORT || 3000
+const port = Number(process.env.IPP_PORT) || 3000
 const server = app.listen(port, () => {
   console.log(dayjs().format() + ' Server started on port ' + port)
 })

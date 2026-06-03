@@ -5,7 +5,8 @@ through a Docker volume mount.
  */
 
 import { Response } from 'express-serve-static-core'
-import { getConfigOption, log } from './functions'
+import { getConfigOption } from './config/access'
+import { log } from './utils/log'
 
 export function respondToInvalidRequest (res: Response, defaultResponse: number | string | null, logMessage = '') {
   let method = getConfigOption('ipp.customInvalidResponse', false)

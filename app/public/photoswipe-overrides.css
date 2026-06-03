@@ -51,8 +51,11 @@
   color: var(--pswp-icon-color);
 }
 
+/* Hide PhotoSwipe's default top-right X close button - we use a top-left
+   back arrow instead (registered as `back-button` in client/lightbox-ui.ts),
+   matching Immich's native asset-viewer affordance. */
 .pswp__button--close {
-  margin-right: 10px;
+  display: none;
 }
 
 .pswp__button--download-button {
