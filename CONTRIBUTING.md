@@ -59,7 +59,7 @@ app/
       text.ts             escapeHtml + toString narrowing
     view/                 Preact SSR templates (.tsx)
     shared/types.ts       Types shared between server SSR and client (GalleryItem, etc.)
-    client/               Client gallery, virtualization, lightbox, sidebar
+    client/               Client gallery, virtualisation, lightbox, sidebar
   public/                 Static assets served as-is
     photoswipe/           Vendored PhotoSwipe v5
     thumbhash/, fonts/, images/

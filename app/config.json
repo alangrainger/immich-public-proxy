@@ -5,7 +5,7 @@
       "Access-Control-Allow-Origin":  "*"
     },
     "downloadOriginalPhoto": true,
-    "downloadedFilename": 2,
+    "downloadedFilename": 0,
     "allowDownloadAll": 0,
     "downloadFromImmichConcurrencyLimit": 20,
     "allowSlugLinks": true,
@@ -16,26 +16,25 @@
         "sidebar": false
       },
       "exif": {
-        "enabled": false,
-        "dateTimeOriginal": true,
-        "fileName": true,
-        "dimensions": true,
-        "fileSize": true,
-        "make": true,
-        "model": true,
-        "lensModel": true,
-        "exposureTime": true,
-        "iso": true,
-        "fNumber": true,
-        "focalLength": true
+        "enableAll": false,
+        "dateTimeOriginal": false,
+        "fileName": false,
+        "dimensions": false,
+        "fileSize": false,
+        "make": false,
+        "model": false,
+        "lensModel": false,
+        "exposureTime": false,
+        "iso": false,
+        "fNumber": false,
+        "focalLength": false
       },
       "location": {
-        "enabled": false,
-        "city": true,
-        "state": true,
-        "country": true,
-        "gps": true,
-        "webLink": true
+        "enableAll": false,
+        "city": false,
+        "state": false,
+        "country": false,
+        "gps": false
       }
     },
     "customInvalidResponse": false,

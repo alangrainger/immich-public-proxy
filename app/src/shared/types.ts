@@ -6,10 +6,10 @@
 
 /**
  * Per-asset EXIF / location metadata shown in the info sidebar. Each field
- * is optional - the server only includes a field if both the group is
- * enabled (`ipp.showMetadata.exif.enabled` or `.location.enabled`) and the
- * per-field flag is true. Strings are plain text (the client uses
- * `textContent`, not `innerHTML`).
+ * is optional - the server only includes a field when either the group's
+ * `enableAll` is true (`ipp.showMetadata.exif.enableAll` /
+ * `.location.enableAll`) or the field's own per-field flag is true.
+ * Strings are plain text (the client uses `textContent`, not `innerHTML`).
  */
 export interface GalleryExif {
   dateTimeOriginal?: string // ISO date string; client formats with Intl.DateTimeFormat
@@ -45,7 +45,7 @@ export interface GalleryItem {
   description?: string
   downloadFilename: string
   // Display dimensions after EXIF orientation correction; needed for the
-  // pre-computed justified-rows layout that virtualization depends on.
+  // pre-computed justified-rows layout that virtualisation depends on.
   width?: number
   height?: number
   // Base64-encoded thumbhash for an optional blur placeholder behind each tile

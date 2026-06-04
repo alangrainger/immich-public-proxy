@@ -15,7 +15,7 @@ function onThumbError (this: HTMLImageElement) {
 }
 
 // Cache of decoded thumbhash → PNG data URL. Same thumbhash on multiple
-// tile-creations (revisits during virtualization) reuses the same URL.
+// tile-creations (revisits during virtualisation) reuses the same URL.
 const thumbhashCache = new Map<string, string | null>()
 
 function decodeThumbhash (base64: string): string | null {

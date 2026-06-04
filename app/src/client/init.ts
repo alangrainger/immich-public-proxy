@@ -11,7 +11,7 @@ import type { InitParams } from '../shared/types.js'
 import { state } from './state.js'
 import { setupToolbar } from './selection.js'
 import { initLightbox, openLightbox } from './lightbox.js'
-import { computeLayoutAndRender, onScroll } from './virtualization.js'
+import { computeLayoutAndRender, onScroll } from './virtualisation.js'
 
 function readInitParams (): InitParams {
   const el = document.getElementById('ipp-init')

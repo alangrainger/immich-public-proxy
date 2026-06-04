@@ -1,6 +1,6 @@
 // Justified-rows + square-grid layout, with optional month grouping. Pure
 // geometry: takes a container width, returns positions for every tile and
-// every header. Called by virtualization on first render and on resize.
+// every header. Called by virtualisation on first render and on resize.
 
 import {
   state,
@@ -26,7 +26,7 @@ export interface LayoutResult {
  * for the gallery at the given container width.
  *
  * Reads `state.items` and `state.groupByDate`. Output is pure data - the
- * caller (virtualization) is responsible for actually placing DOM nodes
+ * caller (virtualisation) is responsible for actually placing DOM nodes
  * according to the returned positions.
  *
  * Switches between a mobile square grid (under MOBILE_BREAKPOINT) and the

@@ -83,7 +83,7 @@ export function Gallery (props: GalleryProps) {
         {props.description && (
           <p id="album-description">{props.description}</p>
         )}
-{/* Container is intentionally empty - web.js's virtualization manager
+{/* Container is intentionally empty - web.js's virtualisation manager
             populates it with only the tiles within the viewport buffer. */}
         <div id="gallery"></div>
         {props.showDownload && (

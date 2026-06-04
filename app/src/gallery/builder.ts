@@ -14,7 +14,7 @@ import { h } from 'preact'
 import { renderPage } from '../view/render'
 import { Gallery, GalleryItem, GalleryProps } from '../view/gallery'
 import { getFilename } from './filename'
-import { pickExif } from './exif'
+import { metadataGroupActive, pickExif } from './exif'
 
 /**
  * Render a gallery page for a given SharedLink.
@@ -39,10 +39,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
   // `metadataConfig` in the init JSON.
   const descriptionInCaption = !!getConfigOption('ipp.showMetadata.description.caption', false)
   const descriptionInSidebar = !!getConfigOption('ipp.showMetadata.description.sidebar', false)
-  const exifGroupEnabled = !!getConfigOption('ipp.showMetadata.exif.enabled', false)
-  const locationGroupEnabled = !!getConfigOption('ipp.showMetadata.location.enabled', false)
-  const locationWebLink = locationGroupEnabled && !!getConfigOption('ipp.showMetadata.location.webLink', true)
-  const sidebarHasContent = descriptionInSidebar || exifGroupEnabled || locationGroupEnabled
+  const sidebarHasContent = descriptionInSidebar || metadataGroupActive('exif') || metadataGroupActive('location')
 
   // Build structured items in parallel
   const items: GalleryItem[] = await Promise.all(share.assets.map(async (asset): Promise<GalleryItem> => {
@@ -135,8 +132,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     metadataConfig: {
       descriptionInCaption,
       descriptionInSidebar,
-      sidebarHasContent,
-      locationWebLink
+      sidebarHasContent
     },
     groupByDate
   }
