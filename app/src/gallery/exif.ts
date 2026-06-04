@@ -85,13 +85,11 @@ const RULES: Record<Group, FieldRule[]> = {
 /**
  * Build the per-asset metadata sub-object included in the gallery JSON.
  * Reads `ipp.showMetadata.exif.*` and `ipp.showMetadata.location.*` config:
- * each group has a master `enableAll` toggle and a set of per-field flags
- * that all default to `false`. A field appears in the output when either
- * the group's `enableAll` is true, OR the field's own flag is true.
+ * every field is an explicit per-field opt-in (all default `false`), so
+ * nothing is sent unless the operator has explicitly turned on the flag.
  *
- * Returns `undefined` when neither group has any visible content, or when
- * no fields survive gating (so the client knows there's no metadata to
- * show).
+ * Returns `undefined` when no fields survive gating (so the client knows
+ * there's no metadata to show).
  *
  * The server never sends Immich values that the operator hasn't opted in
  * to via config; the client just renders what's present.
@@ -111,24 +109,18 @@ export function pickExif (asset: Asset): GalleryExif | undefined {
 }
 
 /**
- * Returns true if a metadata group would render any field for the current
- * config - either `enableAll` is set, or at least one per-field flag is
- * explicitly `true`. Used by the sidebar visibility check.
+ * Returns true if a metadata group has at least one per-field flag
+ * explicitly set to `true` in config. Used by the sidebar visibility
+ * check.
  */
 export function metadataGroupActive (group: Group): boolean {
-  if (groupEnableAll(group)) return true
   return RULES[group].some(rule => fieldFlag(group, rule.flag))
 }
 
 function applyRules (group: Group, out: GalleryExif, info: ExifInfo, asset: Asset): void {
-  const enableAll = groupEnableAll(group)
   for (const rule of RULES[group]) {
-    if (enableAll || fieldFlag(group, rule.flag)) rule.emit(out, info, asset)
+    if (fieldFlag(group, rule.flag)) rule.emit(out, info, asset)
   }
-}
-
-function groupEnableAll (group: Group): boolean {
-  return !!getConfigOption(`ipp.showMetadata.${group}.enableAll`, false)
 }
 
 function fieldFlag (group: Group, flag: string): boolean {

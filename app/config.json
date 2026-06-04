@@ -16,7 +16,6 @@
         "sidebar": false
       },
       "exif": {
-        "enableAll": false,
         "dateTimeOriginal": false,
         "fileName": false,
         "dimensions": false,
@@ -30,7 +29,6 @@
         "focalLength": false
       },
       "location": {
-        "enableAll": false,
         "city": false,
         "state": false,
         "country": false,

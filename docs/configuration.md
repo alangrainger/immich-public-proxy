@@ -37,7 +37,7 @@ For one-off or single-key overrides. See [inline configuration](inline-configura
 
 ## How options are organised
 
-All options live under `ipp.*`. Several groups follow a master-toggle plus per-field-overrides pattern (`ipp.showMetadata.exif`, `ipp.showMetadata.location`): set the group's `enabled: true` to expose the group, then turn individual fields off if you want fewer.
+All options live under `ipp.*`. The metadata groups (`ipp.showMetadata.exif`, `ipp.showMetadata.location`) are per-field opt-in: every field is off until you explicitly set its flag to `true`. Nothing is automatically exposed - including fields IPP adds in future versions.
 
 You only need to include the keys you're changing. Anything you omit keeps its default.
 
@@ -123,15 +123,15 @@ Configured under `ipp.showMetadata`. The lightbox includes a slide-in info sideb
 
 | Option        | Type     | Description                                                                                                                                       |
 |---------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| `description` | `object` | Where to show the description. `{ "caption": bool, "sidebar": bool }`. Both default `false`. See [Description](#description).                     |
-| `exif`        | `object` | Camera / file EXIF group. Set `enabled: true` to expose any of the per-field flags below. See [EXIF group](#exif-group).                          |
-| `location`    | `object` | Location group (city / state / country / GPS). Set `enabled: true` to expose any of the per-field flags below. See [Location group](#location-group). |
+| `description` | `object` | Where to show the description. `{ "caption": bool, "sidebar": bool }`. Both default `false`. See [Description](#description). |
+| `exif`        | `object` | Camera / file EXIF group. Per-field opt-in flags, all default `false`. See [EXIF group](#exif-group).                          |
+| `location`    | `object` | Location group (city / state / country / GPS). Per-field opt-in flags, all default `false`. See [Location group](#location-group). |
 
-Within each group, the master `enabled` toggle controls whether the group's fields are sent at all. Per-field flags default to `true` once the group is enabled, so you can turn off individual fields without renaming or removing them.
+Every per-field flag defaults to `false`. A field is sent to the client only when its flag is explicitly `true`. There is no master switch - this is deliberate, so that fields IPP adds in future releases don't auto-expose without your action.
 
-IPP only sends a field if **both** the group's `enabled` is true AND the field's flag is true. If Immich itself isn't exposing metadata for the share (the per-share toggle on the Immich side), no metadata is available regardless of these settings.
+If Immich itself isn't exposing metadata for the share (the per-share toggle on the Immich side), no metadata is available regardless of these settings.
 
-The info sidebar (and its toolbar toggle button) only appear when there is at least one section the operator has opted into - i.e. `description.sidebar`, `exif.enabled`, or `location.enabled` is true. With all three off, the sidebar UI is suppressed.
+The info sidebar (and its toolbar toggle button) only appear when there is at least one section the operator has opted into - i.e. `description.sidebar` is true, or `exif` / `location` has at least one flag set to `true`. With all three off, the sidebar UI is suppressed.
 
 ### Description
 
@@ -150,7 +150,6 @@ Under `ipp.showMetadata.exif`.
 
 | Option              | Type   | Description                                                              |
 |---------------------|--------|--------------------------------------------------------------------------|
-| `enabled`           | `bool` | Master switch for the EXIF group. Default `false`.                       |
 | `dateTimeOriginal`  | `bool` | Show the date the photo was taken (per EXIF).                            |
 | `fileName`          | `bool` | Show the original filename.                                              |
 | `dimensions`        | `bool` | Show width x height and megapixel count.                                 |
@@ -169,22 +168,30 @@ Under `ipp.showMetadata.location`.
 
 | Option     | Type   | Description                                                          |
 |------------|--------|----------------------------------------------------------------------|
-| `enabled`  | `bool` | Master switch for the location group. Default `false`.               |
 | `city`     | `bool` | Show city.                                                           |
 | `state`    | `bool` | Show state / region.                                                 |
 | `country`  | `bool` | Show country.                                                        |
 | `gps`      | `bool` | Show GPS coordinates.                                                |
 | `webLink`  | `bool` | Show an "Open in OpenStreetMap" link below the coordinates. The link is rendered with `rel="noreferrer"` so the share URL is not leaked to the map provider when a viewer clicks it. Has no effect unless `gps` is also true. Default `true`. |
 
-A full example showing the description in the sidebar only (not as a lightbox caption), exposing full EXIF, and revealing place names but not the GPS coordinates:
+A full example showing the description in the sidebar only (not as a lightbox caption), exposing camera EXIF, and revealing place names but not the GPS coordinates:
 
 ```json
 {
   "ipp": {
     "showMetadata": {
       "description": { "caption": false, "sidebar": true },
-      "exif": { "enabled": true },
-      "location": { "enabled": true, "gps": false }
+      "exif": {
+        "dateTimeOriginal": true,
+        "make": true,
+        "model": true,
+        "lensModel": true,
+        "exposureTime": true,
+        "iso": true,
+        "fNumber": true,
+        "focalLength": true
+      },
+      "location": { "city": true, "state": true, "country": true }
     }
   }
 }
@@ -216,3 +223,10 @@ A few config keys have been renamed across versions. Existing configs continue t
 | `ipp.groupGalleryByDate`  | `ipp.gallery.groupByDate`     |
 
 **`showMetadata.description` is now an object.** It used to be a single boolean. A legacy `description: true` migrates to `{ caption: true, sidebar: true }` (and `false` to both `false`). Move to the explicit form to silence the deprecation notice and so you can target the caption vs. the sidebar independently.
+
+**`showMetadata.{exif,location}.enabled` was removed (v2.4).** Per-field flags are now the only gate, and all default to `false`. The shim preserves behaviour for legacy configs by rewriting them in memory at startup:
+
+- Legacy `enabled: true` defaults every unset per-field flag in the group to `true`, matching the old "everything visible" behaviour. Per-field flags you had explicitly set to `false` (the "all except X" pattern) are kept.
+- Legacy `enabled: false` clears any per-field flags that were `true`, matching the old "nothing visible" behaviour and stopping leftover documentation flags from the shipped 2.3 config from becoming live opt-ins.
+
+A deprecation notice is printed at startup. Update your `config.json` to the explicit per-field form to silence it. The shim will be removed in v3.0, and at that point any field IPP has added since v2.3 will need a fresh opt-in.

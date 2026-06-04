@@ -25,7 +25,7 @@ const SHIMS: Shim[] = [
   { name: 'lightGallery', removeIn: 'v3.0', apply: applyLightGalleryShim },
   { name: 'topLevelGallery', removeIn: 'v3.0', apply: applyTopLevelGalleryShim },
   { name: 'descriptionSplit', removeIn: 'v3.0', apply: applyDescriptionSplitShim },
-  { name: 'enableAll', removeIn: 'v3.0', apply: applyEnableAllShim }
+  { name: 'metadataEnabled', removeIn: 'v3.0', apply: applyMetadataEnabledShim }
 ]
 
 /**
@@ -123,50 +123,62 @@ function applyDescriptionSplitShim (config: Config): void {
 }
 
 /**
- * SHIM: showMetadata.{exif,location}.enabled -> .enableAll, with per-
- * field defaults flipped from `true` to `false`.
+ * SHIM: showMetadata.{exif,location}.enabled removed. Per-field flags are
+ * now the only gate, and they all default to `false`.
  *
- * New semantics: `enableAll: true` shows every field in the group;
- * `enableAll: false` shows only fields with an explicit per-field `true`.
+ * The 2.3.0 shipped `config.json` had `enabled: false` plus every per-
+ * field flag set to `true` as documentation. Without this shim those
+ * `true`s would become live opt-ins on upgrade, silently exposing GPS
+ * coordinates and EXIF data on share pages. The shim rewrites legacy
+ * configs in memory at startup:
  *
- * Two compatibility hazards the shim guards against:
- *   (a) Old shipped `config.json` used `enabled: false` with every
- *       per-field flag set to `true` as documentation. Under new
- *       semantics those would become live opt-ins. When the legacy
- *       `enabled` was `false`, the shim zeroes out per-field flags so
- *       the runtime keeps the "nothing visible" behaviour the user had.
- *   (b) `enabled: true` with selective per-field `false` (e.g. to hide
- *       GPS while showing the rest of location) is no longer expressible
- *       because `enableAll: true` overrides per-field flags. The shim
- *       can't preserve that without enumerating every other field; we
- *       just log a warning telling the user to rewrite as explicit
- *       opt-ins.
+ *   - `enabled: true`: for each known field in the group, if the per-
+ *     field flag is `undefined`, set it to `true` (the old default).
+ *     Explicit `false` per-field flags are kept, so "all except X"
+ *     patterns continue to work.
+ *   - `enabled: false`: clear any per-field flag that is `true`. Under
+ *     the old semantic those flags were dead code (the master switch
+ *     hid them), so wiping them preserves the "nothing visible"
+ *     behaviour the user had.
+ *
+ * The field lists below are frozen at v2.x. If new fields are added in
+ * future versions, they will not auto-appear for legacy `enabled: true`
+ * users - which is the safer privacy default and matches the policy the
+ * new design is establishing.
  */
-function applyEnableAllShim (config: Config): void {
+const LEGACY_EXIF_FIELDS = [
+  'dateTimeOriginal', 'fileName', 'dimensions', 'fileSize',
+  'make', 'model', 'lensModel', 'exposureTime', 'iso',
+  'fNumber', 'focalLength'
+]
+
+const LEGACY_LOCATION_FIELDS = ['city', 'state', 'country', 'gps']
+
+function applyMetadataEnabledShim (config: Config): void {
   const ipp = (config.ipp || (config.ipp = {})) as Record<string, unknown>
   const showMetadata = ipp.showMetadata as Record<string, unknown> | undefined
   if (!showMetadata) return
 
   let migrated = false
-  for (const groupName of ['exif', 'location']) {
+  const groups: Array<[string, string[]]> = [
+    ['exif', LEGACY_EXIF_FIELDS],
+    ['location', LEGACY_LOCATION_FIELDS]
+  ]
+  for (const [groupName, fields] of groups) {
     const group = showMetadata[groupName] as Record<string, unknown> | undefined
     if (!group || typeof group !== 'object') continue
     if (group.enabled === undefined) continue
 
     const legacyEnabled = !!group.enabled
-    if (group.enableAll === undefined) {
-      group.enableAll = legacyEnabled
-    }
     delete group.enabled
 
-    // Hazard (a): zero out per-field flags when the legacy master was
-    // off. Under the old semantic those flags were dead code, so wiping
-    // them is a no-op behaviour-wise but stops the new semantic from
-    // treating them as live opt-ins.
-    if (!legacyEnabled) {
-      for (const key of Object.keys(group)) {
-        if (key === 'enableAll') continue
-        if (typeof group[key] === 'boolean') group[key] = false
+    if (legacyEnabled) {
+      for (const field of fields) {
+        if (group[field] === undefined) group[field] = true
+      }
+    } else {
+      for (const field of fields) {
+        if (group[field] === true) group[field] = false
       }
     }
 
@@ -176,10 +188,10 @@ function applyEnableAllShim (config: Config): void {
   if (migrated) {
     console.log(
       '[IPP] `ipp.showMetadata.exif.enabled` / `.location.enabled` are ' +
-      'deprecated; renamed to `enableAll`. Per-field defaults are now ' +
-      '`false` and `enableAll: true` overrides them, so any per-field ' +
-      '`false` that used to subtract from an all-on group is now ignored. ' +
-      'See README to rewrite "show all except X" as explicit opt-ins.'
+      'deprecated and have been removed. Per-field flags are now the ' +
+      'only gate (all default `false`). Your legacy config has been ' +
+      'rewritten in memory to preserve current behaviour; please update ' +
+      'your `config.json` to the explicit per-field form. See README.'
     )
   }
 }

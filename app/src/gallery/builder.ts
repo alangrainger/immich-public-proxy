@@ -132,7 +132,8 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     metadataConfig: {
       descriptionInCaption,
       descriptionInSidebar,
-      sidebarHasContent
+      sidebarHasContent,
+      locationWebLink: !!getConfigOption('ipp.showMetadata.location.webLink', true)
     },
     groupByDate
   }
