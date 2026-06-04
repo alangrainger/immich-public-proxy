@@ -1,5 +1,7 @@
 # Configuration
 
+Note: You can see all of the configurable options by [looking at the default config.json](https://github.com/alangrainger/immich-public-proxy/blob/main/app/config.json).
+
 ## Contents
 
 - [How to provide a config override](#how-to-provide-a-config-override)
