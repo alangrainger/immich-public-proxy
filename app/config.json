@@ -5,7 +5,7 @@
       "Access-Control-Allow-Origin":  "*"
     },
     "downloadOriginalPhoto": true,
-    "downloadedFilename": 0,
+    "downloadedFilename": 2,
     "allowDownloadAll": 0,
     "downloadFromImmichConcurrencyLimit": 20,
     "allowSlugLinks": true,
