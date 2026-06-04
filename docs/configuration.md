@@ -16,7 +16,7 @@
 
 ## How to provide a config override
 
-**Note 👉** You only need to include the keys you're changing. Anything you omit keeps its default.
+**Note 👉** You only need to include the keys you're changing. Anything you omit keeps its default. The defaults in IPP are always the most privacy-respecting option.
 
 There are two ways to supply custom config:
 
