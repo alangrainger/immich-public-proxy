@@ -146,6 +146,12 @@ function applyDescriptionSplitShim (config: Config): void {
  * users - which is the safer privacy default and matches the policy the
  * new design is establishing.
  */
+// These lists are frozen at v2.3.0 and intentionally do NOT track the
+// current field set. The server's source-of-truth rules table lives in
+// `gallery/exif.ts`, and the sidebar's UI placement lives in
+// `client/sidebar.ts`. New fields added in future versions deliberately
+// won't auto-appear for legacy `enabled: true` users via this shim - they
+// should opt in explicitly.
 const LEGACY_EXIF_FIELDS = [
   'dateTimeOriginal', 'fileName', 'dimensions', 'fileSize',
   'make', 'model', 'lensModel', 'exposureTime', 'iso',

@@ -123,6 +123,10 @@ function writePersistedState (open: boolean) {
 }
 
 // ----- content rendering ---------------------------------------------------
+//
+// Sidebar UI placement for each metadata field. Server-side gating lives in
+// `gallery/exif.ts` (rules table); legacy-config migration lives in
+// `config/migrations.ts`. Adding a new field requires updating all three.
 
 function renderContents (root: HTMLElement, item: GalleryItem | undefined) {
   root.replaceChildren()
@@ -213,67 +217,78 @@ function renderDateRow (iso: string): HTMLElement {
   return row
 }
 
-function renderFileRow (exif: GalleryExif): HTMLElement | null {
-  if (!exif.fileName && !exif.width && !exif.fileSizeInByte) return null
-  const row = makeRow(ICON_IMAGE)
+interface RowSpec {
+  icon: string
+  // Title paragraph at the top of the row body. Falsy values are omitted.
+  label?: string | null
+  labelClass?: string
+  // Stats rendered as `<span>` chips in a flex row beneath the label.
+  // Nullish entries are skipped, so callers can write
+  // `exif.iso != null ? 'ISO ' + exif.iso : null` and not branch.
+  stats: Array<string | null | undefined>
+}
+
+/**
+ * Build one info-sidebar row. Returns `null` when the row would have
+ * neither a label nor any non-null stat, so the caller can skip appending.
+ */
+function renderRow (spec: RowSpec): HTMLElement | null {
+  const presentStats = spec.stats.filter((s): s is string => s != null && s !== '')
+  if (!spec.label && presentStats.length === 0) return null
+
+  const row = makeRow(spec.icon)
   const body = row.querySelector('.ipp-sidebar-row-body') as HTMLElement
-  if (exif.fileName) {
-    const name = document.createElement('p')
-    name.className = 'ipp-sidebar-filename'
-    name.textContent = exif.fileName
-    body.appendChild(name)
+  if (spec.label) {
+    const p = document.createElement('p')
+    if (spec.labelClass) p.className = spec.labelClass
+    p.textContent = spec.label
+    body.appendChild(p)
   }
-  if (exif.width && exif.height) {
+  if (presentStats.length) {
     const stats = document.createElement('div')
     stats.className = 'ipp-sidebar-stats'
-    const mp = Math.round((exif.width * exif.height) / 1_000_000)
-    if (mp >= 1) stats.appendChild(makeStat(mp + ' MP'))
-    stats.appendChild(makeStat(exif.width + ' x ' + exif.height))
-    if (exif.fileSizeInByte) stats.appendChild(makeStat(formatBytes(exif.fileSizeInByte)))
-    body.appendChild(stats)
-  } else if (exif.fileSizeInByte) {
-    const stats = document.createElement('div')
-    stats.className = 'ipp-sidebar-stats'
-    stats.appendChild(makeStat(formatBytes(exif.fileSizeInByte)))
+    for (const s of presentStats) stats.appendChild(makeStat(s))
     body.appendChild(stats)
   }
   return row
+}
+
+function renderFileRow (exif: GalleryExif): HTMLElement | null {
+  const hasDims = !!(exif.width && exif.height)
+  const mp = hasDims ? Math.round((exif.width! * exif.height!) / 1_000_000) : 0
+  return renderRow({
+    icon: ICON_IMAGE,
+    label: exif.fileName,
+    labelClass: 'ipp-sidebar-filename',
+    stats: [
+      hasDims && mp >= 1 ? mp + ' MP' : null,
+      hasDims ? exif.width + ' x ' + exif.height : null,
+      exif.fileSizeInByte ? formatBytes(exif.fileSizeInByte) : null
+    ]
+  })
 }
 
 function renderCameraRow (exif: GalleryExif): HTMLElement | null {
-  if (!exif.make && !exif.model && exif.exposureTime == null && exif.iso == null) return null
-  const row = makeRow(ICON_CAMERA)
-  const body = row.querySelector('.ipp-sidebar-row-body') as HTMLElement
-  const label = [exif.make, exif.model].filter(Boolean).join(' ').trim()
-  if (label) {
-    const p = document.createElement('p')
-    p.textContent = label
-    body.appendChild(p)
-  }
-  const stats = document.createElement('div')
-  stats.className = 'ipp-sidebar-stats'
-  if (exif.exposureTime) stats.appendChild(makeStat(exif.exposureTime + ' s'))
-  if (exif.iso != null) stats.appendChild(makeStat('ISO ' + exif.iso))
-  if (stats.childElementCount) body.appendChild(stats)
-  return row
+  return renderRow({
+    icon: ICON_CAMERA,
+    label: [exif.make, exif.model].filter(Boolean).join(' ').trim() || null,
+    stats: [
+      exif.exposureTime ? exif.exposureTime + ' s' : null,
+      exif.iso != null ? 'ISO ' + exif.iso : null
+    ]
+  })
 }
 
 function renderLensRow (exif: GalleryExif): HTMLElement | null {
-  if (!exif.lensModel && exif.fNumber == null && exif.focalLength == null) return null
-  const row = makeRow(ICON_IRIS)
-  const body = row.querySelector('.ipp-sidebar-row-body') as HTMLElement
-  if (exif.lensModel) {
-    const p = document.createElement('p')
-    p.className = 'ipp-sidebar-lens'
-    p.textContent = exif.lensModel
-    body.appendChild(p)
-  }
-  const stats = document.createElement('div')
-  stats.className = 'ipp-sidebar-stats'
-  if (exif.fNumber != null) stats.appendChild(makeStat('f/' + exif.fNumber))
-  if (exif.focalLength != null) stats.appendChild(makeStat(exif.focalLength + ' mm'))
-  if (stats.childElementCount) body.appendChild(stats)
-  return row
+  return renderRow({
+    icon: ICON_IRIS,
+    label: exif.lensModel,
+    labelClass: 'ipp-sidebar-lens',
+    stats: [
+      exif.fNumber != null ? 'f/' + exif.fNumber : null,
+      exif.focalLength != null ? exif.focalLength + ' mm' : null
+    ]
+  })
 }
 
 function renderLocation (exif: GalleryExif): HTMLElement {

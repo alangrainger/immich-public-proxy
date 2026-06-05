@@ -31,6 +31,15 @@ function copy (key: keyof ExifInfo & keyof GalleryExif): FieldRule {
   same string. `copy` handles the whole if/copy dance for each. Fields
   that need special handling (fileName, dimensions, fileSize, gps) appear
   inline in the `*_RULES` arrays below.
+
+  Adding a new metadata field: this rules table is the server-side source
+  of truth. Two other places carry parallel knowledge of the field set:
+    - `client/sidebar.ts` (renderRow specs decide where the field appears
+      in the info sidebar UI)
+    - `config/migrations.ts` LEGACY_* arrays (frozen v2.x field list used
+      by the `enabled -> per-field` shim; do NOT extend when adding new
+      fields - new fields should not retroactively appear for legacy
+      `enabled: true` users).
 */
 const EXIF_FIELDS = [
   'dateTimeOriginal', 'make', 'model', 'lensModel',

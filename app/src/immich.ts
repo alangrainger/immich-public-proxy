@@ -23,6 +23,7 @@ import { renderPage } from './view/render'
 import { Password } from './view/password'
 import { respondToInvalidRequest } from './invalidRequestHandler'
 import { encrypt } from './encrypt'
+import { TtlLruCache } from './utils/ttlLruCache'
 
 /*
   In-process cache for share-link lookups. Each direct-asset request (e.g.
@@ -40,15 +41,8 @@ import { encrypt } from './encrypt'
   across concurrent requests. Current callers (notably the in-place
   `share.assets.sort(...)` in render.ts) happen to be idempotent so this is
   safe today, but new callers should clone before mutating.
-
-  Eviction is LRU: each cache hit moves the entry to the end of the Map's
-  insertion order, and overflow drops the oldest (least-recently-used)
-  entry. TTL handles freshness; size cap handles memory.
 */
-type ShareCacheEntry = { promise: Promise<SharedLinkResult>; expiresAt: number }
-const shareCache = new Map<string, ShareCacheEntry>()
-const shareCacheTtlMs = 120_000
-const shareCacheMax = 100
+const shareCache = new TtlLruCache<Promise<SharedLinkResult>>({ ttlMs: 120_000, max: 100 })
 
 /*
   Immich replaced the deprecated `?password=...` query-param auth for shared
@@ -60,10 +54,7 @@ const shareCacheMax = 100
   cache key (often empty) and falls through to a fresh login that Immich will
   reject - IPP never serves cached tokens to unauthenticated visitors.
 */
-type TokenCacheEntry = { promise: Promise<string | null>; expiresAt: number }
-const tokenCache = new Map<string, TokenCacheEntry>()
-const tokenCacheTtlMs = 120_000
-const tokenCacheMax = 100
+const tokenCache = new TtlLruCache<Promise<string | null>>({ ttlMs: 120_000, max: 100 })
 
 /**
  * Make a request to Immich API. We're not using the SDK to limit
@@ -197,24 +188,11 @@ export async function handleShareRequest (req: IncomingShareRequest, res: Respon
  */
 export async function getShareByKey (key: string, password?: string, keyType: KeyType = KeyType.key): Promise<SharedLinkResult> {
   const cacheKey = `${keyType}:${key}:${password ?? ''}`
-  const now = Date.now()
   const cached = shareCache.get(cacheKey)
-  if (cached && cached.expiresAt > now) {
-    // Move-to-end to mark this entry as most-recently-used for LRU eviction
-    shareCache.delete(cacheKey)
-    shareCache.set(cacheKey, cached)
-    return cached.promise
-  }
+  if (cached) return cached
 
   const promise = fetchShareByKey(key, password, keyType)
-  shareCache.set(cacheKey, {
-    promise,
-    expiresAt: now + shareCacheTtlMs
-  })
-  if (shareCache.size > shareCacheMax) {
-    const oldest = shareCache.keys().next().value
-    if (oldest !== undefined && oldest !== cacheKey) shareCache.delete(oldest)
-  }
+  shareCache.set(cacheKey, promise)
   promise.then(
     (result) => { if (!result?.valid) shareCache.delete(cacheKey) },
     () => { shareCache.delete(cacheKey) }
@@ -352,22 +330,11 @@ export async function authHeaders (keyType: KeyType, key: string, password?: str
  */
 async function getSharedLinkToken (key: string, password: string, keyType: KeyType): Promise<string | null> {
   const cacheKey = `${keyType}:${key}:${password}`
-  const now = Date.now()
   const cached = tokenCache.get(cacheKey)
-  if (cached && cached.expiresAt > now) {
-    tokenCache.delete(cacheKey)
-    tokenCache.set(cacheKey, cached)
-    return cached.promise
-  }
+  if (cached) return cached
+
   const promise = sharedLinkLogin(key, password, keyType)
-  tokenCache.set(cacheKey, {
-    promise,
-    expiresAt: now + tokenCacheTtlMs
-  })
-  if (tokenCache.size > tokenCacheMax) {
-    const oldest = tokenCache.keys().next().value
-    if (oldest !== undefined && oldest !== cacheKey) tokenCache.delete(oldest)
-  }
+  tokenCache.set(cacheKey, promise)
   promise.then(
     (token) => { if (!token) tokenCache.delete(cacheKey) },
     () => { tokenCache.delete(cacheKey) }

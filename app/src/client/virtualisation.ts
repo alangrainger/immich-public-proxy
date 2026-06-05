@@ -56,18 +56,7 @@ export function virtualize () {
     if (l.top > bottom) break
     neededTiles.add(l.index)
   }
-  for (const [index, el] of state.renderedTiles) {
-    if (!neededTiles.has(index)) {
-      el.remove()
-      state.renderedTiles.delete(index)
-    }
-  }
-  for (const index of neededTiles) {
-    if (state.renderedTiles.has(index)) continue
-    const tile = createTile(index)
-    state.container.appendChild(tile)
-    state.renderedTiles.set(index, tile)
-  }
+  syncRendered(neededTiles, state.renderedTiles, createTile)
 
   // Group headers (when grouping is enabled; headers is empty otherwise)
   const neededHeaders = new Set<string>()
@@ -76,19 +65,39 @@ export function virtualize () {
     if (h.top > bottom) break
     neededHeaders.add(h.label)
   }
-  for (const [label, el] of state.renderedHeaders) {
-    if (!neededHeaders.has(label)) {
+  syncRendered(neededHeaders, state.renderedHeaders, (label) => {
+    const h = state.headers.find(x => x.label === label)
+    return h ? createHeader(h) : null
+  })
+}
+
+/**
+ * Reconcile a Map of rendered DOM elements against the set of keys that
+ * should currently be on screen: remove elements whose key is no longer
+ * needed, then create + append elements for keys that aren't rendered yet.
+ *
+ * The `create` callback may return `null` when the key can't be resolved
+ * (e.g. a stale header label that no longer matches any layout entry); in
+ * that case nothing is added for the key and the Map is left alone.
+ */
+function syncRendered<K> (
+  needed: Set<K>,
+  rendered: Map<K, HTMLElement>,
+  create: (key: K) => HTMLElement | null
+): void {
+  if (!state.container) return
+  for (const [key, el] of rendered) {
+    if (!needed.has(key)) {
       el.remove()
-      state.renderedHeaders.delete(label)
+      rendered.delete(key)
     }
   }
-  for (const label of neededHeaders) {
-    if (state.renderedHeaders.has(label)) continue
-    const h = state.headers.find(x => x.label === label)
-    if (!h) continue
-    const el = createHeader(h)
+  for (const key of needed) {
+    if (rendered.has(key)) continue
+    const el = create(key)
+    if (!el) continue
     state.container.appendChild(el)
-    state.renderedHeaders.set(label, el)
+    rendered.set(key, el)
   }
 }
 
