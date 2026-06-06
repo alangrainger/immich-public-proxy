@@ -3,9 +3,9 @@ import { Response } from 'express-serve-static-core'
 import { Asset, ImageSize, KeyType, SharedLink } from '../types'
 import { getConfigOption } from '../config/access'
 import { log } from '../utils/log'
-import archiver from 'archiver'
+import archiver, { Archiver } from 'archiver'
 import { sanitize } from '../utils/sanitize'
-import { Readable, Transform } from 'stream'
+import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
 import { promises as fs, createWriteStream } from 'fs'
 import { tmpdir } from 'os'
@@ -13,53 +13,8 @@ import { join } from 'path'
 import { resolveImageEndpoint, ImageEndpoint } from './asset'
 import { title } from '../share'
 import { getFilename } from '../gallery/filename'
-
-/**
- * A pass-through Transform that destroys itself if no data flows through for
- * `idleMs`. The timer is set when the transform is created and reset on every
- * chunk, so a slow-but-steady download (large video over a slow link) keeps
- * going, while a genuinely stalled connection still fails fast.
- */
-function createIdleTimeoutStream (idleMs: number): Transform {
-  let timer: NodeJS.Timeout | undefined
-  const transform: Transform = new Transform({
-    transform (chunk, _, cb) {
-      if (timer) clearTimeout(timer)
-      timer = setTimeout(() => transform.destroy(new Error(`No data received for ${idleMs}ms`)), idleMs)
-      cb(null, chunk)
-    },
-    flush (cb) {
-      if (timer) clearTimeout(timer)
-      cb()
-    }
-  })
-  // Arm the timer immediately so a response that returns headers but never
-  // sends a body also times out.
-  timer = setTimeout(() => transform.destroy(new Error(`No data received for ${idleMs}ms`)), idleMs)
-  return transform
-}
-
-/**
- * Returns a function that runs at most `limit` async tasks concurrently.
- * Tasks queue when the limit is reached and resume in FIFO order.
- */
-function createLimiter (limit: number) {
-  let active = 0
-  const queue: Array<() => void> = []
-  return async function run<T> (fn: () => Promise<T>): Promise<T> {
-    if (active >= limit) {
-      await new Promise<void>(resolve => queue.push(resolve))
-    }
-    active++
-    try {
-      return await fn()
-    } finally {
-      active--
-      const next = queue.shift()
-      if (next) next()
-    }
-  }
-}
+import { createLimiter } from '../utils/limiter'
+import { createIdleTimeoutStream } from '../utils/idleTimeoutStream'
 
 /**
  * Download all assets in a share as a zip file.
@@ -68,26 +23,41 @@ export async function downloadAll (res: Response, share: SharedLink) {
   await downloadAssets(res, share, share.assets)
 }
 
+type StagedAsset = { tempfile: string, asset: Asset, endpoint: ImageEndpoint }
+type Failure = { asset: Asset, url: string, status?: number, error?: unknown }
+type StageOutcome = StagedAsset | { failure: Failure } | null
+
+type AbortFlag = { aborted: boolean }
+
+type StagingOptions = {
+  stagingDir: string
+  concurrency: number
+  maxAttempts: number
+  headerTimeoutMs: number
+  idleTimeoutMs: number
+}
+
 /**
  * Stream the given assets back as a zip file.
  *
- * Pattern adapted from Immich's own download service:
- *   https://github.com/immich-app/immich/blob/main/server/src/services/download.service.ts
+ * Immich's own download service (server/src/services/download.service.ts)
+ * zips files directly from local disk - no HTTP, retries, or timeouts needed.
+ * We're a proxy fetching over HTTP, so the shape diverges:
  *
- * Per asset, the upstream fetch is two phases:
- *   1. Get the response headers (retried up to 3 times with linear backoff,
- *      bounded by a 20s header-receipt timeout).
- *   2. Stream the body to a temp file, guarded by an idle timeout that
- *      resets on every chunk. A genuinely stalled connection fails fast; a
- *      slow-but-steady transfer (large video over a slow link) completes.
+ *   - Bounded concurrency against the upstream Immich server.
+ *   - Two-phase fetch per asset: get headers (retried with linear backoff,
+ *     bounded by a 20s header-receipt timeout), then stream the body to a
+ *     temp file under an idle timeout that resets on every chunk -
+ *     slow-but-steady downloads survive, truly stalled ones fail fast.
+ *   - Stage everything to disk first so we can detect failure BEFORE any
+ *     bytes hit the client. Once we've started streaming the zip we can't
+ *     recover gracefully; aborting means killing the response socket and
+ *     leaving a visibly broken download. This is the alternative to silently
+ *     omitting failed assets - the user gets a clear "broken" signal instead
+ *     of a zip quietly missing files.
  *
- * If any asset ultimately fails, the in-flight download is aborted mid-stream:
- * the archive is aborted, the HTTP response socket is destroyed, and the
- * failure is logged. We do this (rather than silently omitting the asset)
- * because by the time we know the asset failed we've already sent a 200
- * response to the client, so the only way to signal "your zip is incomplete"
- * is to terminate the response - leaving the user with a visibly broken/
- * truncated download instead of a zip that's quietly missing files.
+ * The only thing we share with Immich here is using zip STORE (no
+ * compression), since photos and videos are already compressed.
  */
 export async function downloadAssets (res: Response, share: SharedLink, assets: Asset[]) {
   res.setHeader('Content-Type', 'application/zip')
@@ -96,133 +66,180 @@ export async function downloadAssets (res: Response, share: SharedLink, assets: 
   res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${filename}`)
   // Hint to intermediate proxies (Nginx, etc.) not to buffer this response.
   res.setHeader('X-Accel-Buffering', 'no')
-  // STORE rather than deflate - photos and videos are already compressed,
-  // this is the same as Immich does
   const archive = archiver('zip', { store: true })
   archive.pipe(res)
 
-  const maxAttempts = 3
-  const headerTimeoutMs = 20_000
-  const idleTimeoutMs = 20_000
-  const concurrency = Math.max(1, getConfigOption('ipp.downloadFromImmichConcurrencyLimit', 8) as number)
-
-  const stagingDir = await fs.mkdtemp(join(tmpdir(), 'ipp-zip-'))
-  let aborted = false
-
-  type StagedAsset = { tempfile: string, asset: Asset, endpoint: ImageEndpoint }
-  type Failure = { asset: Asset, url: string, status?: number, error?: unknown }
-
-  const stageOne = async (asset: Asset, index: number): Promise<StagedAsset | { failure: Failure } | null> => {
-    // Skip work if another stage has already triggered an abort.
-    if (aborted) return null
-
-    const endpoint = resolveImageEndpoint(ImageSize.original, asset)
-    const url = buildUrl(apiUrl() + '/assets/' + encodeURIComponent(asset.id) + endpoint.subpath, {
-      [asset.keyType || 'key']: asset.key,
-      size: endpoint.sizeQueryParam
-    })
-    const reqAuthHeaders = await authHeaders(asset.keyType || KeyType.key, asset.key, asset.password)
-
-    // Phase 1: get response headers, retrying on transient failure.
-    // We use AbortController + a clearable timer rather than
-    // `AbortSignal.timeout` because the signal we pass to fetch stays bound
-    // to the response body - if the timeout fires after headers arrive but
-    // while the body is still streaming, the body read errors out. The
-    // header timer is cleared as soon as we have a response; from there the
-    // idle-timeout transform downstream guards against stalled bodies.
-    let response: globalThis.Response | undefined
-    let lastStatus: number | undefined
-    let lastError: unknown
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      if (aborted) return null
-      const controller = new AbortController()
-      const headerTimer = setTimeout(() => controller.abort(new Error(`No response headers within ${headerTimeoutMs}ms`)), headerTimeoutMs)
-      try {
-        const data = await fetch(url, { signal: controller.signal, headers: reqAuthHeaders })
-        clearTimeout(headerTimer)
-        if (data.ok) {
-          response = data
-          break
-        }
-        await data.body?.cancel()
-        lastStatus = data.status
-        lastError = undefined
-      } catch (e) {
-        clearTimeout(headerTimer)
-        lastError = e
-        lastStatus = undefined
-      }
-      if (attempt < maxAttempts) {
-        const reason = lastStatus !== undefined
-          ? `HTTP ${lastStatus}`
-          : (lastError instanceof Error ? lastError.message : String(lastError))
-        log(`Retrying asset ${asset.id} (attempt ${attempt + 1}/${maxAttempts}) after ${reason}`)
-        // Linear backoff between attempts to avoid hammering a struggling server.
-        await new Promise(resolve => setTimeout(resolve, 500 * attempt))
-      }
-    }
-
-    if (!response || !response.body) {
-      return { failure: { asset, url, status: lastStatus, error: lastError } }
-    }
-
-    // Phase 2: stream body to a temp file, guarded by an idle timeout.
-    // Use the array index in the path so we never collide on duplicate IDs.
-    const tempfile = join(stagingDir, `${index}-${asset.id}`)
-    // `response.body` is the global/undici ReadableStream<Uint8Array>;
-    // Readable.fromWeb expects node:stream/web's ReadableStream<any>. The
-    // two are structurally compatible at runtime but TS sees them as
-    // distinct nominal types, so a cast is needed.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const body = Readable.fromWeb(response.body as any)
-    try {
-      await pipeline(body, createIdleTimeoutStream(idleTimeoutMs), createWriteStream(tempfile))
-    } catch (e) {
-      return { failure: { asset, url, error: e } }
-    }
-
-    return { tempfile, asset, endpoint }
+  const options: StagingOptions = {
+    stagingDir: await fs.mkdtemp(join(tmpdir(), 'ipp-zip-')),
+    concurrency: Math.max(1, getConfigOption('ipp.downloadFromImmichConcurrencyLimit', 8) as number),
+    maxAttempts: 3,
+    headerTimeoutMs: 20_000,
+    idleTimeoutMs: 20_000
   }
+  const abortFlag: AbortFlag = { aborted: false }
 
   try {
-    const limit = createLimiter(concurrency)
-    // Kick off every stage at once; the limiter caps how many run concurrently.
-    // The map preserves input order so the consumer below archives in order.
-    const stages = assets.map((asset, index) => limit(() => stageOne(asset, index)))
-
-    let failure: Failure | null = null
-    for (const stage of stages) {
-      const result = await stage
-      if (result === null) break // aborted by an earlier stage
-      if ('failure' in result) {
-        aborted = true
-        failure = result.failure
-        break
-      }
-      // archive.file queues the entry; archiver lazily opens and reads it.
-      archive.file(result.tempfile, { name: getFilename(result.asset, result.endpoint.servedSize) })
-    }
-
-    // After abort, wait for any in-flight stages to settle before we delete
-    // the staging dir. stageOne never rejects (errors become failure objects),
-    // so a plain Promise.all is safe.
-    if (aborted) await Promise.all(stages)
-
+    const stages = stageAssetsToDisk(assets, options, abortFlag)
+    const failure = await archiveStaged(archive, stages, abortFlag)
     if (failure) {
-      const f = failure as Failure
-      const detail = f.status !== undefined
-        ? `HTTP ${f.status}`
-        : (f.error instanceof Error ? f.error.message : String(f.error))
-      log(`Aborting zip download for share ${share.key}: failed to fetch asset ${f.asset.id} from ${f.url} (${detail})`)
-      archive.abort()
-      res.destroy()
+      abortDownload(archive, res, share, failure)
       return
     }
-
     // finalize() resolves when archiver has finished writing the zip output,
     // which means every queued tempfile has been read. Safe to delete after.
     await archive.finalize()
   } finally {
-    await fs.rm(stagingDir, { recursive: true, force: true }).catch(() => { /* best effort */ })
+    await fs.rm(options.stagingDir, { recursive: true, force: true }).catch(() => { /* best effort */ })
+  }
+}
+
+/**
+ * Kick off staging for every asset at once; the limiter caps how many run
+ * concurrently. Returns the promise array in input order so the consumer can
+ * archive in order.
+ */
+function stageAssetsToDisk (assets: Asset[], options: StagingOptions, abortFlag: AbortFlag): Promise<StageOutcome>[] {
+  const limit = createLimiter(options.concurrency)
+  return assets.map((asset, index) => limit(() => stageOne(asset, index, options, abortFlag)))
+}
+
+/**
+ * Walk the staged assets in input order, adding each to the archive as soon
+ * as it lands. The first failure sets the abort flag (so unstarted stages
+ * bail out) and is returned to the caller. We wait for in-flight stages to
+ * settle before returning so the staging dir is safe to delete.
+ */
+async function archiveStaged (archive: Archiver, stages: Promise<StageOutcome>[], abortFlag: AbortFlag): Promise<Failure | null> {
+  let failure: Failure | null = null
+  for (const stage of stages) {
+    const result = await stage
+    if (result === null) break // aborted by an earlier stage
+    if ('failure' in result) {
+      abortFlag.aborted = true
+      failure = result.failure
+      break
+    }
+    // archive.file queues the entry; archiver lazily opens and reads it.
+    archive.file(result.tempfile, { name: getFilename(result.asset, result.endpoint.servedSize) })
+  }
+
+  // After abort, wait for any in-flight stages to settle before we delete
+  // the staging dir. stageOne never rejects (errors become failure objects),
+  // so a plain Promise.all is safe.
+  if (abortFlag.aborted) await Promise.all(stages)
+  return failure
+}
+
+function abortDownload (archive: Archiver, res: Response, share: SharedLink, failure: Failure) {
+  const detail = failure.status !== undefined
+    ? `HTTP ${failure.status}`
+    : (failure.error instanceof Error ? failure.error.message : String(failure.error))
+  log(`Aborting zip download for share ${share.key}: failed to fetch asset ${failure.asset.id} from ${failure.url} (${detail})`)
+  archive.abort()
+  res.destroy()
+}
+
+/**
+ * Fetch one asset's upstream bytes into a temp file. Two phases:
+ *   1. fetchHeadersWithRetry - get the response headers, retried on
+ *      transient failure.
+ *   2. streamBodyToTempFile - drain the body to disk under an idle timeout.
+ *
+ * Returns the staged asset on success, a wrapped Failure on error, or null
+ * if we observed the abort flag and bailed without doing work.
+ */
+async function stageOne (asset: Asset, index: number, options: StagingOptions, abortFlag: AbortFlag): Promise<StageOutcome> {
+  if (abortFlag.aborted) return null
+
+  const endpoint = resolveImageEndpoint(ImageSize.original, asset)
+  const url = buildUrl(apiUrl() + '/assets/' + encodeURIComponent(asset.id) + endpoint.subpath, {
+    [asset.keyType || 'key']: asset.key,
+    size: endpoint.sizeQueryParam
+  })
+  const reqAuthHeaders = await authHeaders(asset.keyType || KeyType.key, asset.key, asset.password)
+
+  const fetched = await fetchHeadersWithRetry(url, reqAuthHeaders, options.maxAttempts, options.headerTimeoutMs, abortFlag, asset)
+  if (fetched === null) return null
+  if ('failure' in fetched) return { failure: { ...fetched.failure, asset, url } }
+
+  // Use the array index in the path so we never collide on duplicate IDs.
+  const tempfile = join(options.stagingDir, `${index}-${asset.id}`)
+  const streamed = await streamBodyToTempFile(fetched.response, tempfile, options.idleTimeoutMs)
+  if ('failure' in streamed) return { failure: { asset, url, error: streamed.failure } }
+
+  return { tempfile, asset, endpoint }
+}
+
+type HeaderFetchOutcome =
+  | { response: globalThis.Response }
+  | { failure: { status?: number, error?: unknown } }
+  | null
+
+/**
+ * GET `url` until we have response headers or run out of attempts. Retries
+ * use linear backoff to avoid hammering a struggling upstream.
+ *
+ * AbortController + clearable timer (rather than `AbortSignal.timeout`)
+ * because the signal we pass to fetch stays bound to the response body - if
+ * the timeout fires after headers arrive but while the body is still
+ * streaming, the body read errors out. We clear the header timer as soon
+ * as we have a response; downstream the idle-timeout transform guards
+ * against stalled bodies.
+ */
+async function fetchHeadersWithRetry (
+  url: string,
+  headers: Record<string, string>,
+  maxAttempts: number,
+  headerTimeoutMs: number,
+  abortFlag: AbortFlag,
+  asset: Asset
+): Promise<HeaderFetchOutcome> {
+  let lastStatus: number | undefined
+  let lastError: unknown
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    if (abortFlag.aborted) return null
+    const controller = new AbortController()
+    const headerTimer = setTimeout(() => controller.abort(new Error(`No response headers within ${headerTimeoutMs}ms`)), headerTimeoutMs)
+    try {
+      const data = await fetch(url, { signal: controller.signal, headers })
+      clearTimeout(headerTimer)
+      if (data.ok) return { response: data }
+      await data.body?.cancel()
+      lastStatus = data.status
+      lastError = undefined
+    } catch (e) {
+      clearTimeout(headerTimer)
+      lastError = e
+      lastStatus = undefined
+    }
+    if (attempt < maxAttempts) {
+      const reason = lastStatus !== undefined
+        ? `HTTP ${lastStatus}`
+        : (lastError instanceof Error ? lastError.message : String(lastError))
+      log(`Retrying asset ${asset.id} (attempt ${attempt + 1}/${maxAttempts}) after ${reason}`)
+      await new Promise(resolve => setTimeout(resolve, 500 * attempt))
+    }
+  }
+  return { failure: { status: lastStatus, error: lastError } }
+}
+
+/**
+ * Stream `response.body` to `tempfile`, guarded by an idle timeout. The
+ * idle stream destroys itself if no chunk arrives within `idleMs`, killing
+ * the pipeline with a clear error.
+ */
+async function streamBodyToTempFile (response: globalThis.Response, tempfile: string, idleMs: number): Promise<{ ok: true } | { failure: unknown }> {
+  if (!response.body) return { failure: new Error('Upstream response has no body') }
+  // `response.body` is the global/undici ReadableStream<Uint8Array>;
+  // Readable.fromWeb expects node:stream/web's ReadableStream<any>. The
+  // two are structurally compatible at runtime but TS sees them as
+  // distinct nominal types, so a cast is needed.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const body = Readable.fromWeb(response.body as any)
+  try {
+    await pipeline(body, createIdleTimeoutStream(idleMs), createWriteStream(tempfile))
+    return { ok: true }
+  } catch (e) {
+    return { failure: e }
   }
 }
