@@ -16,11 +16,36 @@ import { getFilename } from '../gallery/filename'
 import { createLimiter } from '../utils/limiter'
 import { createIdleTimeoutStream } from '../utils/idleTimeoutStream'
 
+const STAGING_DIR_PREFIX = 'ipp-zip-'
+
 /**
  * Download all assets in a share as a zip file.
  */
 export async function downloadAll (res: Response, share: SharedLink) {
   await downloadAssets(res, share, share.assets)
+}
+
+/**
+ * Delete staging directories left over from a prior run that crashed before
+ * its `finally` block could clean up. Intended to run once at startup.
+ *
+ * A live download holds its staging dir open for the duration of the zip;
+ * `maxAgeMs` should comfortably exceed any realistic download time so we
+ * never delete a dir from a still-running download in another worker.
+ */
+export async function sweepStaleStagingDirs (maxAgeMs = 60 * 60 * 1000) {
+  const root = tmpdir()
+  const cutoff = Date.now() - maxAgeMs
+  const entries = await fs.readdir(root).catch(() => [] as string[])
+  for (const name of entries) {
+    if (!name.startsWith(STAGING_DIR_PREFIX)) continue
+    const path = join(root, name)
+    const stat = await fs.stat(path).catch(() => null)
+    if (!stat || stat.mtimeMs >= cutoff) continue
+    await fs.rm(path, { recursive: true, force: true }).catch(e => {
+      log.warn(`Failed to sweep stale staging dir ${path}: ${e instanceof Error ? e.message : String(e)}`)
+    })
+  }
 }
 
 type StagedAsset = { tempfile: string, asset: Asset, endpoint: ImageEndpoint }
@@ -70,7 +95,7 @@ export async function downloadAssets (res: Response, share: SharedLink, assets: 
   archive.pipe(res)
 
   const options: StagingOptions = {
-    stagingDir: await fs.mkdtemp(join(tmpdir(), 'ipp-zip-')),
+    stagingDir: await fs.mkdtemp(join(tmpdir(), STAGING_DIR_PREFIX)),
     concurrency: Math.max(1, getConfigOption('ipp.downloadFromImmichConcurrencyLimit', 8) as number),
     maxAttempts: 3,
     headerTimeoutMs: 20_000,

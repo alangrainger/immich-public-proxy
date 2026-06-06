@@ -13,7 +13,7 @@ import {
 } from './immich'
 import crypto from 'crypto'
 import { assetBuffer } from './stream/asset'
-import { downloadAssets } from './stream/download'
+import { downloadAssets, sweepStaleStagingDirs } from './stream/download'
 import dayjs from 'dayjs'
 import { NextFunction, Request, Response } from 'express-serve-static-core'
 import { Asset, AssetType, ImageSize, KeyType } from './types'
@@ -282,4 +282,7 @@ process.on('SIGTERM', () => {
 const port = Number(process.env.IPP_PORT) || 3000
 const server = app.listen(port, () => {
   console.log(dayjs().format() + ' Server started on port ' + port)
+  // Clean up any zip-download staging dirs left behind by a previous
+  // run that crashed before its finally block could run
+  sweepStaleStagingDirs().catch(e => console.error('sweepStaleStagingDirs failed:', e))
 })
