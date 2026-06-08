@@ -68,6 +68,11 @@ export interface SharedLink {
   description?: string;
   assets: Asset[];
   allowDownload?: boolean;
+  // Per-share "Show metadata" toggle from Immich. When `false`, the share owner
+  // has asked that no EXIF / location / description / filename metadata be
+  // surfaced to viewers. We treat this as a kill-switch over the operator's
+  // own `ipp.showMetadata.*` config: see `gallery/builder.ts`.
+  showMetadata?: boolean;
   password?: string;
   album?: {
     id: string;

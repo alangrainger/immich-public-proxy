@@ -77,6 +77,11 @@ function groupItemsByMonth (): GroupSpec[] {
     }
     g.indices.push(i)
   }
+  // When every item is undated (typically because the share's "Show metadata"
+  // toggle stripped dates upstream), drop the lone "Undated" header
+  if (map.size === 1 && map.has('undated')) {
+    map.get('undated')!.label = null
+  }
   return Array.from(map.values())
 }
 

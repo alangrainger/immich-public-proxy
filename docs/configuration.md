@@ -75,13 +75,13 @@ For example, to disable the home page at `/` and at `/share`:
 
 Options that control how the gallery page is rendered. Configured under `ipp.gallery`.
 
-| Option               | Type   | Description                                                                                                                                                                                                         |
-|----------------------|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `singleImage`        | `bool` | By default a link to a single image will directly open the image file. Set to `true` if you want to show a gallery page instead for a single item.                                                                  |
-| `singleItemAutoOpen` | `bool` | When a share contains a single item and is opened on its gallery page, automatically open the lightbox on the asset. Default `true`.                                                                                |
-| `showTitle`          | `bool` | Show a title on the gallery page. This is taken from the album title if it is an album being shared, otherwise the "Description" from the shared link will be used.                                                 |
-| `showDescription`    | `bool` | Show the album description below the title. This only applies if it is an album which is being shared.                                                                                                              |
-| `groupByDate`        | `bool` | Group the gallery's thumbnails by month, with headers like "December 2024" above each group. Sorts photos newest-first. Items missing a creation date end up under an "Undated" bucket at the end. Default `false`. |
+| Option               | Type   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+|----------------------|--------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `singleImage`        | `bool` | By default a link to a single image will directly open the image file. Set to `true` if you want to show a gallery page instead for a single item.                                                                                                                                                                                                                                                                                                                |
+| `singleItemAutoOpen` | `bool` | When a share contains a single item and is opened on its gallery page, automatically open the lightbox on the asset. Default `true`.                                                                                                                                                                                                                                                                                                                              |
+| `showTitle`          | `bool` | Show a title on the gallery page. This is taken from the album title if it is an album being shared, otherwise the "Description" from the shared link will be used.                                                                                                                                                                                                                                                                                               |
+| `showDescription`    | `bool` | Show the album description below the title. This only applies if it is an album which is being shared.                                                                                                                                                                                                                                                                                                                                                            |
+| `groupByDate`        | `bool` | Group the gallery's thumbnails by month, with headers like "December 2024" above each group. Sorts photos newest-first. Items missing a creation date end up under an "Undated" bucket at the end (or render without any header when the whole gallery is undated). **Requires "Show metadata" to be enabled on the share in Immich** - when that's off, Immich strips creation dates from the assets it returns to IPP, so grouping won't work. Default `false`. |
 
 Example: show the gallery title and group photos by month.
 
@@ -131,7 +131,10 @@ Configured under `ipp.showMetadata`. The lightbox includes a slide-in info sideb
 
 Every per-field flag defaults to `false`. A field is sent to the client only when its flag is explicitly `true`. There is no master switch - this is deliberate, so that fields IPP adds in future releases don't auto-expose without your action.
 
-If Immich itself isn't exposing metadata for the share (the per-share toggle on the Immich side), no metadata is available regardless of these settings.
+The share owner's **"Show metadata"** toggle in Immich takes precedence over everything here: when it's off, 
+IPP suppresses all description / EXIF / location output and hides the info sidebar (and its toolbar toggle) 
+entirely, regardless of these settings. Note that with "Show metadata" off Immich also strips file creation 
+dates from non-album shares, so [date grouping](#gallery) won't work for those shares.
 
 The info sidebar (and its toolbar toggle button) only appear when there is at least one section the operator has opted into - i.e. `description.sidebar` is true, or `exif` / `location` has at least one flag set to `true`. With all three off, the sidebar UI is suppressed.
 

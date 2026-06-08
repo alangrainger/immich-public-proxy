@@ -37,9 +37,13 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
 
   // Metadata display flags. Read once here and forwarded to the client via
   // `metadataConfig` in the init JSON.
-  const descriptionInCaption = !!getConfigOption('ipp.showMetadata.description.caption', false)
-  const descriptionInSidebar = !!getConfigOption('ipp.showMetadata.description.sidebar', false)
-  const sidebarHasContent = descriptionInSidebar || metadataGroupActive('exif') || metadataGroupActive('location')
+  // The share owner's "Show metadata" toggle in Immich is a kill-switch over
+  // the operator's own config: when explicitly `false`, no EXIF / location /
+  // description fields are surfaced, regardless of `ipp.showMetadata.*`
+  const shareMetadataAllowed = share.showMetadata !== false
+  const descriptionInCaption = shareMetadataAllowed && !!getConfigOption('ipp.showMetadata.description.caption', false)
+  const descriptionInSidebar = shareMetadataAllowed && !!getConfigOption('ipp.showMetadata.description.sidebar', false)
+  const sidebarHasContent = shareMetadataAllowed && (descriptionInSidebar || metadataGroupActive('exif') || metadataGroupActive('location'))
 
   // Build structured items in parallel
   const items: GalleryItem[] = await Promise.all(share.assets.map(async (asset): Promise<GalleryItem> => {
@@ -97,7 +101,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       height,
       thumbhash: asset.thumbhash,
       fileCreatedAt: asset.fileCreatedAt,
-      exif: pickExif(asset)
+      exif: shareMetadataAllowed ? pickExif(asset) : undefined
     }
   }))
 
