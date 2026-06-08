@@ -81,11 +81,15 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       ? asset.exifInfo.description
       : ''
 
-    let width = asset.exifInfo?.exifImageWidth
-    let height = asset.exifInfo?.exifImageHeight
-    const orientation = asset.exifInfo?.orientation
-    if (orientation && ['5', '6', '7', '8'].includes(orientation) && width && height) {
-      [width, height] = [height, width]
+    let width = asset.width
+    let height = asset.height
+    if (!width || !height) {
+      width = asset.exifInfo?.exifImageWidth
+      height = asset.exifInfo?.exifImageHeight
+      const orientation = asset.exifInfo?.orientation
+      if (orientation && ['5', '6', '7', '8'].includes(orientation) && width && height) {
+        [width, height] = [height, width]
+      }
     }
 
     return {

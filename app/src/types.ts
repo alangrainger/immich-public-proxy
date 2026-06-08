@@ -51,6 +51,8 @@ export interface Asset {
   type: AssetType;
   isTrashed: boolean;
   exifInfo?: ExifInfo;
+  width?: number;
+  height?: number;
   // Base64-encoded thumbhash for tasteful blur placeholders during lazy-load
   thumbhash?: string;
 }
