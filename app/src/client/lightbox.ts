@@ -54,7 +54,7 @@ function buildDataSource () {
       return {
         html:
           '<div class="pswp__video-wrap">' +
-          '<video controls playsinline poster="' + escapeAttr(item.thumbnailUrl) + '">' +
+          '<video controls playsinline poster="' + escapeAttr(item.thumbnailUrl) + '" style="width: 100%; height: 100%; object-fit: contain;">' +
           '<source src="' + escapeAttr(v.src) + '" type="' + escapeAttr(v.type) + '">' +
           '</video>' +
           '</div>'
@@ -161,6 +161,57 @@ export function initLightbox () {
       state.closingFromHistory = true
       state.lightbox.pswp.close()
     }
+  })
+
+  // Video autoplay
+  let autoplayInterval: ReturnType<typeof setInterval> | null = null
+  let lastAutoplayIndex = -1
+
+  const tryAutoplay = () => {
+    if (!state.lightbox.pswp || !state.lightbox.pswp.currSlide || !state.lightbox.pswp.currSlide.isActive) return
+    const index = state.lightbox.pswp.currIndex
+    if (index === lastAutoplayIndex) return
+
+    const item = state.items[index]
+    if (!item) return
+    
+    // If it's a video, wait for the DOM element to actually exist
+    const video = state.lightbox.pswp.currSlide.container
+      ? state.lightbox.pswp.currSlide.container.querySelector('video')
+      : null
+      
+    if (item.type === 'VIDEO' && !video) return
+
+    // Mark this slide as processed
+    lastAutoplayIndex = index
+
+    if (video && video.paused) {
+      const playPromise = video.play()
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          video.muted = true
+          video.play().catch(() => {})
+        })
+      }
+    }
+  }
+
+  state.lightbox.on('uiRegister', () => {
+    // Start polling when lightbox opens
+    autoplayInterval = setInterval(tryAutoplay, 50)
+
+    state.lightbox.pswp.on('close', () => {
+      if (autoplayInterval) clearInterval(autoplayInterval)
+      lastAutoplayIndex = -1
+    })
+  })
+
+  // We still use contentDeactivate to immediately pause videos when sliding away
+  state.lightbox.on('contentDeactivate', ({ content }: any) => {
+    const video = content && content.element && content.element.querySelector
+      ? content.element.querySelector('video')
+      : null
+    if (video) { video.pause(); video.currentTime = 0 }
   })
 
   // Optional control hiding (defaults match Immich's behavior)
