@@ -11,7 +11,29 @@
     "allowSlugLinks": true,
     "showHomePage": true,
     "showMetadata": {
-      "description": false
+      "description": {
+        "caption": false,
+        "sidebar": false
+      },
+      "exif": {
+        "dateTimeOriginal": false,
+        "fileName": false,
+        "dimensions": false,
+        "fileSize": false,
+        "make": false,
+        "model": false,
+        "lensModel": false,
+        "exposureTime": false,
+        "iso": false,
+        "fNumber": false,
+        "focalLength": false
+      },
+      "location": {
+        "city": false,
+        "state": false,
+        "country": false,
+        "gps": false
+      }
     },
     "customInvalidResponse": false,
     "gallery": {

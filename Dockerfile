@@ -5,7 +5,8 @@ WORKDIR /app
 COPY --chown=node:node app/ ./
 
 RUN npm ci \
-    && npx tsc
+    && npx tsc \
+    && npx tsc -p tsconfig.client.json
 
 FROM node:lts-alpine AS runner
 

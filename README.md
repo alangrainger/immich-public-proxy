@@ -27,17 +27,9 @@ Setup takes less than a minute, and you never need to touch it again as all of y
 
 - [About this project](#about-this-project)
 - [Installation](#installation)
-  - [Install with Docker](#install-with-docker--podman)
-  - [Install with Kubernetes](docs/kubernetes.md)
 - [How to use it](#how-to-use-it)
 - [How it works](#how-it-works)
-- [Additional configuration](#additional-configuration)
-  - [IPP options](#immich-public-proxy-options)
-  - [Gallery options](#gallery-options)
-  - [Lightbox options](#lightbox-options)
-  - [Metadata](#metadata)
-  - [Custom error pages](#customising-your-error-response-pages)
-  - [Serving from multiple domains](#serving-from-multiple-domains)
+- [Configuration](docs/configuration.md)
 - [Troubleshooting](#troubleshooting)
 - [Feature requests](#feature-requests)
 
@@ -140,119 +132,9 @@ If the shared link has expired or any of the assets have been put in the Immich 
 
 All incoming data is validated and sanitised, and anything unexpected is simply dropped with a 404.
 
-## Additional configuration
+## Configuration
 
-There are some additional configuration options you can change, for example the way the gallery is set up.
-
-1. Make a copy of [config.json](https://github.com/alangrainger/immich-public-proxy/blob/main/app/config.json) in the same folder as your `docker-compose.yml`.
-
-2. Pass the config to your docker container by adding a volume like this:
-
-```yaml
-    volumes:
-      - ./config.json:/app/config.json
-```
-
-3. Restart your container and your custom configuration should be active.
-
-Alternatively, you can [pass the configuration inline](docs/inline-configuration.md) from your `docker-compose.yml` file.
-
-### Immich Public Proxy options
-
-| Option                                | Type     | Description                                                                                                                                                                                                                                                                                   |
-|---------------------------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `responseHeaders`                     | `object` | Change the headers sent with your web responses. By default there is `cache-control` and CORS added.                                                                                                                                                                                          |
-| `downloadOriginalPhoto`               | `bool`   | Set to `false` if you only want people to be able to download the 'preview' quality photo, rather than your original photo.                                                                                                                                                                   |
-| `downloadedFilename`                  | `int`    | The filename of the downloaded image.<br>`0` for the original filename if available, falling back to the Immich asset ID<br>`1` for the Immich asset ID number<br>`2` for a shortened version of the asset ID: `img_` plus the first 8 characters of the asset ID                             |
-| `allowDownloadAll`                    | `int`    | Allow visitors to download all files as a zip, including the selective-download flow in multi-select mode.<br>`0` disable downloads<br>`1` follow Immich setting per share ([example](https://github.com/user-attachments/assets/79ea8c08-71ce-42ab-b025-10aec384938a))<br>`2` always allowed |
-| `downloadFromImmichConcurrencyLimit`  | `int`    | Maximum number of assets IPP will fetch from your Immich server in parallel when building a "download all" zip. Defaults to `8`. Lower this if your Immich server is slow or you see download timeouts on large albums; raise it for faster downloads if your server can handle the load.     |
-| `allowSlugLinks`                      | `bool`   | Enable/disable the custom URL links.                                                                                                                                                                                                                                                          |
-| `showHomePage`                        | `bool`   | Set to `false` to remove the IPP shield page at `/` and at `/share`                                                                                                                                                                                                                           |
-| `gallery`                             | `object` | Gallery-page options, see the [Gallery options](#gallery-options) section below.                                                                                                                                                                                                              |
-| `lightbox`                            | `object` | Lightbox option, see the [Lightbox options](#lightbox-options) section below.                                                                                                                                                                                                                 |
-| `showMetadata`                        | `object` | See the [Metadata](#metadata) section below.                                                                                                                                                                                                                                                  |
-| `customInvalidResponse`               | various  | Send a custom response instead of the default 404 - see [Custom responses](docs/custom-responses.md) for more details.                                                                                                                                                                        |
-
-For example, to disable the home page at `/` and at `/share` you need to change `showHomePage` to `false`:
-
-```json
-{
-  "ipp": {
-    "showHomePage": false,
-    ...
-  }
-}
-```
-
-### Gallery options
-
-Options that control how the gallery page is rendered. Configured under `ipp.gallery`.
-
-| Option               | Type   | Description                                                                                                                                                                                                         |
-|----------------------|--------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `singleImage`        | `bool` | By default a link to a single image will directly open the image file. Set to `true` if you want to show a gallery page instead for a single item.                                                                  |
-| `singleItemAutoOpen` | `bool` | When a share contains a single item and is opened on its gallery page, automatically open the lightbox on the asset. Default `true`.                                                                                |
-| `showTitle`          | `bool` | Show a title on the gallery page. This is taken from the album title if it is an album being shared, otherwise the "Description" from the shared link will be used.                                                 |
-| `showDescription`    | `bool` | Show the album description below the title. This only applies if it is an album which is being shared.                                                                                                              |
-| `groupByDate`        | `bool` | Group the gallery's thumbnails by month, with headers like "December 2024" above each group. Sorts photos newest-first. Items missing a creation date end up under an "Undated" bucket at the end. Default `false`. |
-
-Example: show the gallery title and group photos by month:
-
-```json
-{
-  "ipp": {
-    "gallery": {
-      "showTitle": true,
-      "groupByDate": true
-    }
-  }
-}
-```
-
-> **Note** for upgraders from earlier versions: the keys `singleImageGallery`, `singleItemAutoOpen`, `showGalleryTitle`, `showGalleryDescription`, and `groupGalleryByDate` used to live directly under `ipp.*`. They've been renamed and moved under `ipp.gallery.*` (see the table above). Existing configs continue to work via a backward-compatibility shim, but you'll see a deprecation notice in the startup log until you migrate them.
-
-### Lightbox options
-
-The gallery's lightbox is powered by [PhotoSwipe](https://photoswipe.com/). Configured under `ipp.lightbox`.
-
-| Option         | Type     | Description                                                                                                                              |
-|----------------|----------|------------------------------------------------------------------------------------------------------------------------------------------|
-| `showArrows`   | `bool`   | Show the prev/next arrows on desktop. They appear when the user hovers the lightbox. Default `true`.                                     |
-| `showDownload` | `bool`   | Show a download button in the lightbox toolbar. Only takes effect when downloads are also allowed by `allowDownloadAll`. Default `true`. |
-| `mobileArrows` | `bool`   | Show prev/next arrows on mobile (under 640px viewport). Off by default since swipe is the natural mobile navigation.                     |
-| `options`      | `object` | Custom [PhotoSwipe options](https://photoswipe.com/options/) to override defaults (e.g. `{"wheelToZoom": true}`).                        |
-
-Example: hide the download button inside the lightbox even though zip downloads are otherwise allowed:
-
-```json
-{
-  "ipp": {
-    "lightbox": {
-      "showDownload": false
-    }
-  }
-}
-```
-
-### Metadata
-
-Configured under `ipp.showMetadata`.
-
-| Option        | Type   | Description                                        |
-|---------------|--------|----------------------------------------------------|
-| `description` | `bool` | Show the description as a caption below the photo. |
-
-### Customising your error response pages
-
-You can customise the responses that IPP sends for invalid requests. For example you could:
-
-- Drop the connection entirely (no response).
-- Redirect to a new website.
-- Send a different status code.
-- Send a custom 404 page.
-- And so on...
-
-See [Custom responses](docs/custom-responses.md) for more details.
+See **[the configuration docs](docs/configuration.md)** for the full reference.
 
 ## Troubleshooting
 
@@ -278,8 +160,8 @@ From inside a Docker container, you can't reach another container using `localho
 You can [add feature requests here](https://github.com/alangrainger/immich-public-proxy/discussions/categories/feature-requests?discussions_q=is%3Aopen+category%3A%22Feature+Requests%22+sort%3Atop),
 however my goal with this project is to keep it as lean as possible.
 
-Due to the sensitivity of data contained within Immich, I want anyone with a bit of coding knowledge
-to be able to read this codebase and fully understand everything it is doing.
+Due to the sensitivity of data contained within Immich, this project optimises for auditability: the code 
+stays small enough that someone with coding experience can review it for security-relevant behavior.
 
 The most basic rule for this project is that it has **read-only** access to Immich.
 

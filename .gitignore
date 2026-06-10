@@ -1,5 +1,8 @@
 node_modules/
 dist/
+app/public/js/
 .idea
 .env
 .directory
+/app/config.dev.json
+.npm-cache/

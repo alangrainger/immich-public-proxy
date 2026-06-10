@@ -1,34 +1,8 @@
 import { AssetType } from '../types'
-import { ThemeScript } from './_theme'
+import { ThemeScript } from './theme'
+import { GalleryItem, LightboxConfig, MetadataConfig } from '../shared/types'
 
-export interface GalleryItem {
-  id: string
-  type: AssetType
-  previewUrl: string
-  thumbnailUrl: string
-  downloadUrl?: string
-  // pre-stringified JSON describing the video source (used to build a <video>
-  // element for video slides in the PhotoSwipe lightbox)
-  videoData?: string
-  // already-escaped HTML fragment used as a caption in the lightbox
-  description?: string
-  downloadFilename: string
-  // Display dimensions after EXIF orientation correction; needed for the
-  // pre-computed justified-rows layout that virtualization depends on.
-  width?: number
-  height?: number
-  // Base64-encoded thumbhash for an optional blur placeholder behind each tile
-  thumbhash?: string
-  // ISO date string from Immich; used to group tiles by month when enabled.
-  fileCreatedAt?: string
-}
-
-export interface LightboxConfig {
-  showArrows: boolean
-  showDownload: boolean
-  mobileArrows: boolean
-  options?: Record<string, unknown>
-}
+export type { GalleryItem, LightboxConfig, MetadataConfig }
 
 export interface GalleryProps {
   items: GalleryItem[]
@@ -41,6 +15,7 @@ export interface GalleryProps {
   openItem?: number
   ogImageItem?: GalleryItem
   lightboxConfig: LightboxConfig
+  metadataConfig: MetadataConfig
   groupByDate: boolean
 }
 
@@ -49,6 +24,7 @@ export function Gallery (props: GalleryProps) {
     items: props.items,
     openItem: props.openItem,
     lightboxConfig: props.lightboxConfig,
+    metadataConfig: props.metadataConfig,
     groupByDate: props.groupByDate
   })
   const firstItem = props.items[0]
@@ -107,7 +83,7 @@ export function Gallery (props: GalleryProps) {
         {props.description && (
           <p id="album-description">{props.description}</p>
         )}
-{/* Container is intentionally empty - web.js's virtualization manager
+{/* Container is intentionally empty - web.js's virtualisation manager
             populates it with only the tiles within the viewport buffer. */}
         <div id="gallery"></div>
         {props.showDownload && (
@@ -134,7 +110,7 @@ export function Gallery (props: GalleryProps) {
           id="ipp-init"
           dangerouslySetInnerHTML={{ __html: initJson }}
         />
-        <script type="module" src="/share/static/web.js"></script>
+        <script type="module" src="/share/static/js/client/init.js"></script>
       </body>
     </html>
   )
