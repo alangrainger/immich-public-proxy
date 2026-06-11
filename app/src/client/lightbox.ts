@@ -170,12 +170,17 @@ export function initLightbox () {
     state.lightbox.on('contentActivate', ({ content }: { content: { element?: HTMLElement } }) => {
       const video = content.element?.querySelector('video')
       if (video) {
-        video.play().catch(() => {
-          // Browsers block unmuted autoplay without a user gesture (e.g. a
-          // deep link straight to a video slide) - retry muted.
-          video.muted = true
-          video.play().catch(() => {})
-        })
+        setTimeout(() => {
+          video.play().catch((err: Error) => {
+            // Only mute and retry if the browser explicitly blocked unmuted autoplay.
+            if (err.name === 'NotAllowedError') {
+              video.muted = true
+              video.play().catch(() => {})
+            } else if (err.name === 'AbortError') {
+              video.play().catch(() => {})
+            }
+          })
+        }, 50)
       }
     })
   }
