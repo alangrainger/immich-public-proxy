@@ -135,6 +135,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       showDownload: downloadAllowed && !!getConfigOption('ipp.lightbox.showDownload', true),
       showArrows: !!getConfigOption('ipp.lightbox.showArrows', true),
       mobileArrows: !!getConfigOption('ipp.lightbox.mobileArrows', false),
+      autoPlayVideos: !!getConfigOption('ipp.lightbox.autoPlayVideos', false),
       options: lightboxOptions
     },
     metadataConfig: {

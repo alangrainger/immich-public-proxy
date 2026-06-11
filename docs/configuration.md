@@ -105,6 +105,7 @@ The gallery's lightbox is powered by [PhotoSwipe](https://photoswipe.com/). Conf
 | `showArrows`   | `bool`   | Show the prev/next arrows on desktop. They appear when the user hovers the lightbox. Default `true`.                                     |
 | `showDownload` | `bool`   | Show a download button in the lightbox toolbar. Only takes effect when downloads are also allowed by `allowDownloadAll`. Default `true`. |
 | `mobileArrows` | `bool`   | Show prev/next arrows on mobile (under 640px viewport). Off by default since swipe is the natural mobile navigation.                     |
+| `autoPlayVideos` | `bool` | Automatically play videos when their slide opens or becomes active. If the browser blocks unmuted autoplay (e.g. when deep-linking straight to a video), playback falls back to muted. Default `false`. |
 | `options`      | `object` | Custom [PhotoSwipe options](https://photoswipe.com/options/) to override defaults (e.g. `{"wheelToZoom": true}`).                        |
 
 Example: hide the download button inside the lightbox even though zip downloads are otherwise allowed.
@@ -123,10 +124,10 @@ Example: hide the download button inside the lightbox even though zip downloads 
 
 Configured under `ipp.showMetadata`. The lightbox includes a slide-in info sidebar (toggle with the **i** key or the info button in the toolbar) that surfaces whatever metadata you opt into here.
 
-| Option        | Type     | Description                                                                                                                                       |
-|---------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| `description` | `object` | Where to show the description. `{ "caption": bool, "sidebar": bool }`. Both default `false`. See [Description](#description). |
-| `exif`        | `object` | Camera / file EXIF group. Per-field opt-in flags, all default `false`. See [EXIF group](#exif-group).                          |
+| Option        | Type     | Description                                                                                                                        |
+|---------------|----------|------------------------------------------------------------------------------------------------------------------------------------|
+| `description` | `object` | Where to show the description. `{ "caption": bool, "sidebar": bool }`. Both default `false`. See [Description](#description).      |
+| `exif`        | `object` | Camera / file EXIF group. Per-field opt-in flags, all default `false`. See [EXIF group](#exif-group).                              |
 | `location`    | `object` | Location group (city / state / country / GPS). Per-field opt-in flags, all default `false`. See [Location group](#location-group). |
 
 Every per-field flag defaults to `false`. A field is sent to the client only when its flag is explicitly `true`. There is no master switch - this is deliberate, so that fields IPP adds in future releases don't auto-expose without your action.
@@ -171,12 +172,12 @@ Under `ipp.showMetadata.exif`.
 
 Under `ipp.showMetadata.location`.
 
-| Option     | Type   | Description                                                          |
-|------------|--------|----------------------------------------------------------------------|
-| `city`     | `bool` | Show city.                                                           |
-| `state`    | `bool` | Show state / region.                                                 |
-| `country`  | `bool` | Show country.                                                        |
-| `gps`      | `bool` | Show GPS coordinates.                                                |
+| Option     | Type   | Description                                                                                                                                                                                                                                   |
+|------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `city`     | `bool` | Show city.                                                                                                                                                                                                                                    |
+| `state`    | `bool` | Show state / region.                                                                                                                                                                                                                          |
+| `country`  | `bool` | Show country.                                                                                                                                                                                                                                 |
+| `gps`      | `bool` | Show GPS coordinates.                                                                                                                                                                                                                         |
 | `webLink`  | `bool` | Show an "Open in OpenStreetMap" link below the coordinates. The link is rendered with `rel="noreferrer"` so the share URL is not leaked to the map provider when a viewer clicks it. Has no effect unless `gps` is also true. Default `true`. |
 
 A full example showing the description in the sidebar only (not as a lightbox caption), exposing camera EXIF, and revealing place names but not the GPS coordinates:
@@ -219,13 +220,13 @@ A few config keys have been renamed across versions. Existing configs continue t
 
 **Gallery keys moved under `ipp.gallery.*` (v2.0).** The old top-level keys are mapped automatically:
 
-| Legacy key                | New key                       |
-|---------------------------|-------------------------------|
-| `ipp.singleImageGallery`  | `ipp.gallery.singleImage`     |
-| `ipp.singleItemAutoOpen`  | `ipp.gallery.singleItemAutoOpen` |
-| `ipp.showGalleryTitle`    | `ipp.gallery.showTitle`       |
-| `ipp.showGalleryDescription` | `ipp.gallery.showDescription` |
-| `ipp.groupGalleryByDate`  | `ipp.gallery.groupByDate`     |
+| Legacy key                   | New key                          |
+|------------------------------|----------------------------------|
+| `ipp.singleImageGallery`     | `ipp.gallery.singleImage`        |
+| `ipp.singleItemAutoOpen`     | `ipp.gallery.singleItemAutoOpen` |
+| `ipp.showGalleryTitle`       | `ipp.gallery.showTitle`          |
+| `ipp.showGalleryDescription` | `ipp.gallery.showDescription`    |
+| `ipp.groupGalleryByDate`     | `ipp.gallery.groupByDate`        |
 
 **`showMetadata.description` is now an object.** It used to be a single boolean. A legacy `description: true` migrates to `{ caption: true, sidebar: true }` (and `false` to both `false`). Move to the explicit form to silence the deprecation notice and so you can target the caption vs. the sidebar independently.
 

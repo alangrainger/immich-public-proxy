@@ -60,6 +60,7 @@ export interface LightboxConfig {
   showArrows: boolean
   showDownload: boolean
   mobileArrows: boolean
+  autoPlayVideos: boolean
   options?: Record<string, unknown>
 }
 

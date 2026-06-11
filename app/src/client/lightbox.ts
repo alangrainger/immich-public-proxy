@@ -163,6 +163,34 @@ export function initLightbox () {
     }
   })
 
+  // Video autoplay (off by default, ipp.lightbox.autoPlayVideos). PhotoSwipe
+  // fires contentActivate/contentDeactivate as slides become / stop being the
+  // current slide, including the initial slide on open.
+  if (state.lightboxConfig.autoPlayVideos) {
+    state.lightbox.on('contentActivate', ({ content }: { content: { element?: HTMLElement } }) => {
+      const video = content.element?.querySelector('video')
+      if (video) {
+        video.play().catch(() => {
+          // Browsers block unmuted autoplay without a user gesture (e.g. a
+          // deep link straight to a video slide) - retry muted.
+          video.muted = true
+          video.play().catch(() => {})
+        })
+      }
+    })
+  }
+
+  // Pause and rewind videos when sliding away so audio doesn't bleed into
+  // the neighbouring slides (PhotoSwipe keeps them mounted). Applies whether
+  // playback started automatically or manually.
+  state.lightbox.on('contentDeactivate', ({ content }: { content: { element?: HTMLElement } }) => {
+    const video = content.element?.querySelector('video')
+    if (video) {
+      video.pause()
+      video.currentTime = 0
+    }
+  })
+
   // Optional control hiding (defaults match Immich's behavior)
   const docEl = document.documentElement
   if (!state.lightboxConfig.showArrows) docEl.classList.add('pswp-no-arrows')
