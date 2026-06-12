@@ -167,21 +167,30 @@ export function initLightbox () {
   // fires contentActivate/contentDeactivate as slides become / stop being the
   // current slide, including the initial slide on open.
   if (state.lightboxConfig.autoPlayVideos) {
-    state.lightbox.on('contentActivate', ({ content }: { content: { element?: HTMLElement } }) => {
+    state.lightbox.on('contentActivate', ({ content }: { content: { element?: HTMLElement, slide?: { isActive: boolean } } }) => {
       const video = content.element?.querySelector('video')
-      if (video) {
-        setTimeout(() => {
-          video.play().catch((err: Error) => {
-            // Only mute and retry if the browser explicitly blocked unmuted autoplay.
-            if (err.name === 'NotAllowedError') {
-              video.muted = true
-              video.play().catch(() => {})
-            } else if (err.name === 'AbortError') {
-              video.play().catch(() => {})
-            }
-          })
-        }, 50)
-      }
+      if (!video) return
+      // Brief delay so PhotoSwipe finishes attaching the video to the DOM
+      // (deferred until the opening animation completes) - calling play()
+      // synchronously gets interrupted by the attach and rejects with an
+      // AbortError.
+      setTimeout(() => {
+        if (!content.slide?.isActive) return
+        video.play().catch((err: Error) => {
+          if (err.name === 'NotAllowedError') {
+            // The browser blocked unmuted autoplay without a user gesture
+            // (e.g. a deep link straight to a video slide) - retry muted.
+            video.muted = true
+            video.play().catch(() => {})
+          } else if (err.name === 'AbortError' && content.slide?.isActive) {
+            // A pending play() was interrupted, e.g. by our contentDeactivate
+            // pause rejecting it while the video was still buffering. Only
+            // retry if the slide is still current, so we never resume audio
+            // behind a different slide.
+            video.play().catch(() => {})
+          }
+        })
+      }, 50)
     })
   }
 
