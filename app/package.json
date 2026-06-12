@@ -1,6 +1,6 @@
 {
   "name": "immich-public-proxy",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"tsx watch src/index.ts\" \"tsc -w -p tsconfig.client.json\"",
     "build": "tsc && tsc -p tsconfig.client.json",
