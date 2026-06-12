@@ -1,6 +1,7 @@
 # Configuration
 
-**Note:** You can see all of the configurable options by [looking at the default config.json](https://github.com/alangrainger/immich-public-proxy/blob/main/app/config.json). A description of each of these options is below.
+> [!NOTE]
+> You can see all of the configurable options by [looking at the default config.json](https://github.com/alangrainger/immich-public-proxy/blob/main/app/config.json). A description of each of these options is below.
 
 ## Contents
 
@@ -18,7 +19,8 @@
 
 ## How to provide a config override
 
-**Note 👉** You only need to include the keys you're changing. Anything you omit keeps its default. The defaults in IPP are always the most privacy-respecting option.
+> [!NOTE]
+> You only need to include the keys you're changing. Anything you omit keeps its default. The defaults in IPP are always the most privacy-respecting option.
 
 There are two ways to supply custom config:
 
