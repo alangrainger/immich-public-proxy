@@ -15,12 +15,6 @@
   --pswp-transition-duration: 250ms;
 }
 
-/* Hide UI Immich doesn't show */
-.pswp__button--zoom,
-.pswp__counter {
-  display: none !important;
-}
-
 /* Top toolbar: subtle dark backdrop, no shadows */
 .pswp__top-bar {
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);
@@ -51,12 +45,7 @@
   color: var(--pswp-icon-color);
 }
 
-/* Hide PhotoSwipe's default top-right X close button - we use a top-left
-   back arrow instead (registered as `back-button` in client/lightbox-ui.ts),
-   matching Immich's native asset-viewer affordance. */
-.pswp__button--close {
-  display: none;
-}
+
 
 .pswp__button--download-button {
   color: #fff;

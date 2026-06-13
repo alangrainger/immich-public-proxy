@@ -82,24 +82,35 @@ function buildDataSource () {
 export function initLightbox () {
   const { options = {} } = state.lightboxConfig
 
+  // Extract padding to use as defaults, and paddingFn to avoid overwriting our function with an object from JSON
+  const { padding, paddingFn: _ignoredPaddingFn, ...restOptions } = options as any
+
+  const basePadding = {
+    top: padding?.top ?? 56,
+    bottom: padding?.bottom ?? 56,
+    left: padding?.left ?? 16,
+    right: padding?.right ?? 16
+  }
+
   state.lightbox = new PhotoSwipeLightbox({
     bgOpacity: 1,
     showHideAnimationType: 'fade',
     closeOnVerticalDrag: true,
     arrowKeys: true,
     loop: false,
+    counter: false,
+    zoom: false,
+    close: false,
     // paddingFn lets the sidebar shrink the slide viewport when open. On a
     // narrow viewport the sidebar overlays instead, so we leave padding
     // alone in that case.
     paddingFn: () => ({
-      top: 56,
-      bottom: 56,
-      left: 16,
+      ...basePadding,
       right: state.sidebarOpen && window.innerWidth >= MOBILE_BREAKPOINT
-        ? SIDEBAR_WIDTH + 16
-        : 16
+        ? SIDEBAR_WIDTH + basePadding.right
+        : basePadding.right
     }),
-    ...options,
+    ...restOptions,
     dataSource: buildDataSource(),
     // @ts-expect-error - runtime URL resolved by Express static
     pswpModule: () => import('/share/static/photoswipe/photoswipe.esm.js') // eslint-disable-line import/no-absolute-path
