@@ -82,17 +82,10 @@ function buildDataSource () {
 export function initLightbox () {
   const { options = {} } = state.lightboxConfig
 
-  // Pull `padding` out as an override. Drop any `paddingFn` coming from config
-  // without overwriting ours: PhotoSwipe expects a function there, so an object
-  // from JSON would crash it.
-  const configPadding = options.padding as Partial<Record<'top' | 'bottom' | 'left' | 'right', number>> | undefined
-  const restOptions = { ...options }
-  delete restOptions.padding
-  delete restOptions.paddingFn
-
   // Full-bleed by default, the same as Immich. Reserve a bottom strip only when captions
   // are enabled, so the caption has somewhere to sit without overlapping the image.
-  // Operators can override these via ipp.lightbox.options.padding
+  // Operators can override any side via ipp.lightbox.options.padding.
+  const configPadding = options.padding as Partial<Record<'top' | 'bottom' | 'left' | 'right', number>> | undefined
   const showCaption = !!state.metadataConfig.descriptionInCaption
   const basePadding = {
     top: 0,
@@ -108,19 +101,24 @@ export function initLightbox () {
     closeOnVerticalDrag: true,
     arrowKeys: true,
     loop: false,
+    // Hidden by default to match Immich; operators can re-enable via
+    // ipp.lightbox.options, which is why these sit before the `...options` spread.
     counter: false,
     zoom: false,
     close: false,
-    // paddingFn lets the sidebar shrink the slide viewport when open. On a
-    // narrow viewport the sidebar overlays instead, so we leave padding
-    // alone in that case.
+    ...options,
+    // paddingFn comes after `...options` so it always wins: PhotoSwipe gives it
+    // precedence over `padding`, and spreading it last neutralises any `padding`
+    // or (mistyped) `paddingFn` an operator put in config. Their static `padding`
+    // is still honoured above via basePadding. It lets the sidebar shrink the
+    // slide viewport when docked; on a narrow viewport the sidebar overlays
+    // instead, so we leave padding alone there.
     paddingFn: () => ({
       ...basePadding,
       right: state.sidebarOpen && window.innerWidth >= MOBILE_BREAKPOINT
         ? SIDEBAR_WIDTH + basePadding.right
         : basePadding.right
     }),
-    ...restOptions,
     dataSource: buildDataSource(),
     // @ts-expect-error - runtime URL resolved by Express static
     pswpModule: () => import('/share/static/photoswipe/photoswipe.esm.js') // eslint-disable-line import/no-absolute-path
