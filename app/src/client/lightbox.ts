@@ -6,6 +6,7 @@
 // @ts-expect-error - browser-only ESM URL
 import PhotoSwipeLightbox from '/share/static/photoswipe/photoswipe-lightbox.esm.js' // eslint-disable-line import/no-absolute-path
 
+import type { PhotoSwipeOptions } from 'photoswipe'
 import { state, SIDEBAR_WIDTH, MOBILE_BREAKPOINT } from './state.js'
 import type { GalleryItem } from '../shared/types.js'
 import {
@@ -95,7 +96,7 @@ export function initLightbox () {
     ...configPadding
   }
 
-  state.lightbox = new PhotoSwipeLightbox({
+  const lightboxOptions: PhotoSwipeOptions = {
     bgOpacity: 1,
     showHideAnimationType: 'fade',
     closeOnVerticalDrag: true,
@@ -122,7 +123,9 @@ export function initLightbox () {
     dataSource: buildDataSource(),
     // @ts-expect-error - runtime URL resolved by Express static
     pswpModule: () => import('/share/static/photoswipe/photoswipe.esm.js') // eslint-disable-line import/no-absolute-path
-  })
+  }
+
+  state.lightbox = new PhotoSwipeLightbox(lightboxOptions)
 
   registerBackButton(state.lightbox)
   if (state.lightboxConfig.showDownload) registerDownloadButton(state.lightbox)
