@@ -100,7 +100,7 @@ export function initLightbox () {
     loop: false,
     counter: false,
     zoom: false,
-    close: true,
+    close: false,
     // paddingFn lets the sidebar shrink the slide viewport when open. On a
     // narrow viewport the sidebar overlays instead, so we leave padding
     // alone in that case.
