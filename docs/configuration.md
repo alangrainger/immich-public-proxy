@@ -102,13 +102,13 @@ Example: show the gallery title and group photos by month.
 
 The gallery's lightbox is powered by [PhotoSwipe](https://photoswipe.com/). Configured under `ipp.lightbox`.
 
-| Option         | Type     | Description                                                                                                                              |
-|----------------|----------|------------------------------------------------------------------------------------------------------------------------------------------|
-| `showArrows`   | `bool`   | Show the prev/next arrows on desktop. They appear when the user hovers the lightbox. Default `true`.                                     |
-| `showDownload` | `bool`   | Show a download button in the lightbox toolbar. Only takes effect when downloads are also allowed by `allowDownloadAll`. Default `true`. |
-| `mobileArrows` | `bool`   | Show prev/next arrows on mobile (under 640px viewport). Off by default since swipe is the natural mobile navigation.                     |
-| `autoPlayVideos` | `bool` | Automatically play videos when their slide opens or becomes active. If the browser blocks unmuted autoplay (e.g. when deep-linking straight to a video), playback falls back to muted. Default `false`. |
-| `options`      | `object` | Custom [PhotoSwipe options](https://photoswipe.com/options/) to override defaults (e.g. `{"wheelToZoom": true}`).                        |
+| Option           | Type     | Description                                                                                                                                                                                             |
+|------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `showArrows`     | `bool`   | Show the prev/next arrows on desktop. They appear when the user hovers the lightbox. Default `true`.                                                                                                    |
+| `showDownload`   | `bool`   | Show a download button in the lightbox toolbar. Only takes effect when downloads are also allowed by `allowDownloadAll`. Default `true`.                                                                |
+| `mobileArrows`   | `bool`   | Show prev/next arrows on mobile (under 640px viewport). Off by default since swipe is the natural mobile navigation.                                                                                    |
+| `autoPlayVideos` | `bool`   | Automatically play videos when their slide opens or becomes active. If the browser blocks unmuted autoplay (e.g. when deep-linking straight to a video), playback falls back to muted. Default `false`. |
+| `options`        | `object` | Custom [PhotoSwipe options](https://photoswipe.com/options/) to override defaults (e.g. `{"wheelToZoom": true}`).                                                                                       |
 
 Example: hide the download button inside the lightbox even though zip downloads are otherwise allowed.
 

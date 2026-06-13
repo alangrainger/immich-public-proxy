@@ -82,14 +82,24 @@ function buildDataSource () {
 export function initLightbox () {
   const { options = {} } = state.lightboxConfig
 
-  // Extract padding to use as defaults, and paddingFn to avoid overwriting our function with an object from JSON
-  const { padding, paddingFn: _ignoredPaddingFn, ...restOptions } = options as any
+  // Pull `padding` out as an override. Drop any `paddingFn` coming from config
+  // without overwriting ours: PhotoSwipe expects a function there, so an object
+  // from JSON would crash it.
+  const configPadding = options.padding as Partial<Record<'top' | 'bottom' | 'left' | 'right', number>> | undefined
+  const restOptions = { ...options }
+  delete restOptions.padding
+  delete restOptions.paddingFn
 
+  // Full-bleed by default, the same as Immich. Reserve a bottom strip only when captions
+  // are enabled, so the caption has somewhere to sit without overlapping the image.
+  // Operators can override these via ipp.lightbox.options.padding
+  const showCaption = !!state.metadataConfig.descriptionInCaption
   const basePadding = {
-    top: padding?.top ?? 56,
-    bottom: padding?.bottom ?? 56,
-    left: padding?.left ?? 16,
-    right: padding?.right ?? 16
+    top: 0,
+    bottom: showCaption ? 56 : 0,
+    left: 0,
+    right: 0,
+    ...configPadding
   }
 
   state.lightbox = new PhotoSwipeLightbox({

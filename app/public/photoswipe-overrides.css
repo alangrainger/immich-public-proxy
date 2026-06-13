@@ -45,7 +45,11 @@
   color: var(--pswp-icon-color);
 }
 
-
+/* The zoom, counter, and close buttons are suppressed via PhotoSwipe options
+   (counter/zoom/close: false in client/lightbox.ts) so they can be re-enabled
+   through ipp.lightbox.options, rather than being hidden here in CSS. We use a
+   top-left back arrow (registered as `back-button` in client/lightbox-ui.ts)
+   in place of the close button, matching Immich's native asset-viewer. */
 
 .pswp__button--download-button {
   color: #fff;
