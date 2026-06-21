@@ -45,7 +45,7 @@ export interface Asset {
   key: string;
   keyType: KeyType;
   originalFileName?: string;
-  originalMimeType: string;
+  originalMimeType?: string;
   password?: string;
   fileCreatedAt?: string; // May not exist - see https://github.com/alangrainger/immich-public-proxy/issues/61
   type: AssetType;
@@ -55,12 +55,34 @@ export interface Asset {
   height?: number;
   // Base64-encoded thumbhash for tasteful blur placeholders during lazy-load
   thumbhash?: string;
+  // True for album assets enumerated via the timeline API, which give us only
+  // grid fields (id, type, ratio, thumbhash, isTrashed, fileCreatedAt). Their
+  // exif / originalFileName / description are fetched lazily when the asset is
+  // opened in the lightbox (see the `/meta/` route + client/metadata.ts).
+  needsDetail?: boolean;
 }
 
-export interface Album {
-  id: string;
-  assets: Asset[];
-  albumThumbnailAssetId?: string;
+/**
+ * One entry of `GET /timeline/buckets` - a time bucket (month) and its count.
+ */
+export interface TimelineBucket {
+  timeBucket: string;
+  count: number;
+}
+
+/**
+ * `GET /timeline/bucket` columnar (struct-of-arrays) response. Each array is
+ * index-aligned: element `i` of every array describes the same asset. Only
+ * the fields the gallery grid needs are typed here; Immich returns more.
+ */
+export interface TimelineBucketAssets {
+  id: string[];
+  isImage: boolean[];
+  // width / height ratio (Immich's `ratio` already accounts for orientation)
+  ratio: number[];
+  thumbhash: (string | null)[];
+  isTrashed: boolean[];
+  fileCreatedAt: string[];
 }
 
 export interface SharedLink {
@@ -70,10 +92,6 @@ export interface SharedLink {
   description?: string;
   assets: Asset[];
   allowDownload?: boolean;
-  // Per-share "Show metadata" toggle from Immich. When `false`, the share owner
-  // has asked that no EXIF / location / description / filename metadata be
-  // surfaced to viewers. We treat this as a kill-switch over the operator's
-  // own `ipp.showMetadata.*` config: see `gallery/builder.ts`.
   showMetadata?: boolean;
   password?: string;
   album?: {
@@ -82,6 +100,7 @@ export interface SharedLink {
     order?: string;
     description?: string;
     albumThumbnailAssetId?: string;
+    assetCount?: number;
   }
   expiresAt: string | null;
 }

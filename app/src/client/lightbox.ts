@@ -16,6 +16,7 @@ import {
   registerFullscreenButton
 } from './lightbox-ui.js'
 import { registerSidebar } from './sidebar.js'
+import { registerLazyDetail } from './metadata.js'
 
 /**
  * Replace the current history entry with the same URL minus any hash.
@@ -33,9 +34,12 @@ function parseVideoData (item: GalleryItem): { src: string, type: string } {
   try {
     const data = JSON.parse(item.videoData || '{}')
     const source = (data.source && data.source[0]) || {}
-    return { src: source.src || '', type: source.type || 'video/mp4' }
+    // type may be empty for lazy album videos (the content-type probe is
+    // deferred); an empty type attribute is omitted below so the browser
+    // falls back to the proxy's response Content-Type.
+    return { src: source.src || '', type: source.type || '' }
   } catch (e) {
-    return { src: '', type: 'video/mp4' }
+    return { src: '', type: '' }
   }
 }
 
@@ -52,11 +56,12 @@ function buildDataSource () {
   return state.items.map(item => {
     if (item.type === 'VIDEO') {
       const v = parseVideoData(item)
+      const typeAttr = v.type ? ' type="' + escapeAttr(v.type) + '"' : ''
       return {
         html:
           '<div class="pswp__video-wrap">' +
           '<video controls playsinline poster="' + escapeAttr(item.thumbnailUrl) + '">' +
-          '<source src="' + escapeAttr(v.src) + '" type="' + escapeAttr(v.type) + '">' +
+          '<source src="' + escapeAttr(v.src) + '"' + typeAttr + '>' +
           '</video>' +
           '</div>'
       }
@@ -127,11 +132,19 @@ export function initLightbox () {
 
   state.lightbox = new PhotoSwipeLightbox(lightboxOptions)
 
+  // PhotoSwipe recreates its pswp instance (and re-fires uiRegister) on every
+  // open, so the UI elements below re-register their slide refreshers each
+  // time. Clear the list before each open so it can't grow unbounded.
+  state.lightbox.on('beforeOpen', () => { state.slideRefreshers = [] })
+
   registerBackButton(state.lightbox)
   if (state.lightboxConfig.showDownload) registerDownloadButton(state.lightbox)
   registerFullscreenButton(state.lightbox)
   if (state.metadataConfig.descriptionInCaption) registerCaption(state.lightbox)
   if (state.metadataConfig.sidebarHasContent) registerSidebar(state.lightbox)
+  // Lazy album items load their exif / description / filename on open; this
+  // refreshes the UI elements above once detail arrives.
+  registerLazyDetail(state.lightbox)
 
   // Hash navigation + back-button handling: push a history entry on open so
   // the mobile back gesture closes the lightbox; sync the hash with the

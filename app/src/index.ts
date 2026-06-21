@@ -5,18 +5,20 @@ import express from 'express'
 import cookieSession from 'cookie-session'
 import {
   accessible,
+  fetchAssetDetail,
   getKeyTypeFromShare,
   getShareByKey,
   handleShareRequest,
   isId,
   isKey
 } from './immich'
+import { buildAssetMetadata } from './gallery/metadata'
 import crypto from 'crypto'
 import { assetBuffer } from './stream/asset'
 import { downloadAssets, sweepStaleStagingDirs } from './stream/download'
 import dayjs from 'dayjs'
 import { NextFunction, Request, Response } from 'express-serve-static-core'
-import { Asset, AssetType, ImageSize, KeyType } from './types'
+import { Asset, AssetType, ImageSize, KeyType, SharedLink } from './types'
 import { getConfigOption } from './config/access'
 import { loadConfig } from './config/loader'
 import { addResponseHeaders } from './http'
@@ -75,6 +77,54 @@ const decodeCookie = (req: Request, _res: Response, next: NextFunction) => {
     } catch (e) { }
   }
   next()
+}
+
+/*
+ * Shared route guards. Several routes need the same "resolve a share, reject
+ * invalid / password-protected ones, optionally find the requested asset"
+ * preamble. These return a discriminated result so each route keeps control of
+ * its own response (e.g. the photo route redirects on password where the meta
+ * and download routes return 401), while the validation order and the
+ * `valid`/`link`/`passwordRequired` checks live in one place.
+ */
+type ShareResolution =
+  | { ok: true, link: SharedLink }
+  | { ok: false, status: number, reason: string, passwordRequired?: boolean }
+
+type SharedAssetResolution =
+  | { ok: true, link: SharedLink, asset: Asset }
+  | { ok: false, status: number, reason: string, passwordRequired?: boolean }
+
+async function resolveShare (req: Request, keyType: KeyType): Promise<ShareResolution> {
+  if (!isKey(req.params.key)) {
+    return { ok: false, status: 404, reason: 'Invalid key for ' + req.path }
+  }
+  // The password is provided from the encrypted session cookie (if set) by
+  // decodeCookie. Validating the share here prevents direct URL access from
+  // bypassing password protection.
+  const share = await getShareByKey(req.params.key, req.password, keyType)
+  if (!share?.valid || !share.link) {
+    return { ok: false, status: 404, reason: 'Invalid share link' }
+  }
+  if (share.passwordRequired) {
+    return { ok: false, status: 401, reason: 'Password required', passwordRequired: true }
+  }
+  return { ok: true, link: share.link }
+}
+
+async function resolveSharedAsset (req: Request, keyType: KeyType): Promise<SharedAssetResolution> {
+  if (!isId(req.params.id)) {
+    return { ok: false, status: 404, reason: 'Invalid ID for ' + req.path }
+  }
+  const resolved = await resolveShare(req, keyType)
+  if (!resolved.ok) return resolved
+  // Confirm the asset belongs to this share (defence in depth - Immich also
+  // enforces this via the share key).
+  const asset = resolved.link.assets.find(a => a.id === req.params.id)
+  if (!asset) {
+    return { ok: false, status: 404, reason: 'Asset not found in share' }
+  }
+  return { ok: true, link: resolved.link, asset }
 }
 
 /*
@@ -148,28 +198,24 @@ app.post('/:shareType(share|s)/:key/download', decodeCookie, async (req, res) =>
     return
   }
 
-  const result = await getShareByKey(req.params.key, req.password, keyType)
-  if (!result?.valid || !result.link) {
-    respondToInvalidRequest(res, 404, 'Invalid share link')
+  const resolved = await resolveShare(req, keyType)
+  if (!resolved.ok) {
+    respondToInvalidRequest(res, resolved.status, resolved.reason)
     return
   }
-  if (result.passwordRequired) {
-    respondToInvalidRequest(res, 401, 'Password required')
-    return
-  }
-  if (!canDownload(result.link)) {
+  if (!canDownload(resolved.link)) {
     respondToInvalidRequest(res, 403, 'Downloads disabled for this share')
     return
   }
 
   const requested = new Set(requestedIds.map(String))
-  const validAssets = result.link.assets.filter(a => requested.has(a.id))
+  const validAssets = resolved.link.assets.filter(a => requested.has(a.id))
   if (validAssets.length === 0) {
     respondToInvalidRequest(res, 400, 'No valid assets in selection')
     return
   }
 
-  await downloadAssets(res, result.link, validAssets)
+  await downloadAssets(res, resolved.link, validAssets)
 })
 
 /*
@@ -188,44 +234,29 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
   // Add the headers configured in config.json (most likely `cache-control`)
   addResponseHeaders(res)
 
-  // Check for valid key and ID
-  if (!isKey(req.params.key) || !isId(req.params.id)) {
-    respondToInvalidRequest(res, 404, 'Invalid key or ID for ' + req.path)
-    return
-  }
-
   // Validate the size parameter
   if (req.params.size && !Object.values(ImageSize).includes(req.params.size as ImageSize)) {
     respondToInvalidRequest(res, 404, 'Invalid size parameter ' + req.path)
     return
   }
 
-  // Validate share link and check password before serving assets
-  // This prevents direct URL access from bypassing password protection
-  // The password is provided from the encrypted session cookie (if set)
-  const share = await getShareByKey(req.params.key, req.password)
-  if (!share) {
-    respondToInvalidRequest(res, 404, 'Invalid share link')
-    return
-  }
-
-  // If password is required but not provided, redirect to the share page
-  if (share.passwordRequired) {
-    res.redirect('/share/' + req.params.key)
-    return
-  }
-
-  // Find the real asset on the share so assetBuffer has access to
-  // originalMimeType and originalFileName (needed for Content-Disposition and
-  // for requiresOriginal to recognise videos/animated images and bypass the
-  // preview downgrade). Doubles as the "belongs to this share" check.
-  const realAsset = share.link?.assets?.find(a => a.id === req.params.id)
-  if (!realAsset) {
-    respondToInvalidRequest(res, 404, 'Asset not found in share')
+  // Resolve the share + asset (this is a `/share/...` route, always key auth).
+  // The resolved asset gives assetBuffer access to originalMimeType and
+  // originalFileName (needed for Content-Disposition and for requiresOriginal
+  // to recognise videos/animated images and bypass the preview downgrade).
+  const resolved = await resolveSharedAsset(req, KeyType.key)
+  if (!resolved.ok) {
+    // Password-protected: redirect to the share page so the visitor gets the
+    // unlock prompt, rather than returning an error.
+    if (resolved.passwordRequired) {
+      res.redirect('/share/' + req.params.key)
+      return
+    }
+    respondToInvalidRequest(res, resolved.status, resolved.reason)
     return
   }
   const asset: Asset = {
-    ...realAsset,
+    ...resolved.asset,
     type: req.params.type === 'video' ? AssetType.video : AssetType.image
   }
 
@@ -235,6 +266,33 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
     range: req.headers.range || ''
   }
   assetBuffer(request, res, asset, req.params.size).then()
+})
+
+/*
+ * [ROUTE] On-demand per-asset metadata for lazy album items.
+ *
+ * Album shares enumerate their assets from the timeline API, which yields
+ * grid-only data (no exif / filename / description). When such an item opens
+ * in the lightbox, the client fetches its detail from here. The id is
+ * validated against the share's asset set (defence in depth - Immich also
+ * enforces this via the share key) before we fetch `GET /assets/:id`.
+ */
+app.get('/:shareType(share|s)/meta/:key/:id', decodeCookie, async (req, res) => {
+  addResponseHeaders(res)
+
+  const resolved = await resolveSharedAsset(req, getKeyTypeFromShare(req.params.shareType))
+  if (!resolved.ok) {
+    respondToInvalidRequest(res, resolved.status, resolved.reason)
+    return
+  }
+
+  const detail = await fetchAssetDetail(resolved.asset)
+  if (!detail) {
+    respondToInvalidRequest(res, 404, 'Asset detail unavailable for ' + req.params.id)
+    return
+  }
+
+  res.json(buildAssetMetadata(detail, resolved.link))
 })
 
 /*

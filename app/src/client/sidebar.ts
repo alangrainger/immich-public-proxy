@@ -41,6 +41,8 @@ export function registerSidebar (lightbox: LightboxInstance) {
         const renderSidebar = () => renderContents(el, state.items[pswp.currIndex])
         renderSidebar()
         pswp.on('change', renderSidebar)
+        // Re-render when a lazy album item's detail arrives after open.
+        state.slideRefreshers.push(renderSidebar)
         pswp.on('destroy', () => {
           document.documentElement.classList.remove('ipp-sidebar-open')
         })

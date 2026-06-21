@@ -1,4 +1,4 @@
-/**
+/*
  * Types shared between the server (Preact SSR) and the client (gallery).
  * Only put a type here if it crosses the server/client boundary - i.e. it
  * describes data the server serialises into the gallery's init JSON block.
@@ -40,20 +40,30 @@ export interface GalleryItem {
   // Pre-stringified JSON describing the video source (used to build a <video>
   // element for video slides in the PhotoSwipe lightbox)
   videoData?: string
-  // Plain-text caption shown below the image in the lightbox and at the top
-  // of the info sidebar. Rendered with `textContent` on the client.
+  // Immich uses "description" but this is our caption
   description?: string
   downloadFilename: string
-  // Display dimensions after EXIF orientation correction; needed for the
-  // pre-computed justified-rows layout that virtualisation depends on.
   width?: number
   height?: number
-  // Base64-encoded thumbhash for an optional blur placeholder behind each tile
   thumbhash?: string
-  // ISO date string from Immich; used to group tiles by month when enabled.
   fileCreatedAt?: string
-  // Per-field gated EXIF / location metadata for the sidebar (see GalleryExif).
   exif?: GalleryExif
+  // True for album "grid" items whose exif / description / real download
+  // filename haven't been loaded yet. The client fetches them from the
+  // `/meta/` route the first time the item opens in the lightbox.
+  needsDetail?: boolean
+}
+
+/**
+ * Per-asset detail fetched on demand from the `/meta/` route when a lazy
+ * (`needsDetail`) album item opens in the lightbox. Mirrors the subset of a
+ * full asset the gallery actually renders. All fields respect the share's
+ * `showMetadata` toggle and the operator's `ipp.showMetadata.*` config.
+ */
+export interface AssetMetadata {
+  exif?: GalleryExif
+  description?: string
+  downloadFilename?: string
 }
 
 export interface LightboxConfig {
@@ -88,4 +98,5 @@ export interface InitParams {
   lightboxConfig?: LightboxConfig
   metadataConfig?: MetadataConfig
   groupByDate?: boolean
+  metaBase?: string
 }

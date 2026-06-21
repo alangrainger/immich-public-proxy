@@ -187,12 +187,55 @@ async function stageOne (asset: Asset, index: number, options: StagingOptions, a
   if (fetched === null) return null
   if ('failure' in fetched) return { failure: { ...fetched.failure, asset, url } }
 
+  // Album "grid" assets (timeline-sourced) lack originalFileName/Mime, so
+  // getFilename would fall back to an id-based name. The `/original` response
+  // carries the real name in Content-Disposition and the mime in Content-Type,
+  // so recover them from the headers we already fetched - no extra calls.
+  const stagedAsset = asset.originalFileName ? asset : enrichFromHeaders(asset, fetched.response)
+
   // Use the array index in the path so we never collide on duplicate IDs.
   const tempfile = join(options.stagingDir, `${index}-${asset.id}`)
   const streamed = await streamBodyToTempFile(fetched.response, tempfile, options.idleTimeoutMs)
   if ('failure' in streamed) return { failure: { asset, url, error: streamed.failure } }
 
-  return { tempfile, asset, endpoint }
+  return { tempfile, asset: stagedAsset, endpoint }
+}
+
+/**
+ * Fill in originalFileName / originalMimeType from an asset response's
+ * `Content-Disposition` / `Content-Type` headers, for assets that arrived
+ * without them (lazy album grid assets). Returns a shallow copy so the cached
+ * share asset is never mutated.
+ */
+function enrichFromHeaders (asset: Asset, response: globalThis.Response): Asset {
+  const fileName = filenameFromContentDisposition(response.headers.get('content-disposition'))
+  const mime = (response.headers.get('content-type') || '').split(';')[0].trim() || undefined
+  if (!fileName && !mime) return asset
+  return {
+    ...asset,
+    originalFileName: asset.originalFileName || fileName,
+    originalMimeType: asset.originalMimeType || mime
+  }
+}
+
+/**
+ * Extract a filename from a `Content-Disposition` header. Prefers the RFC 5987
+ * `filename*=UTF-8''...` form (percent-decoded) over the plain `filename=`.
+ * Returns undefined when neither is present.
+ */
+export function filenameFromContentDisposition (header: string | null): string | undefined {
+  if (!header) return undefined
+  const extended = header.match(/filename\*=(?:UTF-8'')?([^;]+)/i)
+  if (extended) {
+    const raw = extended[1].trim().replace(/^"|"$/g, '')
+    try {
+      return decodeURIComponent(raw)
+    } catch (e) {
+      return raw
+    }
+  }
+  const plain = header.match(/filename="?([^";]+)"?/i)
+  return plain ? plain[1].trim() : undefined
 }
 
 type HeaderFetchOutcome =

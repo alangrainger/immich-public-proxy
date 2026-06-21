@@ -49,8 +49,6 @@ export interface GroupSpec {
 }
 
 // PhotoSwipeLightbox is an external module with no TS types in this project.
-// Typing it as `unknown` would push casts to every call site; `any` is the
-// pragmatic choice and stays scoped to this single state slot.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type PhotoSwipeLightboxInstance = any
 
@@ -85,5 +83,11 @@ export const state = {
   downloadBtn: null as HTMLButtonElement | null,
   // Info sidebar open/closed. Persisted to localStorage so the choice
   // survives navigation between slides and gallery reloads.
-  sidebarOpen: false
+  sidebarOpen: false,
+  // Base URL (`/share/meta/<key>`) for the on-demand per-asset metadata route.
+  metaBase: '',
+  // Re-render callbacks registered by lightbox UI elements (sidebar, caption,
+  // download button). Each re-renders for the current slide. Invoked after a
+  // lazy item's detail arrives so the just-opened slide reflects it.
+  slideRefreshers: [] as Array<() => void>
 }

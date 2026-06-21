@@ -49,13 +49,13 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
   const items: GalleryItem[] = await Promise.all(share.assets.map(async (asset): Promise<GalleryItem> => {
     let videoData: string | undefined
     if (asset.type === AssetType.video) {
+      const source: { src: string, type?: string } = { src: videoUrl(share.key, asset.id) }
+      // Album "grid" videos defer the content-type probe (one upstream call
+      // per video) - a <source> with no type lets the browser fall back to
+      // the proxy's response Content-Type, keeping grid render O(buckets).
+      if (!asset.needsDetail) source.type = await getVideoContentType(asset)
       videoData = JSON.stringify({
-        source: [
-          {
-            src: videoUrl(share.key, asset.id),
-            type: await getVideoContentType(asset)
-          }
-        ],
+        source: [source],
         attributes: {
           playsinline: 'playsinline',
           controls: 'controls'
@@ -105,9 +105,17 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       height,
       thumbhash: asset.thumbhash,
       fileCreatedAt: asset.fileCreatedAt,
-      exif: shareMetadataAllowed ? pickExif(asset) : undefined
+      exif: shareMetadataAllowed ? pickExif(asset) : undefined,
+      // Album grid items carry no exif / description / real filename yet; the
+      // client fetches them from `metaBase` the first time the item opens.
+      needsDetail: asset.needsDetail || undefined
     }
   }))
+
+  // Album shares contain lazy items; expose the on-demand metadata route so
+  // the client can fetch per-asset detail on lightbox open. Individual shares
+  // bake everything in, so no metaBase is needed there.
+  const metaBase = items.some(item => item.needsDetail) ? '/share/meta/' + share.key : undefined
 
   const downloadAllowed = canDownload(share)
   // Prefer the album's owner-chosen cover for og:image; fall back to first
@@ -144,7 +152,8 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       sidebarHasContent,
       locationWebLink: !!getConfigOption('ipp.showMetadata.location.webLink', true)
     },
-    groupByDate
+    groupByDate,
+    metaBase
   }
 
   res.send(renderPage(h(Gallery, props)))

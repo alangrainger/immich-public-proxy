@@ -17,6 +17,7 @@ export interface GalleryProps {
   lightboxConfig: LightboxConfig
   metadataConfig: MetadataConfig
   groupByDate: boolean
+  metaBase?: string
 }
 
 export function Gallery (props: GalleryProps) {
@@ -25,7 +26,8 @@ export function Gallery (props: GalleryProps) {
     openItem: props.openItem,
     lightboxConfig: props.lightboxConfig,
     metadataConfig: props.metadataConfig,
-    groupByDate: props.groupByDate
+    groupByDate: props.groupByDate,
+    metaBase: props.metaBase
   })
   const firstItem = props.items[0]
   // og:image prefers the album cover (passed via props); for videos, previewUrl

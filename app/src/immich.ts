@@ -1,5 +1,4 @@
 import {
-  Album,
   AlbumType,
   Asset,
   AssetType,
@@ -7,7 +6,9 @@ import {
   IncomingShareRequest,
   KeyType,
   SharedLink,
-  SharedLinkResult
+  SharedLinkResult,
+  TimelineBucket,
+  TimelineBucketAssets
 } from './types'
 import dayjs from 'dayjs'
 import { getConfigOption } from './config/access'
@@ -28,12 +29,12 @@ import { TtlLruCache } from './utils/ttlLruCache'
 /*
   In-process cache for share-link lookups. Each direct-asset request (e.g.
   `/share/photo/:key/:id/thumbnail`) re-validates the share by calling
-  getShareByKey, which for album shares also pulls the entire album asset
-  list from Immich. Without this cache, a gallery view of N tiles fans out
-  into N concurrent full-album fetches against Immich and serializes there,
-  pushing per-thumbnail latency into seconds. The cache holds Promises
-  (not resolved values) so concurrent cold misses coalesce into one upstream
-  call instead of stampeding.
+  getShareByKey, which for album shares also enumerates the album's assets
+  from Immich's timeline API (1 + N_buckets requests). Without this cache, a
+  gallery view of N tiles fans out into N concurrent enumerations against
+  Immich and serializes there, pushing per-thumbnail latency into seconds.
+  The cache holds Promises (not resolved values) so concurrent cold misses
+  coalesce into one upstream call instead of stampeding.
 
   CAUTION: a cache hit returns the SAME SharedLinkResult reference across
   requests. Callers MUST treat the result (and its `link.assets`) as
@@ -55,6 +56,45 @@ const shareCache = new TtlLruCache<Promise<SharedLinkResult>>({ ttlMs: 120_000, 
   reject - IPP never serves cached tokens to unauthenticated visitors.
 */
 const tokenCache = new TtlLruCache<Promise<string | null>>({ ttlMs: 120_000, max: 100 })
+
+/*
+  Per-asset detail cache for the lazy album flow. When a `needsDetail` album
+  item opens in the lightbox, the `/meta/` route fetches the full asset from
+  `GET /assets/:id` for its exif / filename. Paging quickly through a gallery
+  (or prefetching neighbours) would otherwise re-fetch the same asset; this
+  coalesces repeats. Keyed by (keyType, key, id); holds Promises so concurrent
+  opens of the same asset share one upstream call.
+*/
+const assetDetailCache = new TtlLruCache<Promise<Asset | undefined>>({ ttlMs: 120_000, max: 500 })
+
+/**
+ * Memoise an in-flight Promise in `cache`, coalescing concurrent callers onto
+ * a single upstream call. The entry is evicted as soon as it resolves to an
+ * invalid value (per `isValid`, default "falsy is invalid") or rejects, so a
+ * transient Immich blip never poisons the cache with a negative result.
+ *
+ * This is the shared form of the "should this stay cached?" policy that
+ * TtlLruCache deliberately leaves to its callers (see its doc-comment): the
+ * cache stays storage-only; the eviction rule lives here, once, instead of
+ * being hand-copied at each call site.
+ */
+function cachedPromise<T> (
+  cache: TtlLruCache<Promise<T>>,
+  key: string,
+  factory: () => Promise<T>,
+  isValid: (value: T) => boolean = (value) => !!value
+): Promise<T> {
+  const cached = cache.get(key)
+  if (cached) return cached
+
+  const promise = factory()
+  cache.set(key, promise)
+  promise.then(
+    (value) => { if (!isValid(value)) cache.delete(key) },
+    () => { cache.delete(key) }
+  )
+  return promise
+}
 
 /**
  * Make a request to Immich API. We're not using the SDK to limit
@@ -181,23 +221,16 @@ export async function handleShareRequest (req: IncomingShareRequest, res: Respon
  * in-process cache + in-flight de-duplication. See the cache notes at the
  * top of this file for the why.
  *
- * The cache holds the full post-album-population SharedLinkResult, so warm
- * hits skip both the `/shared-links/me` and `/albums/:id` round trips.
+ * The cache holds the full post-album-enumeration SharedLinkResult, so warm
+ * hits skip both the `/shared-links/me` and the timeline round trips.
  * Negative results (`valid: false`) and rejections are dropped from the
  * cache immediately so a transient Immich blip doesn't poison the cache.
  */
-export async function getShareByKey (key: string, password?: string, keyType: KeyType = KeyType.key): Promise<SharedLinkResult> {
+export function getShareByKey (key: string, password?: string, keyType: KeyType = KeyType.key): Promise<SharedLinkResult> {
   const cacheKey = `${keyType}:${key}:${password ?? ''}`
-  const cached = shareCache.get(cacheKey)
-  if (cached) return cached
-
-  const promise = fetchShareByKey(key, password, keyType)
-  shareCache.set(cacheKey, promise)
-  promise.then(
-    (result) => { if (!result?.valid) shareCache.delete(cacheKey) },
-    () => { shareCache.delete(cacheKey) }
-  )
-  return promise
+  // A `{ valid: false }` result is a truthy object, so the default eviction
+  // rule wouldn't drop it - key off `.valid` explicitly.
+  return cachedPromise(shareCache, cacheKey, () => fetchShareByKey(key, password, keyType), (result) => !!result?.valid)
 }
 
 /**
@@ -221,22 +254,30 @@ async function fetchShareByKey (key: string, password?: string, keyType: KeyType
         link = jsonBody as SharedLink
         link.keyType = keyType
 
-        // For an album, we need to make a second request to Immich to populate
-        // the array of assets
+        // For an album, `/shared-links/me` returns an empty `assets` array
+        // (Immich 3.0 dropped album assets from both that response and
+        // `AlbumResponseDto`). We enumerate the album's assets from the
+        // timeline API instead - the same approach Immich's own web client
+        // uses for shared albums. This yields grid-only assets; their full
+        // detail (exif, filename) is fetched lazily on lightbox open. The
+        // album cover id we need for og:image is already on `link.album`
+        // (mapAlbum still returns albumThumbnailAssetId).
         if (link.type === AlbumType.album) {
-          const albumRes = await fetch(buildUrl(apiUrl() + '/albums/' + link?.album?.id, {
-            [keyType]: key
-          }), { headers })
-          const album = await albumRes.json() as Album
-          if (!album?.id) {
-            log('Invalid album ID - ' + link?.album?.id)
+          if (!link.album?.id) {
+            log('Album share missing album id for key ' + key)
             return {
               valid: false
             }
           }
-          // Replace the empty link.assets array with the array of assets from the album
-          link.assets = album.assets
-          if (link.album) link.album.albumThumbnailAssetId = album.albumThumbnailAssetId
+          const albumAssets = await fetchAlbumAssets(link.album.id, keyType, key, headers)
+          if (albumAssets === null) {
+            // Enumeration failed upstream. Return invalid (not cached) rather
+            // than caching an empty album for the next 120s on a transient blip.
+            return {
+              valid: false
+            }
+          }
+          link.assets = albumAssets
         }
 
         link.password = password
@@ -298,6 +339,115 @@ async function fetchShareByKey (key: string, password?: string, keyType: KeyType
   }
 }
 
+// Base resolution used to turn an Immich `ratio` (width/height) into concrete
+// width/height for layout + lightbox sizing. The justified-rows layout only
+// needs the ratio; PhotoSwipe also uses these for its fit/zoom maths, so we
+// scale to a realistic preview-sized longest edge rather than `ratio`x1.
+const TIMELINE_BASE_EDGE = 1600
+
+/**
+ * Turn an Immich timeline `ratio` (width / height, already orientation-aware)
+ * into concrete pixel dimensions whose longest edge is TIMELINE_BASE_EDGE.
+ */
+function ratioToDimensions (ratio: number): { width: number, height: number } {
+  if (!ratio || ratio <= 0 || !isFinite(ratio)) {
+    return { width: TIMELINE_BASE_EDGE, height: TIMELINE_BASE_EDGE }
+  }
+  return ratio >= 1
+    ? { width: TIMELINE_BASE_EDGE, height: Math.round(TIMELINE_BASE_EDGE / ratio) }
+    : { width: Math.round(TIMELINE_BASE_EDGE * ratio), height: TIMELINE_BASE_EDGE }
+}
+
+/**
+ * Map a columnar `GET /timeline/bucket` response into grid-only `Asset`s.
+ * Only the fields needed to render the gallery grid are populated; exif /
+ * filename / mime are filled in lazily on lightbox open (`needsDetail`).
+ * `key` / `keyType` / `password` are stamped by the caller.
+ */
+function timelineBucketToAssets (bucket: TimelineBucketAssets): Asset[] {
+  const assets: Asset[] = []
+  const count = bucket?.id?.length || 0
+  for (let i = 0; i < count; i++) {
+    const { width, height } = ratioToDimensions(bucket.ratio?.[i])
+    assets.push({
+      id: bucket.id[i],
+      key: '',
+      keyType: KeyType.key,
+      type: bucket.isImage?.[i] ? AssetType.image : AssetType.video,
+      isTrashed: !!bucket.isTrashed?.[i],
+      fileCreatedAt: bucket.fileCreatedAt?.[i],
+      thumbhash: bucket.thumbhash?.[i] || undefined,
+      width,
+      height,
+      needsDetail: true
+    })
+  }
+  return assets
+}
+
+/**
+ * Enumerate an album's assets via Immich's timeline API, scoped by album id +
+ * shared-link key. `GET /timeline/buckets` lists the time buckets (months),
+ * then one `GET /timeline/bucket` per bucket returns that bucket's assets in
+ * a columnar shape. Request volume is `1 + N_buckets`, not `N_assets`, so it
+ * scales flat with album size (a 5000-image album is ~a dozen calls).
+ *
+ * All-or-nothing: returns `null` if the bucket list or any bucket fetch fails
+ * (so the caller can treat it as an invalid, uncached result rather than a
+ * partial/empty album). Returns an empty array only for a genuinely empty
+ * album. Never throws - a rejection here would surface as an unhandled
+ * rejection and take the process down.
+ */
+async function fetchAlbumAssets (albumId: string, keyType: KeyType, key: string, headers: Record<string, string>): Promise<Asset[] | null> {
+  try {
+    const bucketsRes = await fetch(buildUrl(apiUrl() + '/timeline/buckets', {
+      albumId,
+      [keyType]: key
+    }), { headers })
+    if (!bucketsRes.ok) {
+      log('Failed to list timeline buckets for album ' + albumId + ' (status ' + bucketsRes.status + ')')
+      return null
+    }
+    const buckets = await bucketsRes.json() as TimelineBucket[]
+    const perBucket = await Promise.all((buckets || []).map(async (bucket) => {
+      const res = await fetch(buildUrl(apiUrl() + '/timeline/bucket', {
+        albumId,
+        timeBucket: bucket.timeBucket,
+        [keyType]: key
+      }), { headers })
+      if (!res.ok) {
+        log('Failed to fetch timeline bucket ' + bucket.timeBucket + ' for album ' + albumId + ' (status ' + res.status + ')')
+        return null
+      }
+      return timelineBucketToAssets(await res.json() as TimelineBucketAssets)
+    }))
+    // If any bucket failed, treat the whole enumeration as failed.
+    if (perBucket.some(b => b === null)) return null
+    return (perBucket as Asset[][]).flat()
+  } catch (e) {
+    log('Error enumerating album ' + albumId + ' via timeline: ' + (e instanceof Error ? e.message : String(e)))
+    return null
+  }
+}
+
+/**
+ * Fetch a single asset's full detail (`GET /assets/:id`) for the lazy album
+ * flow, cached + de-duplicated per (keyType, key, id). The `asset` argument
+ * supplies the id and the already-stamped key/keyType/password. Returns
+ * undefined on any failure.
+ */
+export function fetchAssetDetail (asset: Asset): Promise<Asset | undefined> {
+  const cacheKey = `${asset.keyType}:${asset.key}:${asset.id}`
+  return cachedPromise(assetDetailCache, cacheKey, async () => {
+    const headers = await authHeaders(asset.keyType, asset.key, asset.password)
+    const res = await fetch(buildUrl(apiUrl() + '/assets/' + encodeURIComponent(asset.id), {
+      [asset.keyType]: asset.key
+    }), { headers })
+    if (!res.ok) return undefined
+    return await res.json() as Asset
+  })
+}
+
 /**
  * Get the content-type of a video, for the lightbox <video> element
  */
@@ -328,18 +478,11 @@ export async function authHeaders (keyType: KeyType, key: string, password?: str
  * authenticated session. See `tokenCache` doc-comment for the security
  * argument.
  */
-async function getSharedLinkToken (key: string, password: string, keyType: KeyType): Promise<string | null> {
+function getSharedLinkToken (key: string, password: string, keyType: KeyType): Promise<string | null> {
   const cacheKey = `${keyType}:${key}:${password}`
-  const cached = tokenCache.get(cacheKey)
-  if (cached) return cached
-
-  const promise = sharedLinkLogin(key, password, keyType)
-  tokenCache.set(cacheKey, promise)
-  promise.then(
-    (token) => { if (!token) tokenCache.delete(cacheKey) },
-    () => { tokenCache.delete(cacheKey) }
-  )
-  return promise
+  // Default eviction (falsy is invalid) drops a null/empty token, so a failed
+  // login is never cached.
+  return cachedPromise(tokenCache, cacheKey, () => sharedLinkLogin(key, password, keyType))
 }
 
 /**

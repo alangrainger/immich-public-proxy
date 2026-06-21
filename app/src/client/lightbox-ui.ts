@@ -80,6 +80,8 @@ export function registerCaption (lightbox: LightboxInstance) {
         }
         render()
         pswp.on('change', render)
+        // Re-render when a lazy album item's description arrives after open.
+        state.slideRefreshers.push(render)
       }
     })
   })
@@ -113,6 +115,9 @@ export function registerDownloadButton (lightbox: LightboxInstance) {
         }
         update()
         pswp.on('change', update)
+        // Refresh the href/filename when a lazy album item's real download
+        // filename arrives after open.
+        state.slideRefreshers.push(update)
       }
     })
   })
