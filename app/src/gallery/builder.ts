@@ -8,7 +8,7 @@ import {
 import { Response } from 'express-serve-static-core'
 import { AssetType, ImageSize, SharedLink } from '../types'
 import { getConfigOption } from '../config/access'
-import { canDownload, title } from '../share'
+import { canDownloadAll, title } from '../share'
 import { toString } from '../utils/text'
 import { h } from 'preact'
 import { renderPage } from '../view/render'
@@ -109,7 +109,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     }
   }))
 
-  const downloadAllowed = canDownload(share)
+  const downloadAllAllowed = canDownloadAll(share)
   // Prefer the album's owner-chosen cover for og:image; fall back to first
   // item if the cover asset has been filtered out (e.g. trashed).
   const coverId = share.album?.albumThumbnailAssetId
@@ -126,13 +126,12 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     description: getConfigOption('ipp.gallery.showDescription', false) ? description(share) : '',
     publicBaseUrl: toString(publicBaseUrl),
     path: '/share/' + share.key,
-    showDownload: downloadAllowed,
+    showDownload: downloadAllAllowed,
     showTitle: !!getConfigOption('ipp.gallery.showTitle', true),
     openItem,
     ogImageItem,
     lightboxConfig: {
-      // Show download button only if downloading is allowed AND configured.
-      showDownload: downloadAllowed && !!getConfigOption('ipp.lightbox.showDownload', true),
+      showDownload: !!getConfigOption('ipp.lightbox.showDownload', true),
       showArrows: !!getConfigOption('ipp.lightbox.showArrows', true),
       mobileArrows: !!getConfigOption('ipp.lightbox.mobileArrows', false),
       autoPlayVideos: !!getConfigOption('ipp.lightbox.autoPlayVideos', false),

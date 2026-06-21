@@ -20,7 +20,7 @@ import { Asset, AssetType, ImageSize, KeyType } from './types'
 import { getConfigOption } from './config/access'
 import { loadConfig } from './config/loader'
 import { addResponseHeaders } from './http'
-import { canDownload } from './share'
+import { canDownloadAll } from './share'
 import { toString } from './utils/text'
 import { decrypt, encrypt } from './encrypt'
 import { respondToInvalidRequest } from './invalidRequestHandler'
@@ -157,7 +157,7 @@ app.post('/:shareType(share|s)/:key/download', decodeCookie, async (req, res) =>
     respondToInvalidRequest(res, 401, 'Password required')
     return
   }
-  if (!canDownload(result.link)) {
+  if (!canDownloadAll(result.link)) {
     respondToInvalidRequest(res, 403, 'Downloads disabled for this share')
     return
   }

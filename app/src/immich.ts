@@ -12,7 +12,7 @@ import {
 import dayjs from 'dayjs'
 import { getConfigOption } from './config/access'
 import { addResponseHeaders } from './http'
-import { canDownload } from './share'
+import { canDownloadAll } from './share'
 import { log } from './utils/log'
 import { assetBuffer } from './stream/asset'
 import { downloadAll } from './stream/download'
@@ -153,7 +153,7 @@ export async function handleShareRequest (req: IncomingShareRequest, res: Respon
 
   // Everything is ok - output the shared link data
 
-  if (req.mode === 'download' && canDownload(link)) {
+  if (req.mode === 'download' && canDownloadAll(link)) {
     // Download all assets as a zip file
     await downloadAll(res, link)
   } else if (link.assets.length === 1) {
