@@ -16,7 +16,7 @@ export function title (share: SharedLink): string {
  * config controls the policy: disabled, follow the per-share Immich setting,
  * or always allowed.
  */
-export function canDownload (share: SharedLink): boolean {
+export function canDownloadAll (share: SharedLink): boolean {
   const allowDownloadConfig = getConfigOption('ipp.allowDownloadAll', 0) as DownloadAll
   if (!allowDownloadConfig) {
     // Downloading is disabled in config.json
