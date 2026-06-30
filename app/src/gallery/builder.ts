@@ -159,6 +159,9 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     metaBase
   }
 
+  // Always revalidate the HTML so it picks up new versioned asset URLs on
+  // upgrade; the assets themselves are immutable-cached. (304s via ETag.)
+  res.header('Cache-Control', 'no-cache')
   res.send(renderPage(h(Gallery, props)))
 }
 
