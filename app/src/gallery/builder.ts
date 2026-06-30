@@ -1,8 +1,6 @@
 import {
-  getPreviewImageSize,
   getVideoContentType,
   photoUrl,
-  requiresOriginal,
   videoUrl
 } from '../immich'
 import { Response } from 'express-serve-static-core'
@@ -13,7 +11,8 @@ import { toString } from '../utils/text'
 import { h } from 'preact'
 import { renderPage } from '../view/render'
 import { Gallery, GalleryItem, GalleryProps } from '../view/gallery'
-import { getFilename } from './filename'
+import { downloadFilename } from './filename'
+import { requiresOriginal } from './sizing'
 import { metadataGroupActive, pickExif } from './exif'
 
 /**
@@ -41,6 +40,11 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
   // the operator's own config: when explicitly `false`, no EXIF / location /
   // description fields are surfaced, regardless of `ipp.showMetadata.*`
   const shareMetadataAllowed = share.showMetadata !== false
+  // Offer a zoom upgrade only when the operator opted in AND Immich would serve
+  // it: web `fullsize` resolves to `/original`, which Immich refuses unless the
+  // share's own download toggle (`share.allowDownload`) is on. Deliberately
+  // independent of IPP's `allowDownload` config.
+  const zoomUpgrade = getConfigOption('ipp.maxZoomQuality', 'preview') === 'fullsize' && share.allowDownload !== false
   const descriptionInCaption = shareMetadataAllowed && !!getConfigOption('ipp.showMetadata.description.caption', false)
   const descriptionInSidebar = shareMetadataAllowed && !!getConfigOption('ipp.showMetadata.description.sidebar', false)
   const sidebarHasContent = shareMetadataAllowed && (descriptionInSidebar || metadataGroupActive('exif') || metadataGroupActive('location'))
@@ -63,17 +67,15 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       })
     }
 
-    // Compute the filename so the client-side `<a download="...">` attribute
-    // matches the bytes the server will return. Without this, a HEIC
-    // original served as a preview JPEG would download as "photo.heic"
-    // with JPEG bytes inside.
     const downloadUrl = photoUrl(share.key, asset.id, ImageSize.original)
-    const downloadServedSize = (getConfigOption('ipp.downloadOriginalPhoto', true) || requiresOriginal(asset))
-      ? ImageSize.original
-      : ImageSize.preview
-
     const thumbnailUrl = photoUrl(share.key, asset.id, ImageSize.thumbnail)
-    const previewUrl = photoUrl(share.key, asset.id, getPreviewImageSize(asset))
+    // Always request `preview`; the resolver floors gif/video up to the
+    // original on its own (their preview is a static frame).
+    const previewUrl = photoUrl(share.key, asset.id, ImageSize.preview)
+    // Still images only - gif/video are already served at their highest tier.
+    const fullUrl = zoomUpgrade && asset.type === AssetType.image && !requiresOriginal(asset)
+      ? photoUrl(share.key, asset.id, ImageSize.fullsize)
+      : undefined
     // Plain text; the client uses textContent so no escaping needed here.
     // Description is included if EITHER surface (caption or sidebar) wants it.
     const descriptionEnabled = descriptionInCaption || descriptionInSidebar
@@ -96,11 +98,12 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       id: asset.id,
       type: asset.type,
       previewUrl,
+      fullUrl,
       thumbnailUrl,
       downloadUrl,
       videoData,
       description: itemDescription || undefined,
-      downloadFilename: getFilename(asset, downloadServedSize),
+      downloadFilename: downloadFilename(asset),
       width,
       height,
       thumbhash: asset.thumbhash,

@@ -1,6 +1,6 @@
-import { apiUrl, authHeaders, buildUrl } from '../immich'
+import { assetFetchUrl, authHeadersForAsset } from '../immich'
 import { Response } from 'express-serve-static-core'
-import { Asset, ImageSize, KeyType, SharedLink } from '../types'
+import { Asset, ImageSize, SharedLink } from '../types'
 import { getConfigOption } from '../config/access'
 import { log } from '../utils/log'
 import archiver, { Archiver } from 'archiver'
@@ -10,7 +10,7 @@ import { pipeline } from 'stream/promises'
 import { promises as fs, createWriteStream } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { resolveImageEndpoint, ImageEndpoint } from './asset'
+import { resolveImageEndpoint, ImageEndpoint } from '../gallery/sizing'
 import { title } from '../share'
 import { getFilename } from '../gallery/filename'
 import { createLimiter } from '../utils/limiter'
@@ -177,11 +177,8 @@ async function stageOne (asset: Asset, index: number, options: StagingOptions, a
   if (abortFlag.aborted) return null
 
   const endpoint = resolveImageEndpoint(ImageSize.original, asset)
-  const url = buildUrl(apiUrl() + '/assets/' + encodeURIComponent(asset.id) + endpoint.subpath, {
-    [asset.keyType || 'key']: asset.key,
-    size: endpoint.sizeQueryParam
-  })
-  const reqAuthHeaders = await authHeaders(asset.keyType || KeyType.key, asset.key, asset.password)
+  const url = assetFetchUrl(asset, endpoint.subpath, endpoint.sizeQueryParam)
+  const reqAuthHeaders = await authHeadersForAsset(asset)
 
   const fetched = await fetchHeadersWithRetry(url, reqAuthHeaders, options.maxAttempts, options.headerTimeoutMs, abortFlag, asset)
   if (fetched === null) return null

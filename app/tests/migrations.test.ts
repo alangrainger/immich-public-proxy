@@ -305,3 +305,59 @@ describe('metadataEnabled shim', () => {
     expect(logSpy).not.toHaveBeenCalled()
   })
 })
+
+describe('downloadOriginalPhoto shim', () => {
+  it('maps true -> maxDownloadQuality: original', () => {
+    const config = { ipp: { downloadOriginalPhoto: true } } as Record<string, unknown>
+    applyMigrations(config)
+    expect((config.ipp as Record<string, unknown>).maxDownloadQuality).toBe('original')
+    expect(logSpy).toHaveBeenCalledOnce()
+  })
+
+  it('maps false -> maxDownloadQuality: preview', () => {
+    const config = { ipp: { downloadOriginalPhoto: false } } as Record<string, unknown>
+    applyMigrations(config)
+    expect((config.ipp as Record<string, unknown>).maxDownloadQuality).toBe('preview')
+  })
+
+  it('does not overwrite an explicitly-set maxDownloadQuality', () => {
+    const config = { ipp: { downloadOriginalPhoto: false, maxDownloadQuality: 'fullsize' } } as Record<string, unknown>
+    applyMigrations(config)
+    expect((config.ipp as Record<string, unknown>).maxDownloadQuality).toBe('fullsize')
+    expect(logSpy).not.toHaveBeenCalled()
+  })
+
+  it('does nothing when downloadOriginalPhoto is absent', () => {
+    const config = { ipp: { maxDownloadQuality: 'original' } } as Record<string, unknown>
+    applyMigrations(config)
+    expect(logSpy).not.toHaveBeenCalled()
+  })
+})
+
+describe('allowDownloadAll rename shim', () => {
+  it('maps allowDownloadAll -> allowDownload, preserving the int value', () => {
+    const config = { ipp: { allowDownloadAll: 2 } } as Record<string, unknown>
+    applyMigrations(config)
+    expect((config.ipp as Record<string, unknown>).allowDownload).toBe(2)
+    expect(logSpy).toHaveBeenCalledOnce()
+  })
+
+  it('maps the falsy 0 value through (not skipped as "absent")', () => {
+    const config = { ipp: { allowDownloadAll: 0 } } as Record<string, unknown>
+    applyMigrations(config)
+    expect((config.ipp as Record<string, unknown>).allowDownload).toBe(0)
+  })
+
+  it('does not overwrite an explicitly-set allowDownload', () => {
+    const config = { ipp: { allowDownloadAll: 2, allowDownload: 1 } } as Record<string, unknown>
+    applyMigrations(config)
+    expect((config.ipp as Record<string, unknown>).allowDownload).toBe(1)
+    expect(logSpy).not.toHaveBeenCalled()
+  })
+
+  it('does nothing when allowDownloadAll is absent', () => {
+    const config = { ipp: { allowDownload: 1 } } as Record<string, unknown>
+    applyMigrations(config)
+    expect(logSpy).not.toHaveBeenCalled()
+  })
+})

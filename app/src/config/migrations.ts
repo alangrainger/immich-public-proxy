@@ -25,7 +25,9 @@ const SHIMS: Shim[] = [
   { name: 'lightGallery', removeIn: 'v3.0', apply: applyLightGalleryShim },
   { name: 'topLevelGallery', removeIn: 'v3.0', apply: applyTopLevelGalleryShim },
   { name: 'descriptionSplit', removeIn: 'v3.0', apply: applyDescriptionSplitShim },
-  { name: 'metadataEnabled', removeIn: 'v3.0', apply: applyMetadataEnabledShim }
+  { name: 'metadataEnabled', removeIn: 'v3.0', apply: applyMetadataEnabledShim },
+  { name: 'downloadOriginalPhoto', removeIn: 'v4.0', apply: applyDownloadQualityShim },
+  { name: 'allowDownloadAll', removeIn: 'v4.0', apply: applyAllowDownloadRenameShim }
 ]
 
 /**
@@ -63,6 +65,42 @@ function applyLightGalleryShim (config: Config): void {
   console.log(
     '[IPP] The `lightGallery` config section is deprecated; relevant keys ' +
     'have been mapped to `ipp.lightbox.*`. See README for the current options.'
+  )
+}
+
+/**
+ * SHIM: downloadOriginalPhoto -> maxDownloadQuality. The boolean is superseded
+ * by the `preview | fullsize | original` tier. Maps `true -> 'original'`,
+ * `false -> 'preview'`, only when `maxDownloadQuality` isn't already set.
+ */
+function applyDownloadQualityShim (config: Config): void {
+  const ipp = (config.ipp || (config.ipp = {})) as Record<string, unknown>
+  if (typeof ipp.downloadOriginalPhoto !== 'boolean') return
+  if (ipp.maxDownloadQuality !== undefined) return
+
+  ipp.maxDownloadQuality = ipp.downloadOriginalPhoto ? 'original' : 'preview'
+
+  console.log(
+    '[IPP] `ipp.downloadOriginalPhoto` is deprecated; it has been mapped to ' +
+    '`ipp.maxDownloadQuality` (' + JSON.stringify(ipp.maxDownloadQuality) +
+    '). See README for the new `maxDownloadQuality` / `maxZoomQuality` options.'
+  )
+}
+
+/**
+ * SHIM: allowDownloadAll -> allowDownload (rename, same 0/1/2 values). Maps the
+ * legacy key forward only when the new one hasn't been set.
+ */
+function applyAllowDownloadRenameShim (config: Config): void {
+  const ipp = (config.ipp || (config.ipp = {})) as Record<string, unknown>
+  if (ipp.allowDownloadAll === undefined) return
+  if (ipp.allowDownload !== undefined) return
+
+  ipp.allowDownload = ipp.allowDownloadAll
+
+  console.log(
+    '[IPP] `ipp.allowDownloadAll` has been renamed to `ipp.allowDownload` ' +
+    '(same `0` / `1` / `2` values). Please update your config.json. See README.'
   )
 }
 

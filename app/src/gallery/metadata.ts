@@ -1,9 +1,8 @@
-import { Asset, ImageSize, SharedLink } from '../types'
+import { Asset, SharedLink } from '../types'
 import { AssetMetadata } from '../shared/types'
 import { getConfigOption } from '../config/access'
-import { requiresOriginal } from '../immich'
 import { pickExif } from './exif'
-import { getFilename } from './filename'
+import { downloadFilename } from './filename'
 
 /**
  * Build the on-demand metadata payload for a single asset, served by the
@@ -26,15 +25,9 @@ export function buildAssetMetadata (asset: Asset, share: SharedLink): AssetMetad
     ? asset.exifInfo.description
     : undefined
 
-  // Match the gallery builder's download-size resolution so the filename's
-  // extension reflects the bytes the user will actually receive.
-  const downloadServedSize = (getConfigOption('ipp.downloadOriginalPhoto', true) || requiresOriginal(asset))
-    ? ImageSize.original
-    : ImageSize.preview
-
   return {
     exif: shareMetadataAllowed ? pickExif(asset) : undefined,
     description,
-    downloadFilename: getFilename(asset, downloadServedSize)
+    downloadFilename: downloadFilename(asset)
   }
 }

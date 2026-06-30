@@ -1,22 +1,14 @@
 import {
-  apiUrl,
-  authHeaders,
-  buildUrl,
-  requiresOriginal,
+  assetFetchUrl,
+  authHeadersForAsset,
+  fetchAssetDetail,
   validateImageSize
 } from '../immich'
 import { Response } from 'express-serve-static-core'
-import { Asset, AssetType, ImageSize, IncomingShareRequest, KeyType } from '../types'
-import { getConfigOption } from '../config/access'
+import { Asset, AssetType, ImageSize, IncomingShareRequest } from '../types'
 import { respondToInvalidRequest } from '../invalidRequestHandler'
 import { getFilename } from '../gallery/filename'
-
-export interface ImageEndpoint {
-  subpath: string
-  sizeQueryParam?: string
-  attachment: boolean
-  servedSize: ImageSize
-}
+import { resolveImageEndpoint } from '../gallery/sizing'
 
 /**
  * Stream an asset from Immich back to the client.
@@ -51,18 +43,23 @@ export async function assetBuffer (req: IncomingShareRequest, res: Response, ass
       res.status(206) // Partial Content
     }
   } else {
-    const endpoint = resolveImageEndpoint(validateImageSize(size), asset)
+    const requested = validateImageSize(size)
+    // Album "grid" items arrive without originalMimeType. The fullsize tier
+    // needs it to pick /original (web formats) vs ?size=fullsize (RAW/HEIF), so
+    // fetch the asset detail on demand (cached) before resolving.
+    if (requested === ImageSize.fullsize && !asset.originalMimeType) {
+      const detail = await fetchAssetDetail(asset)
+      if (detail?.originalMimeType) asset = { ...asset, originalMimeType: detail.originalMimeType }
+    }
+    const endpoint = resolveImageEndpoint(requested, asset)
     subpath = endpoint.subpath
     sizeQueryParam = endpoint.sizeQueryParam
     attachment = endpoint.attachment
     servedSize = endpoint.servedSize
   }
 
-  const url = buildUrl(apiUrl() + '/assets/' + encodeURIComponent(asset.id) + subpath, {
-    [asset.keyType || 'key']: asset.key,
-    size: sizeQueryParam
-  })
-  const reqHeaders = await authHeaders(asset.keyType || KeyType.key, asset.key, asset.password)
+  const url = assetFetchUrl(asset, subpath, sizeQueryParam)
+  const reqHeaders = await authHeadersForAsset(asset)
   const data = await fetch(url, { headers: { ...fetchHeaders, ...reqHeaders } })
 
   if (data.status < 200 || data.status >= 300) {
@@ -89,33 +86,4 @@ export async function assetBuffer (req: IncomingShareRequest, res: Response, ass
     })
   )
   res.end()
-}
-
-/**
- * Map an ImageSize to the Immich endpoint that serves it.
- *
- * Policy: when `ipp.downloadOriginalPhoto` is off, requests for the original
- * image are silently downgraded to preview - the operator has opted out of
- * serving full-resolution files. (The original may also be a RAW/HEIC file
- * the browser can't render.)
- *
- * The downgrade is bypassed for assets where `requiresOriginal` is true
- * (videos, animated images), because for those formats the preview is an
- * entirely different artifact (still poster / static JPEG) rather than a
- * lower-res version of the same content.
- *
- * `servedSize` reflects what Immich will actually return after the downgrade,
- * which may differ from the requested `size`. Callers use it to derive a
- * filename whose extension matches the bytes (see getFilename).
- */
-export function resolveImageEndpoint (size: ImageSize, asset: Asset): ImageEndpoint {
-  const allowOriginal = getConfigOption('ipp.downloadOriginalPhoto', true) || requiresOriginal(asset)
-  if (size === ImageSize.original && allowOriginal) {
-    return { subpath: '/original', attachment: true, servedSize: ImageSize.original }
-  }
-  if (size === ImageSize.thumbnail) {
-    return { subpath: '/thumbnail', attachment: false, servedSize: ImageSize.thumbnail }
-  }
-  // preview, or original downgraded because downloadOriginalPhoto is off
-  return { subpath: '/thumbnail', sizeQueryParam: 'preview', attachment: false, servedSize: ImageSize.preview }
 }

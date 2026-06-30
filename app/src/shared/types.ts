@@ -35,6 +35,7 @@ export interface GalleryItem {
   id: string
   type: 'IMAGE' | 'VIDEO'
   previewUrl: string
+  fullUrl?: string
   thumbnailUrl: string
   downloadUrl?: string
   // Pre-stringified JSON describing the video source (used to build a <video>

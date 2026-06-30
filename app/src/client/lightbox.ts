@@ -47,13 +47,19 @@ function escapeAttr (s: string): string {
   return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
+// Per-slide bookkeeping for the zoom-to-upgrade + native-resolution cap, keyed
+// by the gallery item index (stamped on each dataSource entry as `_ippIndex`).
+// Reset on every lightbox open.
+const loadedBitmapWidth = new Map<number, number>() // index -> naturalWidth of the bitmap now in the <img>
+const upgradedSlides = new Set<number>() // indices already swapped to fullUrl
+
 /**
  * Translate `state.items` into PhotoSwipe's dataSource array. Images use
  * `src`/`width`/`height`; videos use the `html` slide with a `<video>`
  * element so PhotoSwipe streams from the server's `/share/video/...` URL.
  */
 function buildDataSource () {
-  return state.items.map(item => {
+  return state.items.map((item, idx) => {
     if (item.type === 'VIDEO') {
       const v = parseVideoData(item)
       const typeAttr = v.type ? ' type="' + escapeAttr(v.type) + '"' : ''
@@ -71,9 +77,93 @@ function buildDataSource () {
       width: item.width || 1600,
       height: item.height || 1200,
       msrc: item.thumbnailUrl,
-      alt: item.description || ''
+      alt: item.description || '',
+      // Custom fields (PhotoSwipe passes them through on slideData untouched):
+      // the higher-res URL to swap in on zoom, and our item index so the zoom
+      // handlers can map a slide back to its loaded-bitmap bookkeeping.
+      fullUrl: item.fullUrl,
+      _ippIndex: idx
     }
   })
+}
+
+/**
+ * Wire up the zoom-to-upgrade + native-resolution cap on a PhotoSwipe lightbox.
+ *
+ * Two cooperating pieces, mirroring Immich's AdaptiveImage:
+ *  1. Cap the maximum zoom to the native pixels of whatever bitmap is currently
+ *     loaded (at most 1:1). The cap follows the loaded bitmap, so it is
+ *     self-correcting: if a `fullUrl` upgrade turns out to be a no-op (Immich
+ *     handed back the preview again), the cap stays put.
+ *  2. When the user zooms past fit-to-screen, swap the slide's <img> to `fullUrl`
+ *     once (if the server offered one), then recompute the cap against the new,
+ *     larger bitmap to unlock deeper zoom.
+ */
+function registerZoomUpgrade (lightbox: { on: (ev: string, cb: (e: any) => void) => void }) { // eslint-disable-line @typescript-eslint/no-explicit-any
+  lightbox.on('zoomLevelsUpdate', (e) => {
+    const zoomLevels = e.zoomLevels
+    const idx = e.slideData?._ippIndex
+    const naturalWidth = (typeof idx === 'number') ? loadedBitmapWidth.get(idx) : undefined
+    const declaredWidth = zoomLevels?.elementSize?.x
+    if (naturalWidth && naturalWidth > 0 && declaredWidth > 0) {
+      // Display at most 1:1 with the loaded bitmap (cap = native px / declared
+      // px), but never below the fit level so the image can always be shown.
+      const cap = Math.max(zoomLevels.initial, naturalWidth / declaredWidth)
+      zoomLevels.max = cap
+      zoomLevels.secondary = Math.min(zoomLevels.secondary, cap)
+    }
+  })
+
+  // Record each image's real pixel width as it loads, then refresh that slide's
+  // cap (the first zoomLevelsUpdate usually runs before the bitmap is decoded).
+  lightbox.on('loadComplete', (e) => {
+    if (e.content?.type === 'image') recordAndRefresh(e.content)
+  })
+
+  // Upgrade on zoom-in, once per slide.
+  lightbox.on('zoomPanUpdate', (e) => {
+    const slide = e.slide
+    if (slide?.content?.type !== 'image') return
+    const data = slide.content.data || {}
+    const idx = data._ippIndex
+    if (typeof idx !== 'number' || upgradedSlides.has(idx) || !data.fullUrl) return
+    // Only when genuinely zoomed past the fit/initial level.
+    if (slide.currZoomLevel <= slide.zoomLevels.initial + 0.01) return
+    const img = slide.content.element
+    if (!(img instanceof HTMLImageElement)) return
+    upgradedSlides.add(idx)
+    // Preload first so the visible preview isn't blanked while the upgrade
+    // downloads; swap the src once it's ready, then recompute the cap.
+    const hi = new Image()
+    hi.addEventListener('load', () => {
+      img.addEventListener('load', () => recordAndRefresh(slide.content), { once: true })
+      img.src = data.fullUrl
+    })
+    hi.addEventListener('error', () => { upgradedSlides.delete(idx) }) // let a retry happen
+    hi.src = data.fullUrl
+  })
+}
+
+/**
+ * Record the loaded bitmap's natural width for a slide, then re-run its zoom
+ * calculation so the cap recomputes against that bitmap. `calculateSize()`
+ * re-dispatches `zoomLevelsUpdate`, where the cap is applied.
+ */
+function recordAndRefresh (content: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const img = content?.element
+  if (img instanceof HTMLImageElement && img.naturalWidth > 0 && typeof content.index === 'number') {
+    loadedBitmapWidth.set(content.index, img.naturalWidth)
+  }
+  const slide = content?.slide
+  if (slide && typeof slide.calculateSize === 'function') {
+    slide.calculateSize()
+    slide.updateContentSize(true)
+    // If a tighter cap just dropped below the current zoom (e.g. the preview
+    // finished loading after the user already zoomed in), snap back into range.
+    if (slide.isActive && slide.currZoomLevel > slide.zoomLevels.max) {
+      slide.zoomTo(slide.zoomLevels.max, false, 0)
+    }
+  }
 }
 
 /**
@@ -107,6 +197,9 @@ export function initLightbox () {
     closeOnVerticalDrag: true,
     arrowKeys: true,
     loop: false,
+    // Plain mouse wheel zooms the image (à la the Immich web viewer), instead of
+    // PhotoSwipe's default of requiring Ctrl/Alt+wheel.
+    wheelToZoom: true,
     // Hidden by default to match Immich; operators can re-enable via
     // ipp.lightbox.options, which is why these sit before the `...options` spread.
     counter: false,
@@ -135,8 +228,13 @@ export function initLightbox () {
   // PhotoSwipe recreates its pswp instance (and re-fires uiRegister) on every
   // open, so the UI elements below re-register their slide refreshers each
   // time. Clear the list before each open so it can't grow unbounded.
-  state.lightbox.on('beforeOpen', () => { state.slideRefreshers = [] })
+  state.lightbox.on('beforeOpen', () => {
+    state.slideRefreshers = []
+    loadedBitmapWidth.clear()
+    upgradedSlides.clear()
+  })
 
+  registerZoomUpgrade(state.lightbox)
   registerBackButton(state.lightbox)
   if (state.lightboxConfig.showDownload) registerDownloadButton(state.lightbox)
   registerFullscreenButton(state.lightbox)

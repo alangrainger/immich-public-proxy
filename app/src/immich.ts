@@ -439,10 +439,8 @@ async function fetchAlbumAssets (albumId: string, keyType: KeyType, key: string,
 export function fetchAssetDetail (asset: Asset): Promise<Asset | undefined> {
   const cacheKey = `${asset.keyType}:${asset.key}:${asset.id}`
   return cachedPromise(assetDetailCache, cacheKey, async () => {
-    const headers = await authHeaders(asset.keyType, asset.key, asset.password)
-    const res = await fetch(buildUrl(apiUrl() + '/assets/' + encodeURIComponent(asset.id), {
-      [asset.keyType]: asset.key
-    }), { headers })
+    const headers = await authHeadersForAsset(asset)
+    const res = await fetch(assetFetchUrl(asset, ''), { headers })
     if (!res.ok) return undefined
     return await res.json() as Asset
   })
@@ -452,7 +450,7 @@ export function fetchAssetDetail (asset: Asset): Promise<Asset | undefined> {
  * Get the content-type of a video, for the lightbox <video> element
  */
 export async function getVideoContentType (asset: Asset) {
-  const headers = await authHeaders(asset.keyType, asset.key, asset.password)
+  const headers = await authHeadersForAsset(asset)
   const data = await request(buildUrl('/assets/' + encodeURIComponent(asset.id) + '/video/playback', {
     [asset.keyType]: asset.key
   }), { headers })
@@ -469,6 +467,26 @@ export async function authHeaders (keyType: KeyType, key: string, password?: str
   if (!password) return {}
   const token = await getSharedLinkToken(key, password, keyType)
   return token ? { Cookie: `immich_shared_link_token=${token}` } : {}
+}
+
+/**
+ * `authHeaders` for an asset whose key/keyType/password are already stamped on
+ * it (the common case for share-scoped fetches).
+ */
+export function authHeadersForAsset (asset: Asset): Promise<Record<string, string>> {
+  return authHeaders(asset.keyType || KeyType.key, asset.key, asset.password)
+}
+
+/**
+ * Build the Immich URL that serves `subpath` for `asset` (e.g. `/original`,
+ * `/video/playback`), with the share key and optional `size` query param
+ * encoded. `buildUrl` drops the `size` param when it is undefined.
+ */
+export function assetFetchUrl (asset: Asset, subpath: string, sizeQueryParam?: string): string {
+  return buildUrl(apiUrl() + '/assets/' + encodeURIComponent(asset.id) + subpath, {
+    [asset.keyType || KeyType.key]: asset.key,
+    size: sizeQueryParam
+  })
 }
 
 /**
@@ -520,41 +538,6 @@ export function buildUrl (baseUrl: string, params: { [key: string]: string | und
     })).toString()
   }
   return baseUrl + query
-}
-
-/**
- * Whether this asset must be served from `/original` to remain useful, bypassing
- * the `ipp.downloadOriginalPhoto` downgrade.
- *
- * - Videos: Immich's preview/thumbnail endpoints return a poster JPEG, not the
- *   video, so the downgrade would replace a video file with a still image.
- * - Animated images (currently just GIF): Immich's preview is a static JPEG,
- *   so the downgrade silently strips the animation. APNG/animated-WebP aren't
- *   listed because Immich doesn't expose a distinct MIME type for them - they
- *   share `image/png` / `image/webp` with their static counterparts.
- *
- * Used by both the display path (lightbox preview URL) and the download path
- * (single-asset download + zip), so the lightbox shows the same bytes the
- * user gets when they hit "download".
- */
-export function requiresOriginal (asset: Asset): boolean {
-  if (asset.type === AssetType.video) {
-    return true
-  } else if (asset.originalMimeType?.startsWith('video/')) {
-    return true
-  } else if (asset.originalMimeType === 'image/gif') {
-    return true
-  }
-  return false
-}
-
-/**
- * Return the correct preview size, depending on the image MIME type.
- * For animated formats, use the original file rather than the preview so
- * animation is preserved (Immich's preview is a static JPEG frame).
- */
-export function getPreviewImageSize (asset: Asset) {
-  return requiresOriginal(asset) ? ImageSize.original : ImageSize.preview
 }
 
 /**

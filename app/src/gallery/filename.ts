@@ -1,6 +1,7 @@
 import { Asset, ImageSize } from '../types'
 import { getConfigOption } from '../config/access'
 import { sanitize } from '../utils/sanitize'
+import { resolveImageEndpoint } from './sizing'
 
 /**
  * Map an Immich asset MIME type to a file extension (including the dot).
@@ -88,4 +89,13 @@ export function getFilename (asset: Asset, servedSize: ImageSize = ImageSize.ori
       return withMimeExtension(stem, servedMime)
     }
   }
+}
+
+/**
+ * Filename for a downloaded asset, whose extension matches the bytes a download
+ * (`/original` request) actually returns after the `maxDownloadQuality` clamp.
+ * Used by both the eager (gallery builder) and lazy (`/meta/`) item paths.
+ */
+export function downloadFilename (asset: Asset): string {
+  return getFilename(asset, resolveImageEndpoint(ImageSize.original, asset).servedSize)
 }
