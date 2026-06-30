@@ -42,7 +42,8 @@
       "singleItemAutoOpen": true,
       "showTitle": true,
       "showDescription": false,
-      "groupByDate": false
+      "groupByDate": false,
+      "cacheTime": 300
     },
     "lightbox": {
       "showArrows": true,

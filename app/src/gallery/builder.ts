@@ -49,7 +49,6 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
   const descriptionInSidebar = shareMetadataAllowed && !!getConfigOption('ipp.showMetadata.description.sidebar', false)
   const sidebarHasContent = shareMetadataAllowed && (descriptionInSidebar || metadataGroupActive('exif') || metadataGroupActive('location'))
 
-  // Build structured items in parallel
   const items: GalleryItem[] = await Promise.all(share.assets.map(async (asset): Promise<GalleryItem> => {
     let videoData: string | undefined
     if (asset.type === AssetType.video) {
@@ -159,9 +158,10 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     metaBase
   }
 
-  // Always revalidate the HTML so it picks up new versioned asset URLs on
-  // upgrade; the assets themselves are immutable-cached. (304s via ETag.)
-  res.header('Cache-Control', 'no-cache')
+  // HTML gallery page cache time
+  const configured = Number(getConfigOption('ipp.gallery.cacheTime', 300))
+  const cacheTime = Number.isFinite(configured) ? Math.max(0, configured) : 300
+  res.header('Cache-Control', 'public, max-age=' + cacheTime)
   res.send(renderPage(h(Gallery, props)))
 }
 
