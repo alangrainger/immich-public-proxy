@@ -1,6 +1,7 @@
 import { AssetType } from '../types'
 import { ThemeScript } from './theme'
 import { GalleryItem, LightboxConfig, MetadataConfig } from '../shared/types'
+import { ASSET_VERSION } from '../version'
 
 export type { GalleryItem, LightboxConfig, MetadataConfig }
 
@@ -57,9 +58,9 @@ export function Gallery (props: GalleryProps) {
           <meta name="twitter:card" content="summary_large_image"/>
         </>}
         <link rel="icon" href="/share/static/favicon.ico" type="image/x-icon"/>
-        <link type="text/css" rel="stylesheet" href="/share/static/style.css"/>
+        <link type="text/css" rel="stylesheet" href={`/share/static/${ASSET_VERSION}/style.css`}/>
         <link type="text/css" rel="stylesheet" href="/share/static/photoswipe/photoswipe.css"/>
-        <link type="text/css" rel="stylesheet" href="/share/static/photoswipe-overrides.css"/>
+        <link type="text/css" rel="stylesheet" href={`/share/static/${ASSET_VERSION}/photoswipe-overrides.css`}/>
       </head>
       <body>
         {(props.showTitle || props.showDownload) && (
@@ -112,7 +113,7 @@ export function Gallery (props: GalleryProps) {
           id="ipp-init"
           dangerouslySetInnerHTML={{ __html: initJson }}
         />
-        <script type="module" src="/share/static/js/client/init.js"></script>
+        <script type="module" src={`/share/static/${ASSET_VERSION}/js/client/init.js`}></script>
       </body>
     </html>
   )

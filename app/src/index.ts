@@ -26,6 +26,7 @@ import { canDownload } from './share'
 import { toString } from './utils/text'
 import { decrypt, encrypt } from './encrypt'
 import { respondToInvalidRequest } from './invalidRequestHandler'
+import { ASSET_VERSION } from './version'
 import { h } from 'preact'
 import { renderPage } from './view/render'
 import { Home } from './view/home'
@@ -52,6 +53,13 @@ app.use(cookieSession({
 app.use(express.json())
 // For parsing the selective-download form POST (form-encoded body)
 app.use(express.urlencoded({ extended: false, limit: '1mb' }))
+// Cache-busted, immutable static assets under a per-release version segment.
+const inProduction = process.env.NODE_ENV === 'production'
+app.use('/share/static/' + ASSET_VERSION, express.static('public', {
+  immutable: inProduction,
+  maxAge: inProduction ? '365d' : 0,
+  setHeaders: addResponseHeaders
+}))
 // Serve static assets from the 'public' folder as /share/static
 app.use('/share/static', express.static('public', { setHeaders: addResponseHeaders }))
 // Serve the same assets on /, to allow for /robots.txt and /favicon.ico
