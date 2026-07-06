@@ -181,13 +181,17 @@ address is valid - and IPP reports the connection as failed. `curl` and glibc (t
 tolerate this, which is why curl works and this only shows up here. The underlying error, hidden behind the log
 message above, is `getaddrinfo ENOTFOUND`.
 
-The reliable fix is to disable IPv6 for the container so only the IPv4 lookup happens. Add this to your service
-in `docker-compose.yml`:
+The reliable fix is to disable IPv6 for the container so only the IPv4 lookup happens. Add the `sysctls` block
+to your service in `docker-compose.yml`:
 
 ```yaml
-sysctls:
-  - net.ipv6.conf.all.disable_ipv6=1
-  - net.ipv6.conf.default.disable_ipv6=1
+services:
+  immich-public-proxy:
+    image: alangrainger/immich-public-proxy:latest
+    # ...your existing config...
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
+      - net.ipv6.conf.default.disable_ipv6=1
 ```
 
 Alternatively, point `IMMICH_URL` at Immich's IP address (a numeric address skips DNS resolution entirely), or
