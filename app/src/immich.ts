@@ -116,7 +116,8 @@ export async function request (endpoint: string, init?: RequestInit) {
     }
   } catch (e) {
     log('Unable to reach Immich on ' + process.env.IMMICH_URL)
-    log(`From the server IPP is running on, see if you can curl to ${apiUrl()}/server/ping and receive a JSON result.`)
+    log(`From the container IPP is running in, run this and check you receive a JSON result: node -e "fetch('${apiUrl()}/server/ping').then(r => r.text()).then(console.log).catch(console.error)"`)
+    log('Avoid testing with curl - curl uses its own DNS resolver and can succeed even when the resolver Node/IPP uses (musl getaddrinfo) fails. See https://github.com/alangrainger/immich-public-proxy/issues/263')
   }
 }
 
