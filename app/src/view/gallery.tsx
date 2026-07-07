@@ -13,6 +13,9 @@ export interface GalleryProps {
   path: string
   showDownload: boolean
   showTitle: boolean
+  // Formatted "available until" date shown in the subtitle, or undefined when
+  // ipp.gallery.showExpiryDate is off or the share never expires.
+  expiryDate?: string
   openItem?: number
   ogImageItem?: GalleryItem
   lightboxConfig: LightboxConfig
@@ -71,6 +74,9 @@ export function Gallery (props: GalleryProps) {
                 <p class="subtitle">
                   {props.items.length}{' '}
                   {props.items.length === 1 ? 'item' : 'items'}
+                  {props.expiryDate && (
+                    <>{' · available until '}{props.expiryDate}</>
+                  )}
                 </p>
               </div>
             )}

@@ -6,7 +6,7 @@ import {
 import { Response } from 'express-serve-static-core'
 import { AssetType, ImageSize, SharedLink } from '../types'
 import { getConfigOption } from '../config/access'
-import { canDownload, title } from '../share'
+import { canDownload, expiryDate, title } from '../share'
 import { toString } from '../utils/text'
 import { h } from 'preact'
 import { renderPage } from '../view/render'
@@ -138,6 +138,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     path: '/share/' + share.key,
     showDownload: downloadAllowed,
     showTitle: !!getConfigOption('ipp.gallery.showTitle', true),
+    expiryDate: expiryDate(share),
     openItem,
     ogImageItem,
     lightboxConfig: {
