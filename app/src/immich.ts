@@ -286,6 +286,15 @@ async function fetchShareByKey (key: string, password?: string, keyType: KeyType
           // This link has expired
           log('Expired link ' + key)
         } else {
+          if (!Array.isArray(link.assets)) {
+            // Immich can return a shared link with no `assets` array (seen on
+            // 3.0.x INDIVIDUAL shares - see #267). The album path above always
+            // populates `link.assets`, so this only bites non-album shares.
+            // Treat a missing array as empty rather than letting `.filter` of
+            // undefined reject and take the whole process down.
+            log('Shared link ' + key + ' returned no assets array (type ' + link.type + ')')
+            link.assets = []
+          }
           // Filter assets to exclude trashed assets
           link.assets = link.assets.filter(asset => !asset.isTrashed)
           // Populate the shared assets with the public key/password
