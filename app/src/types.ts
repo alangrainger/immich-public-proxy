@@ -63,6 +63,15 @@ export interface Asset {
 }
 
 /**
+ * Immich server version as returned by `GET /server/version`.
+ */
+export interface ImmichVersion {
+  major: number;
+  minor: number;
+  patch: number;
+}
+
+/**
  * One entry of `GET /timeline/buckets` - a time bucket (month) and its count.
  */
 export interface TimelineBucket {

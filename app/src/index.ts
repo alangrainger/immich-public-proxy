@@ -5,6 +5,7 @@ import express from 'express'
 import cookieSession from 'cookie-session'
 import {
   accessible,
+  enforceMinimumImmichVersion,
   fetchAssetDetail,
   getKeyTypeFromShare,
   getShareByKey,
@@ -348,6 +349,10 @@ process.on('SIGTERM', () => {
 const port = Number(process.env.IPP_PORT) || 3000
 const server = app.listen(port, () => {
   console.log(dayjs().format() + ' Server started on port ' + port)
+  // Bail out early if the Immich server is older than IPP supports, rather
+  // than silently serving broken album shares. Unknown/unreachable is
+  // tolerated (logs a warning and continues) - see enforceMinimumImmichVersion.
+  enforceMinimumImmichVersion().catch(e => console.error('Immich version check failed:', e))
   // Clean up any zip-download staging dirs left behind by a previous
   // run that crashed before its finally block could run
   sweepStaleStagingDirs().catch(e => console.error('sweepStaleStagingDirs failed:', e))
