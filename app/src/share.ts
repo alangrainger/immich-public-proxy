@@ -1,5 +1,6 @@
 import { DownloadAll, SharedLink } from './types'
 import { getConfigOption } from './config/access'
+import dayjs from 'dayjs'
 
 /**
  * Display title for a shared link. Prefers the user-set link description,
@@ -30,4 +31,22 @@ export function canDownload (share: SharedLink): boolean {
     // Return Immich's setting for this shared link
     return !!share.allowDownload
   }
+}
+
+/**
+ * Formatted expiry date for the gallery subtitle, or undefined when the
+ * feature is off, the share never expires, or the date can't be parsed.
+ *
+ * Gated by `ipp.gallery.showExpiryDate` (default `false`). The date is
+ * formatted with `ipp.gallery.expiryDateFormat`, a dayjs format string that
+ * defaults to the ISO 8601 date `YYYY-MM-DD` (e.g. `2026-07-10`).
+ */
+export function expiryDate (share: SharedLink): string | undefined {
+  if (!getConfigOption('ipp.gallery.showExpiryDate', false)) return undefined
+  if (!share.expiresAt) return undefined
+  const parsed = dayjs(share.expiresAt)
+  if (!parsed.isValid()) return undefined
+  const configured = getConfigOption('ipp.gallery.expiryDateFormat', 'YYYY-MM-DD')
+  const format = typeof configured === 'string' && configured ? configured : 'YYYY-MM-DD'
+  return parsed.format(format)
 }
