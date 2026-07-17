@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import dayjs from 'dayjs'
+import 'dayjs/locale/de' // load German so the localised-format assertions are deterministic
 import { expiryDate } from '../src/share'
 import { loadConfig } from '../src/config/loader'
 import { KeyType, SharedLink } from '../src/types'
@@ -57,5 +58,21 @@ describe('expiryDate', () => {
   it('returns undefined for an unparseable expiry date', () => {
     setConfig({ ipp: { gallery: { showExpiryDate: true } } })
     expect(expiryDate(share('not-a-date'))).toBeUndefined()
+  })
+
+  it('localises name tokens with a configured expiryDateLocale', () => {
+    setConfig({ ipp: { gallery: { showExpiryDate: true, expiryDateFormat: 'D MMMM YYYY', expiryDateLocale: 'de' } } })
+    // "10 Juli 2026" in German, not "10 July 2026"
+    expect(expiryDate(share(EXPIRES))).toBe(dayjs(EXPIRES).locale('de').format('D MMMM YYYY'))
+  })
+
+  it('accepts a locale case-insensitively', () => {
+    setConfig({ ipp: { gallery: { showExpiryDate: true, expiryDateFormat: 'D MMMM YYYY', expiryDateLocale: 'DE' } } })
+    expect(expiryDate(share(EXPIRES))).toBe(dayjs(EXPIRES).locale('de').format('D MMMM YYYY'))
+  })
+
+  it('falls back to English for an unknown or malformed locale', () => {
+    setConfig({ ipp: { gallery: { showExpiryDate: true, expiryDateFormat: 'D MMMM YYYY', expiryDateLocale: '../en' } } })
+    expect(expiryDate(share(EXPIRES))).toBe(dayjs(EXPIRES).locale('en').format('D MMMM YYYY'))
   })
 })

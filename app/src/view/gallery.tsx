@@ -41,6 +41,9 @@ export function Gallery (props: GalleryProps) {
     ? (ogItem.type === AssetType.video ? ogItem.thumbnailUrl : ogItem.previewUrl)
     : ''
   const ogImageUrl = ogItem ? props.publicBaseUrl + ogImageAsset : ''
+  // The title block also carries the subtitle (item count + optional expiry),
+  // so it renders when a title is wanted OR there's an expiry date to show.
+  const showHeaderText = props.showTitle || !!props.expiryDate
 
   return (
     <html lang="en">
@@ -66,11 +69,11 @@ export function Gallery (props: GalleryProps) {
         <link type="text/css" rel="stylesheet" href={`/share/static/${ASSET_VERSION}/photoswipe-overrides.css`}/>
       </head>
       <body>
-        {(props.showTitle || props.showDownload) && (
+        {(showHeaderText || props.showDownload) && (
           <header id="header">
-            {props.showTitle && (
+            {showHeaderText && (
               <div class="header-text">
-                <h1>{props.title || 'Gallery'}</h1>
+                {props.showTitle && <h1>{props.title || 'Gallery'}</h1>}
                 <p class="subtitle">
                   {props.items.length}{' '}
                   {props.items.length === 1 ? 'item' : 'items'}

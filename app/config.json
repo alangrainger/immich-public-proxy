@@ -44,6 +44,7 @@
       "showDescription": false,
       "showExpiryDate": false,
       "expiryDateFormat": "YYYY-MM-DD",
+      "expiryDateLocale": "",
       "groupByDate": false,
       "cacheTime": 300
     },
