@@ -24,7 +24,7 @@ function init () {
   state.items = params.items || []
   state.lightboxConfig = params.lightboxConfig || {}
   if (params.metadataConfig) state.metadataConfig = params.metadataConfig
-  state.groupByDate = !!params.groupByDate
+  state.groupByDate = params.groupByDate || false
   state.metaBase = params.metaBase || ''
   state.container = document.getElementById('gallery')
   if (!state.container) return

@@ -14,6 +14,7 @@ import {
   type HeaderEntry,
   type GroupSpec
 } from './state.js'
+import type { GroupByDateMode } from '../shared/types.js'
 
 export interface LayoutResult {
   layout: LayoutEntry[]
@@ -37,7 +38,7 @@ export function computeLayout (containerW: number): LayoutResult {
   const tileLayout: LayoutEntry[] = new Array(state.items.length)
   const newHeaders: HeaderEntry[] = []
   const groups: GroupSpec[] = state.groupByDate
-    ? groupItemsByMonth()
+    ? groupItemsByDate(state.groupByDate)
     : [{ label: null, indices: itemIndices() }]
   const isMobile = containerW < MOBILE_BREAKPOINT
   let y = 0
@@ -65,14 +66,19 @@ function itemIndices (): number[] {
   return out
 }
 
-function groupItemsByMonth (): GroupSpec[] {
-  // Preserve item order (already sorted desc by render.ts when grouping is on)
+function groupItemsByDate (mode: GroupByDateMode): GroupSpec[] {
+  // Bucket key length: YYYY-MM (month) or YYYY-MM-DD (day). We slice the local
+  // timestamp, so no timezone maths is needed - the string already reads as
+  // the photographer's wall-clock (matching Immich's own timeline grouping).
+  const keyLen = mode === 'day' ? 10 : 7
+  // Preserve item order (already sorted desc by builder.ts when grouping is on)
   const map = new Map<string, GroupSpec>()
   for (let i = 0; i < state.items.length; i++) {
-    const key = (state.items[i].fileCreatedAt || '').slice(0, 7) || 'undated'
+    const item = state.items[i]
+    const key = (item.localDateTime || item.fileCreatedAt || '').slice(0, keyLen) || 'undated'
     let g = map.get(key)
     if (!g) {
-      g = { label: monthLabel(key), indices: [] }
+      g = { label: dateLabel(key, mode), indices: [] }
       map.set(key, g)
     }
     g.indices.push(i)
@@ -85,19 +91,21 @@ function groupItemsByMonth (): GroupSpec[] {
   return Array.from(map.values())
 }
 
-function monthLabel (key: string): string {
+function dateLabel (key: string, mode: GroupByDateMode): string {
   if (key === 'undated') return 'Undated'
   const parts = key.split('-')
   const y = Number(parts[0])
   const m = Number(parts[1])
+  const d = Number(parts[2])
   if (!y || !m) return key
-  // Intl.DateTimeFormat picks up the browser's locale; UTC timeZone keeps
-  // the displayed month consistent with the UTC YYYY-MM bucket key.
+  // Intl.DateTimeFormat picks up the browser's locale; UTC timeZone keeps the
+  // displayed date consistent with the bucket key (which is already local).
   return new Intl.DateTimeFormat(undefined, {
     year: 'numeric',
     month: 'long',
+    ...(mode === 'day' ? { day: 'numeric' } : {}),
     timeZone: 'UTC'
-  }).format(new Date(Date.UTC(y, m - 1, 1)))
+  }).format(new Date(Date.UTC(y, m - 1, mode === 'day' ? (d || 1) : 1)))
 }
 
 /**

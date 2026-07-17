@@ -3,7 +3,7 @@
 // top-level `let`s. Layout / scroll-tuning constants live here too because
 // they are read by multiple modules. SVG icon strings live in `icons.ts`.
 
-import type { GalleryItem, LightboxConfig, MetadataConfig } from '../shared/types.js'
+import type { GalleryItem, LightboxConfig, MetadataConfig, GroupByDateMode } from '../shared/types.js'
 
 // ----- layout / scroll tuning ----------------------------------------------
 
@@ -56,7 +56,7 @@ export const state = {
   items: [] as GalleryItem[],
   layout: [] as LayoutEntry[],
   headers: [] as HeaderEntry[],
-  groupByDate: false,
+  groupByDate: false as GroupByDateMode | false,
   container: null as HTMLElement | null,
   lightbox: null as PhotoSwipeLightboxInstance,
   lightboxConfig: {} as Partial<LightboxConfig>,

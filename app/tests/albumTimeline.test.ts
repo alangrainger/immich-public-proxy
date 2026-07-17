@@ -52,7 +52,8 @@ const bucketResponse = {
   ratio: [1.5, 0.5, 1],
   thumbhash: ['hashA', null, 'hashC'],
   isTrashed: [false, true, false],
-  fileCreatedAt: ['2026-06-03T00:00:00.000Z', '2026-06-02T00:00:00.000Z', '2026-06-01T00:00:00.000Z']
+  fileCreatedAt: ['2026-06-03T00:00:00.000Z', '2026-06-02T00:00:00.000Z', '2026-06-01T00:00:00.000Z'],
+  localOffsetHours: [5.5, -8, 0]
 }
 
 function routeFetch (sharedLink: unknown) {
@@ -98,6 +99,16 @@ describe('album timeline enumeration (Immich 3.0)', () => {
     expect(assets[0].thumbhash).toBe('hashA')
     // dimensions derived from ratio (landscape 1.5 -> wider than tall)
     expect(assets[0].width!).toBeGreaterThan(assets[0].height!)
+  })
+
+  it('synthesises localDateTime from fileCreatedAt + localOffsetHours', async () => {
+    vi.stubGlobal('fetch', routeFetch(sharedLinkResponse()))
+    const result = await getShareByKey(uniqueKey(), undefined, KeyType.key)
+    const assets = result.link!.assets
+    // aaa: 2026-06-03T00:00Z + 5.5h -> 05:30 local
+    expect(assets[0].localDateTime).toBe('2026-06-03T05:30:00.000Z')
+    // ccc: 2026-06-01T00:00Z + 0h -> unchanged
+    expect(assets[1].localDateTime).toBe('2026-06-01T00:00:00.000Z')
   })
 
   it('stamps the share key/keyType onto every asset', async () => {

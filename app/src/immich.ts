@@ -371,18 +371,36 @@ function ratioToDimensions (ratio: number): { width: number, height: number } {
  * filename / mime are filled in lazily on lightbox open (`needsDetail`).
  * `key` / `keyType` / `password` are stamped by the caller.
  */
+/**
+ * Reconstruct an asset's timezone-agnostic local timestamp from its UTC
+ * `fileCreatedAt` and `localOffsetHours`. Returns an ISO string whose date /
+ * time portion reads as the photographer's local wall-clock (the `Z` suffix is
+ * nominal, as with Immich's own `localDateTime`). Undefined if no timestamp.
+ */
+function localDateTimeFromOffset (fileCreatedAt?: string, offsetHours?: number): string | undefined {
+  if (!fileCreatedAt) return undefined
+  const ms = Date.parse(fileCreatedAt)
+  if (isNaN(ms)) return undefined
+  return new Date(ms + (offsetHours || 0) * 3600_000).toISOString()
+}
+
 function timelineBucketToAssets (bucket: TimelineBucketAssets): Asset[] {
   const assets: Asset[] = []
   const count = bucket?.id?.length || 0
   for (let i = 0; i < count; i++) {
     const { width, height } = ratioToDimensions(bucket.ratio?.[i])
+    const fileCreatedAt = bucket.fileCreatedAt?.[i]
     assets.push({
       id: bucket.id[i],
       key: '',
       keyType: KeyType.key,
       type: bucket.isImage?.[i] ? AssetType.image : AssetType.video,
       isTrashed: !!bucket.isTrashed?.[i],
-      fileCreatedAt: bucket.fileCreatedAt?.[i],
+      fileCreatedAt,
+      // The bucket response has no localDateTime; reconstruct it from the UTC
+      // timestamp plus the per-asset offset, matching what Immich's own
+      // timeline does when grouping by local day / month.
+      localDateTime: localDateTimeFromOffset(fileCreatedAt, bucket.localOffsetHours?.[i]),
       thumbhash: bucket.thumbhash?.[i] || undefined,
       width,
       height,

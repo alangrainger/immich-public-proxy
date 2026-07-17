@@ -1,9 +1,9 @@
 import { AssetType } from '../types'
 import { ThemeScript } from './theme'
-import { GalleryItem, LightboxConfig, MetadataConfig } from '../shared/types'
+import { GalleryItem, LightboxConfig, MetadataConfig, GroupByDateMode } from '../shared/types'
 import { ASSET_VERSION } from '../version'
 
-export type { GalleryItem, LightboxConfig, MetadataConfig }
+export type { GalleryItem, LightboxConfig, MetadataConfig, GroupByDateMode }
 
 export interface GalleryProps {
   items: GalleryItem[]
@@ -17,7 +17,7 @@ export interface GalleryProps {
   ogImageItem?: GalleryItem
   lightboxConfig: LightboxConfig
   metadataConfig: MetadataConfig
-  groupByDate: boolean
+  groupByDate: GroupByDateMode | false
   metaBase?: string
 }
 

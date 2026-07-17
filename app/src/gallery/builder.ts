@@ -11,6 +11,7 @@ import { toString } from '../utils/text'
 import { h } from 'preact'
 import { renderPage } from '../view/render'
 import { Gallery, GalleryItem, GalleryProps } from '../view/gallery'
+import type { GroupByDateMode } from '../shared/types'
 import { downloadFilename } from './filename'
 import { requiresOriginal } from './sizing'
 import { metadataGroupActive, pickExif } from './exif'
@@ -28,10 +29,12 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
   const publicBaseUrl = process.env.PUBLIC_BASE_URL || (res.req.protocol + '://' + res.req.headers.host)
 
   // Date grouping needs chronological order; sort newest-first when enabled
-  // (overrides any album.order the upstream applied).
-  const groupByDate = !!getConfigOption('ipp.gallery.groupByDate', false)
+  // (overrides any album.order the upstream applied). Sort by the same local
+  // timestamp the grouping buckets on, so buckets stay contiguous / ordered.
+  const groupByDate = groupByDateMode()
   if (groupByDate) {
-    share.assets.sort((a, b) => (b.fileCreatedAt || '').localeCompare(a.fileCreatedAt || ''))
+    const sortKey = (a: typeof share.assets[number]) => a.localDateTime || a.fileCreatedAt || ''
+    share.assets.sort((a, b) => sortKey(b).localeCompare(sortKey(a)))
   }
 
   // Metadata display flags. Read once here and forwarded to the client via
@@ -107,6 +110,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       height,
       thumbhash: asset.thumbhash,
       fileCreatedAt: asset.fileCreatedAt,
+      localDateTime: asset.localDateTime,
       exif: shareMetadataAllowed ? pickExif(asset) : undefined,
       // Album grid items carry no exif / description / real filename yet; the
       // client fetches them from `metaBase` the first time the item opens.
@@ -170,4 +174,16 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
  */
 function description (share: SharedLink) {
   return share?.album?.description || ''
+}
+
+/**
+ * Normalise the operator's `ipp.gallery.groupByDate` config into a grouping
+ * mode. Accepts `false` (off), `true` / `'month'` (legacy = month buckets) or
+ * `'day'` (day buckets); anything else is treated as off.
+ */
+function groupByDateMode (): GroupByDateMode | false {
+  const v = getConfigOption('ipp.gallery.groupByDate', false)
+  if (v === 'day') return 'day'
+  if (v === true || v === 'month') return 'month'
+  return false
 }
