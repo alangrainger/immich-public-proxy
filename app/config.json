@@ -39,6 +39,7 @@
     "customInvalidResponse": false,
     "gallery": {
       "singleImage": false,
+      "singleVideo": true,
       "singleItemAutoOpen": true,
       "showTitle": true,
       "showDescription": false,

@@ -202,9 +202,13 @@ export async function handleShareRequest (req: IncomingShareRequest, res: Respon
     // This is an individual item (not a gallery)
     log('Serving link ' + req.key)
     const asset = link.assets[0]
-    if ((asset.type === AssetType.image || asset.type === AssetType.video) && !getConfigOption('ipp.gallery.singleImage') && !req.password) {
-      // For photos and videos, output them directly unless configured to show a gallery,
-      // or unless it's a password-protected link
+    // Photos default to a direct image unless `singleImage` opts into a gallery;
+    // videos default to a gallery unless `singleVideo` is explicitly disabled.
+    const directImage = asset.type === AssetType.image && !getConfigOption('ipp.gallery.singleImage')
+    const directVideo = asset.type === AssetType.video && !getConfigOption('ipp.gallery.singleVideo', true)
+    if ((directImage || directVideo) && !req.password) {
+      // Output the asset directly rather than a gallery page, unless it's a
+      // password-protected link
       await assetBuffer(req, res, link.assets[0], ImageSize.preview)
     } else {
       // Show a gallery page
