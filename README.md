@@ -1,7 +1,7 @@
 # Immich Public Proxy
 
 <p align="center" width="100%">
-<img src="docs/ipp.svg" width="180" height="180">
+<img src="docs/public/ipp.svg" width="180" height="180">
 </p>
 
 <p align="center" width="100%">
