@@ -11,7 +11,7 @@ export interface GalleryProps {
   description: string
   publicBaseUrl: string
   path: string
-  showDownload: boolean
+  showDownloadZip: boolean
   showTitle: boolean
   // Formatted "available until" date shown in the subtitle, or undefined when
   // ipp.gallery.showExpiryDate is off or the share never expires.
@@ -69,7 +69,7 @@ export function Gallery (props: GalleryProps) {
         <link type="text/css" rel="stylesheet" href={`/share/static/${ASSET_VERSION}/photoswipe-overrides.css`}/>
       </head>
       <body>
-        {(showHeaderText || props.showDownload) && (
+        {(showHeaderText || props.showDownloadZip) && (
           <header id="header">
             {showHeaderText && (
               <div class="header-text">
@@ -83,7 +83,7 @@ export function Gallery (props: GalleryProps) {
                 </p>
               </div>
             )}
-            {props.showDownload && (
+            {props.showDownloadZip && (
               <a id="download-all" href={props.path + '/download'} title="Download all" aria-label="Download all">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path fill="currentColor" d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/>
@@ -98,7 +98,7 @@ export function Gallery (props: GalleryProps) {
 {/* Container is intentionally empty - web.js's virtualisation manager
             populates it with only the tiles within the viewport buffer. */}
         <div id="gallery"></div>
-        {props.showDownload && (
+        {props.showDownloadZip && (
           <div id="select-toolbar" hidden>
             <button id="select-cancel" class="toolbar-btn" type="button" aria-label="Exit selection mode">
               <svg viewBox="0 0 24 24" aria-hidden="true">

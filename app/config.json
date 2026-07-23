@@ -47,6 +47,7 @@
       "expiryDateFormat": "YYYY-MM-DD",
       "expiryDateLocale": "",
       "groupByDate": false,
+      "showDownloadZip": true,
       "cacheTime": 300
     },
     "lightbox": {

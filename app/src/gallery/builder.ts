@@ -140,7 +140,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     description: getConfigOption('ipp.gallery.showDescription', false) ? description(share) : '',
     publicBaseUrl: toString(publicBaseUrl),
     path: '/share/' + share.key,
-    showDownload: downloadAllowed,
+    showDownloadZip: downloadAllowed && !!getConfigOption('ipp.gallery.showDownloadZip', true),
     showTitle: !!getConfigOption('ipp.gallery.showTitle', true),
     expiryDate: expiryDate(share),
     openItem,
