@@ -29,7 +29,7 @@ Setup takes less than a minute, and you never need to touch it again as all of y
 - [Installation](#installation)
 - [How to use it](#how-to-use-it)
 - [How it works](#how-it-works)
-- [Configuration](docs/configuration.md)
+- [Configuration](docs/config/index.md)
 - [Troubleshooting](#troubleshooting)
 - [Feature requests](#feature-requests)
 
@@ -134,7 +134,7 @@ All incoming data is validated and sanitised, and anything unexpected is simply 
 
 ## Configuration
 
-See **[the configuration docs](docs/configuration.md)** for the full reference.
+See **[the configuration docs](docs/config/index.md)** for the full reference.
 
 ## Troubleshooting
 

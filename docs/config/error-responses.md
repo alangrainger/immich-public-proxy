@@ -1,4 +1,4 @@
-# Customising your web responses
+# Error responses
 
 To avoid giving information away about your server, IPP responds with a limited set of HTTP status codes:
 
@@ -8,7 +8,7 @@ To avoid giving information away about your server, IPP responds with a limited 
 | 401  | Invalid password provided for a password-protected share link.                                  |
 | 404  | All other invalid requests, e.g. album doesn't exist, share link is expired, non-existing file. |
 
-Instead of sending the 404 code, you can customise that response by [changing the configuration option](/configuration#ipp-options) for `customInvalidResponse`.
+Instead of sending the 404 code, you can customise that response by [changing the configuration option](/config/ipp-options#custominvalidresponse) for `customInvalidResponse`.
 
 Possible options are:
 

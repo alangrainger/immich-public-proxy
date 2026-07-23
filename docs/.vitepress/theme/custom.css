@@ -1,0 +1,17 @@
+/* Landing-page hero tweaks for the screenshot-as-hero-image.
+   VitePress's default hero floats a square logo up-and-left; for a wide
+   screenshot we want it centred and vertically aligned with the hero text. */
+@media (min-width: 960px) {
+  .VPHero .container {
+    align-items: center;
+  }
+
+  .VPHero .image {
+    min-height: auto;
+  }
+
+  /* Remove the default up-and-left offset so the image sits centred. */
+  .VPHero .image-container {
+    transform: none;
+  }
+}

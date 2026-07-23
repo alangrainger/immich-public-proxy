@@ -105,7 +105,7 @@ Required environment variables (set in `app/.env` or your shell):
 
 To exercise the full gallery flow you need a real Immich instance you can hit, with at least one public share created. The README has the user-facing setup steps for spinning that up.
 
-Configuration overrides go in `app/config.json` or inline via env (see `docs/inline-configuration.md`). Always read config through `getConfigOption('ipp.path.to.key', defaultValue)` rather than reading the JSON directly.
+Configuration overrides go in `app/config.json` or inline via env (see `docs/config/index.md`). Always read config through `getConfigOption('ipp.path.to.key', defaultValue)` rather than reading the JSON directly.
 
 ## Build, lint, test
 

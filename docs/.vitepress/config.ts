@@ -18,24 +18,30 @@ export default defineConfig({
       provider: 'local'
     },
     nav: [
-      { text: 'Guide', link: '/getting-started' },
-      { text: 'Configuration', link: '/configuration' },
+      { text: 'About', link: '/introduction' },
+      { text: 'Configuration', link: '/config/' },
       { text: 'Live demo', link: DEMO_URL }
     ],
     sidebar: [
       {
         text: 'Getting started',
         items: [
-          { text: 'Introduction', link: '/' },
-          { text: 'Installation & usage', link: '/getting-started' }
+          { text: 'Introduction', link: '/introduction' },
+          { text: 'Installation', link: '/installation' },
+          { text: 'How to use it', link: '/how-to-use' },
+          { text: 'Troubleshooting', link: '/troubleshooting' }
         ]
       },
       {
-        text: 'Configuration',
+        text: 'Config options',
         items: [
-          { text: 'Configuration reference', link: '/configuration' },
-          { text: 'Inline (docker-compose) config', link: '/inline-configuration' },
-          { text: 'Customising web responses', link: '/custom-responses' }
+          { text: 'Overview', link: '/config/' },
+          { text: 'IPP options', link: '/config/ipp-options' },
+          { text: 'Gallery', link: '/config/gallery' },
+          { text: 'Lightbox', link: '/config/lightbox' },
+          { text: 'Metadata', link: '/config/metadata' },
+          { text: 'Error responses', link: '/config/error-responses' },
+          { text: 'Upgrading & migration', link: '/config/upgrading' }
         ]
       },
       {
@@ -55,8 +61,7 @@ export default defineConfig({
       text: 'Edit this page on GitHub'
     },
     footer: {
-      message: 'Released under the AGPL-3.0 licence.',
-      copyright: 'Copyright © Alan Grainger'
+      message: 'Released under the AGPL-3.0 licence.'
     }
   }
 })

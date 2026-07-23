@@ -96,7 +96,7 @@ export async function downloadAssets (res: Response, share: SharedLink, assets: 
 
   const options: StagingOptions = {
     stagingDir: await fs.mkdtemp(join(tmpdir(), STAGING_DIR_PREFIX)),
-    concurrency: Math.max(1, getConfigOption('ipp.downloadFromImmichConcurrencyLimit', 8) as number),
+    concurrency: Math.max(1, getConfigOption('ipp.downloadFromImmichConcurrencyLimit', 20) as number),
     maxAttempts: 3,
     headerTimeoutMs: 20_000,
     idleTimeoutMs: 20_000
