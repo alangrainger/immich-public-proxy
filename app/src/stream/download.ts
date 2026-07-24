@@ -1,7 +1,7 @@
 import { assetFetchUrl, authHeadersForAsset } from '../immich'
 import { Response } from 'express-serve-static-core'
 import { Asset, ImageSize, SharedLink } from '../types'
-import { getConfigOption } from '../config/access'
+import { getNumericConfigOption } from '../config/access'
 import { log } from '../utils/log'
 import archiver, { Archiver } from 'archiver'
 import { sanitize } from '../utils/sanitize'
@@ -96,7 +96,7 @@ export async function downloadAssets (res: Response, share: SharedLink, assets: 
 
   const options: StagingOptions = {
     stagingDir: await fs.mkdtemp(join(tmpdir(), STAGING_DIR_PREFIX)),
-    concurrency: Math.max(1, getConfigOption('ipp.downloadFromImmichConcurrencyLimit', 20) as number),
+    concurrency: Math.max(1, getNumericConfigOption('ipp.downloadFromImmichConcurrencyLimit', 20)),
     maxAttempts: 3,
     headerTimeoutMs: 20_000,
     idleTimeoutMs: 20_000

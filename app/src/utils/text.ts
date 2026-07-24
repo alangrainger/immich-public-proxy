@@ -13,6 +13,19 @@ export function escapeHtml (str: string): string {
 }
 
 /**
+ * Serialise a value as JSON that is safe to embed inside an inline `<script>`
+ * block. `JSON.stringify` does not escape `<`, so a string value containing
+ * `</script>` would terminate the script element early and inject markup into
+ * the page.
+ */
+export function jsonForInlineScript (value: unknown): string {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029')
+}
+
+/**
  * Narrow an `unknown` to `string`, returning an empty string for any other
  * type. Used at boundaries where the input shape isn't statically known
  * (cookie session payloads, etc.).

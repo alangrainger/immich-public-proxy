@@ -96,8 +96,8 @@ export interface MetadataConfig {
 
 /**
  * Shape of the JSON init block embedded in `gallery.tsx` and consumed by
- * `client/init.ts`. The server writes it via `JSON.stringify`; the client
- * reads it via `readInitParams()`.
+ * `client/init.ts`. The server writes it via `jsonForInlineScript`; the
+ * client reads it via `readInitParams()`.
  */
 export interface InitParams {
   items?: GalleryItem[]

@@ -5,7 +5,7 @@ import {
 } from '../immich'
 import { Response } from 'express-serve-static-core'
 import { AssetType, ImageSize, SharedLink } from '../types'
-import { getConfigOption } from '../config/access'
+import { getConfigOption, getNumericConfigOption } from '../config/access'
 import { canDownload, expiryDate, title } from '../share'
 import { toString } from '../utils/text'
 import { h } from 'preact'
@@ -164,8 +164,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
   }
 
   // HTML gallery page cache time
-  const configured = Number(getConfigOption('ipp.gallery.cacheTime', 300))
-  const cacheTime = Number.isFinite(configured) ? Math.max(0, configured) : 300
+  const cacheTime = Math.max(0, getNumericConfigOption('ipp.gallery.cacheTime', 300))
   res.header('Cache-Control', 'public, max-age=' + cacheTime)
   res.send(renderPage(h(Gallery, props)))
 }

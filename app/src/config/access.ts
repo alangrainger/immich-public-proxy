@@ -17,3 +17,12 @@ export function getConfigOption (path: string, defaultOption?: unknown) {
   }
   return value
 }
+
+/**
+ * Read a configuration option that must be a finite number. Non-numeric
+ * values fall back to `defaultOption` instead of propagating `NaN`.
+ */
+export function getNumericConfigOption (path: string, defaultOption: number): number {
+  const value = Number(getConfigOption(path, defaultOption))
+  return Number.isFinite(value) ? value : defaultOption
+}

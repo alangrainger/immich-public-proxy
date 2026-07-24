@@ -2,6 +2,7 @@ import { AssetType } from '../types'
 import { ThemeScript } from './theme'
 import { GalleryItem, LightboxConfig, MetadataConfig, GroupByDateMode } from '../shared/types'
 import { ASSET_VERSION } from '../version'
+import { jsonForInlineScript } from '../utils/text'
 
 export type { GalleryItem, LightboxConfig, MetadataConfig, GroupByDateMode }
 
@@ -25,7 +26,7 @@ export interface GalleryProps {
 }
 
 export function Gallery (props: GalleryProps) {
-  const initJson = JSON.stringify({
+  const initJson = jsonForInlineScript({
     items: props.items,
     openItem: props.openItem,
     lightboxConfig: props.lightboxConfig,

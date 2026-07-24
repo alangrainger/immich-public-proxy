@@ -22,7 +22,7 @@ import { NextFunction, Request, Response } from 'express-serve-static-core'
 import { Asset, AssetType, ImageSize, KeyType, SharedLink } from './types'
 import { getConfigOption } from './config/access'
 import { loadConfig } from './config/loader'
-import { addResponseHeaders } from './http'
+import { addResponseHeaders, asyncHandler, errorHandler } from './http'
 import { canDownload } from './share'
 import { toString } from './utils/text'
 import { decrypt, encrypt } from './encrypt'
@@ -140,18 +140,18 @@ async function resolveSharedAsset (req: Request, keyType: KeyType): Promise<Shar
  * [ROUTE] Healthcheck
  * The path matches for /share/healthcheck, and also the legacy /healthcheck
  */
-app.get(/^(|\/share)\/healthcheck$/, async (_req, res) => {
+app.get(/^(|\/share)\/healthcheck$/, asyncHandler(async (_req, res) => {
   if (await accessible()) {
     res.send('ok')
   } else {
     res.status(503).send()
   }
-})
+}))
 
 /*
  * [ROUTE] This is the main URL that someone would visit if they are opening a shared link
  */
-app.get('/:shareType(share|s)/:key/:mode(download)?', decodeCookie, async (req, res) => {
+app.get('/:shareType(share|s)/:key/:mode(download)?', decodeCookie, asyncHandler(async (req, res) => {
   const keyType = getKeyTypeFromShare(req.params.shareType)
 
   if (keyType === KeyType.slug && !getConfigOption('ipp.allowSlugLinks', true)) {
@@ -166,7 +166,7 @@ app.get('/:shareType(share|s)/:key/:mode(download)?', decodeCookie, async (req, 
       password: req.password
     }, res)
   }
-})
+}))
 
 /*
  * [ROUTE] Receive an unlock request from the password page
@@ -177,7 +177,7 @@ app.get('/:shareType(share|s)/:key/:mode(download)?', decodeCookie, async (req, 
  * managing user session data. The data is provided to the server by the
  * user's browser in its encrypted state.
  */
-app.post('/share/unlock', async (req, res) => {
+app.post('/share/unlock', asyncHandler(async (req, res) => {
   if (req.session && req.body.key) {
     req.session[req.body.key] = encrypt(JSON.stringify({
       password: req.body.password,
@@ -185,7 +185,7 @@ app.post('/share/unlock', async (req, res) => {
     }))
   }
   res.send()
-})
+}))
 
 /*
  * [ROUTE] Selective download - POST a list of asset IDs, get a zip of just those.
@@ -193,7 +193,7 @@ app.post('/share/unlock', async (req, res) => {
  * Validates each ID against share.assets so the request can't pull anything
  * outside the share.
  */
-app.post('/:shareType(share|s)/:key/download', decodeCookie, async (req, res) => {
+app.post('/:shareType(share|s)/:key/download', decodeCookie, asyncHandler(async (req, res) => {
   const keyType = getKeyTypeFromShare(req.params.shareType)
   let requestedIds: unknown
   try {
@@ -225,7 +225,7 @@ app.post('/:shareType(share|s)/:key/download', decodeCookie, async (req, res) =>
   }
 
   await downloadAssets(res, resolved.link, validAssets)
-})
+}))
 
 /*
  * [ROUTE] Catch accidental POST requests to share URLs (e.g. from browser history
@@ -239,7 +239,7 @@ app.post('/:shareType(share|s)/:key/:mode(download)?', (req, res) => {
 /*
  * [ROUTE] This is the direct link to a photo or video asset
  */
-app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, res) => {
+app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, asyncHandler(async (req, res) => {
   // Add the headers configured in config.json (most likely `cache-control`)
   addResponseHeaders(res)
 
@@ -274,8 +274,8 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
     key: req.params.key,
     range: req.headers.range || ''
   }
-  assetBuffer(request, res, asset, req.params.size).then()
-})
+  await assetBuffer(request, res, asset, req.params.size)
+}))
 
 /*
  * [ROUTE] On-demand per-asset metadata for lazy album items.
@@ -286,7 +286,7 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, async (req, r
  * validated against the share's asset set (defence in depth - Immich also
  * enforces this via the share key) before we fetch `GET /assets/:id`.
  */
-app.get('/:shareType(share|s)/meta/:key/:id', decodeCookie, async (req, res) => {
+app.get('/:shareType(share|s)/meta/:key/:id', decodeCookie, asyncHandler(async (req, res) => {
   addResponseHeaders(res)
 
   const resolved = await resolveSharedAsset(req, getKeyTypeFromShare(req.params.shareType))
@@ -302,7 +302,7 @@ app.get('/:shareType(share|s)/meta/:key/:id', decodeCookie, async (req, res) => 
   }
 
   res.json(buildAssetMetadata(detail, resolved.link))
-})
+}))
 
 /*
  * [ROUTE] Home page
@@ -327,6 +327,13 @@ app.get('*', (req, res) => {
   respondToInvalidRequest(res, 404, 'Invalid route ' + req.path)
 })
 
+/*
+ * Terminal error middleware: any throw/rejection inside a route (routed here
+ * by asyncHandler) is logged and answered per the 404 privacy policy, instead
+ * of escaping to process level.
+ */
+app.use(errorHandler)
+
 // Send the correct process error code for any uncaught exceptions
 // so that Docker can gracefully restart the container
 process.on('uncaughtException', (err) => {
@@ -334,10 +341,11 @@ process.on('uncaughtException', (err) => {
   server.close()
   process.exit(1)
 })
+// Log-only: with asyncHandler routing request errors into errorHandler, a
+// stray rejection from a background task (version check, staging-dir sweep,
+// etc.) is not worth killing every in-flight request for.
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason)
-  server.close()
-  process.exit(1)
 })
 process.on('SIGTERM', () => {
   console.log('Received SIGTERM. Gracefully shutting down...')
