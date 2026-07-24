@@ -29,7 +29,7 @@ Setup takes less than a minute, and you never need to touch it again as all of y
 - [Installation](#installation)
 - [How to use it](#how-to-use-it)
 - [How it works](#how-it-works)
-- [Configuration](https://ipp.nz/config/)
+- [Configuration](https://docs.ipp.nz/config/)
 - [Troubleshooting](#troubleshooting)
 - [Feature requests](#feature-requests)
 
@@ -134,11 +134,11 @@ All incoming data is validated and sanitised, and anything unexpected is simply 
 
 ## Configuration
 
-See **[the configuration docs](https://ipp.nz/config/)** for the full reference.
+See **[the configuration docs](https://docs.ipp.nz/config/)** for the full reference.
 
 ## Troubleshooting
 
-See the [troubleshooting docs](https://ipp.nz/troubleshooting).
+See the [troubleshooting docs](https://docs.ipp.nz/troubleshooting).
 
 ## Feature requests
 
