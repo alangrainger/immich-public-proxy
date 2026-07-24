@@ -3,7 +3,7 @@ import { h } from 'vue'
 import screenshot from '../../screenshot.webp'
 import './custom.css'
 
-const DEMO_URL = 'https://immich-demo.note.sx/share/gJfs8l4LcJJrBUpjhMnDoKXFt1Tm5vKXPbXl8BgwPtLtEBCOOObqbQdV5i0oun5hZjQ'
+const DEMO_URL = 'https://demo.ipp.nz/share/gJfs8l4LcJJrBUpjhMnDoKXFt1Tm5vKXPbXl8BgwPtLtEBCOOObqbQdV5i0oun5hZjQ'
 
 /**
  * Extend the default theme to:

@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: Live demo
-      link: https://immich-demo.note.sx/share/gJfs8l4LcJJrBUpjhMnDoKXFt1Tm5vKXPbXl8BgwPtLtEBCOOObqbQdV5i0oun5hZjQ
+      link: https://demo.ipp.nz/share/gJfs8l4LcJJrBUpjhMnDoKXFt1Tm5vKXPbXl8BgwPtLtEBCOOObqbQdV5i0oun5hZjQ
     - theme: alt
       text: Getting started
       link: /introduction

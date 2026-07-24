@@ -9,12 +9,12 @@
     <img alt="Docker pulls" src="https://badgen.net/docker/pulls/alangrainger/immich-public-proxy?icon=docker&label=docker%20pulls&color=green&scale=1.1"></a>
 <a href="https://github.com/alangrainger/immich-public-proxy/releases/latest">
     <img alt="Latest release" src="https://badgen.net/github/tag/alangrainger/immich-public-proxy?scale=1.1&label=release"></a>
-<a href="https://immich-demo.note.sx/share/gJfs8l4LcJJrBUpjhMnDoKXFt1Tm5vKXPbXl8BgwPtLtEBCOOObqbQdV5i0oun5hZjQ"><img alt="Open demo gallery" src="https://badgen.net/static/↗🖼️/live%20demo/green?scale=1.1"></a>
+<a href="https://demo.ipp.nz/share/gJfs8l4LcJJrBUpjhMnDoKXFt1Tm5vKXPbXl8BgwPtLtEBCOOObqbQdV5i0oun5hZjQ"><img alt="Open demo gallery" src="https://badgen.net/static/↗🖼️/live%20demo/green?scale=1.1"></a>
 </p>
 
 Share your Immich photos and albums in a safe way without exposing your Immich instance to the public.
 
-👉 See a [Live demo gallery](https://immich-demo.note.sx/share/gJfs8l4LcJJrBUpjhMnDoKXFt1Tm5vKXPbXl8BgwPtLtEBCOOObqbQdV5i0oun5hZjQ)
+👉 See a [Live demo gallery](https://demo.ipp.nz/share/gJfs8l4LcJJrBUpjhMnDoKXFt1Tm5vKXPbXl8BgwPtLtEBCOOObqbQdV5i0oun5hZjQ)
 serving straight out of my own Immich instance.
 
 Setup takes less than a minute, and you never need to touch it again as all of your sharing stays managed within Immich.
@@ -29,7 +29,7 @@ Setup takes less than a minute, and you never need to touch it again as all of y
 - [Installation](#installation)
 - [How to use it](#how-to-use-it)
 - [How it works](#how-it-works)
-- [Configuration](docs/config/index.md)
+- [Configuration](https://ipp.nz/config/)
 - [Troubleshooting](#troubleshooting)
 - [Feature requests](#feature-requests)
 
@@ -134,71 +134,11 @@ All incoming data is validated and sanitised, and anything unexpected is simply 
 
 ## Configuration
 
-See **[the configuration docs](docs/config/index.md)** for the full reference.
+See **[the configuration docs](https://ipp.nz/config/)** for the full reference.
 
 ## Troubleshooting
 
-### Video playback
-
-If you're using Cloudflare and having issues with videos not playing well, make sure your `/share/video/` paths are set to bypass cache.
-I ran into this issue myself, and found [some helpful advice here](https://community.cloudflare.com/t/mp4-wont-load-in-safari-using-cloudflare/10587/48).
-
-<a href="docs/cloudflare-video-cache.webp"><img src="docs/cloudflare-video-cache.webp" style="width:70%"></a>
-
-I use Linux/Android, so this project is tested with BrowserStack for Apple/Windows devices.
-
-### Can't reach Immich using `localhost:2283`
-
-This is a normal Docker thing, nothing to do with IPP.
-
-From inside a Docker container, you can't reach another container using `localhost`. You need to use a Docker network IP or your server's IP address.
-
-[Here's a guide on connecting Docker containers](https://dionarodrigues.dev/blog/docker-networking-how-to-connect-different-containers).
-
-### IPP logs "Unable to reach Immich", but `curl` inside the container works
-
-If IPP can't connect to Immich even though the container clearly can, you'll see this in the logs:
-
-```
-Unable to reach Immich on http://immich_server:2283
-From the server IPP is running on, see if you can curl to http://immich_server:2283/api/server/ping and receive a JSON result.
-```
-
-yet running that same `curl` from a shell inside the container succeeds:
-
-```
-/app $ curl http://immich_server:2283/api/server/ping
-{"res":"pong"}
-```
-
-This happens with both Docker Compose service names (like `immich_server`) and hostnames from a local DNS
-resolver (for example an AdGuard Home or dnsmasq CNAME rewrite). It is a quirk of the musl libc used by the
-`node:alpine` base image, not IPP itself.
-
-Node's `fetch` asks for the IPv4 (A) and IPv6 (AAAA) records at once. If your resolver answers the AAAA query
-with `NXDOMAIN` instead of the correct empty `NOERROR`, musl fails the whole lookup - even though the IPv4
-address is valid - and IPP reports the connection as failed. `curl` and glibc (the non-alpine `node` image)
-tolerate this, which is why curl works and this only shows up here. The underlying error, hidden behind the log
-message above, is `getaddrinfo ENOTFOUND`.
-
-The reliable fix is to disable IPv6 for the container so only the IPv4 lookup happens. Add the `sysctls` block
-to your service in `docker-compose.yml`:
-
-```yaml
-services:
-  immich-public-proxy:
-    image: alangrainger/immich-public-proxy:latest
-    # ...your existing config...
-    sysctls:
-      - net.ipv6.conf.all.disable_ipv6=1
-      - net.ipv6.conf.default.disable_ipv6=1
-```
-
-Alternatively, point `IMMICH_URL` at Immich's IP address (a numeric address skips DNS resolution entirely), or
-fix your resolver to return an empty `NOERROR` (NODATA) rather than `NXDOMAIN` for the missing AAAA record.
-
-See issues [#203](https://github.com/alangrainger/immich-public-proxy/issues/203) and
-[#263](https://github.com/alangrainger/immich-public-proxy/issues/263) for the full investigation.
+See the [troubleshooting docs](https://ipp.nz/troubleshooting).
 
 ## Feature requests
 
