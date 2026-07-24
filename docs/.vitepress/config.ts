@@ -1,6 +1,6 @@
 import { defineConfig } from 'vitepress'
 
-const DEMO_URL = 'https://demo.ipp.nz/share/gJfs8l4LcJJrBUpjhMnDoKXFt1Tm5vKXPbXl8BgwPtLtEBCOOObqbQdV5i0oun5hZjQ'
+const DEMO_URL = 'https://demo.ipp.nz/s/demo-gallery'
 const REPO_URL = 'https://github.com/alangrainger/immich-public-proxy'
 
 export default defineConfig({

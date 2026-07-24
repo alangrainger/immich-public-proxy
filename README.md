@@ -9,12 +9,12 @@
     <img alt="Docker pulls" src="https://badgen.net/docker/pulls/alangrainger/immich-public-proxy?icon=docker&label=docker%20pulls&color=green&scale=1.1"></a>
 <a href="https://github.com/alangrainger/immich-public-proxy/releases/latest">
     <img alt="Latest release" src="https://badgen.net/github/tag/alangrainger/immich-public-proxy?scale=1.1&label=release"></a>
-<a href="https://demo.ipp.nz/share/gJfs8l4LcJJrBUpjhMnDoKXFt1Tm5vKXPbXl8BgwPtLtEBCOOObqbQdV5i0oun5hZjQ"><img alt="Open demo gallery" src="https://badgen.net/static/↗🖼️/live%20demo/green?scale=1.1"></a>
+<a href="https://demo.ipp.nz/s/demo-gallery"><img alt="Open demo gallery" src="https://badgen.net/static/↗🖼️/live%20demo/green?scale=1.1"></a>
 </p>
 
 Share your Immich photos and albums in a safe way without exposing your Immich instance to the public.
 
-👉 See a [Live demo gallery](https://demo.ipp.nz/share/gJfs8l4LcJJrBUpjhMnDoKXFt1Tm5vKXPbXl8BgwPtLtEBCOOObqbQdV5i0oun5hZjQ)
+👉 See a [Live demo gallery](https://demo.ipp.nz/s/demo-gallery)
 serving straight out of my own Immich instance.
 
 Setup takes less than a minute, and you never need to touch it again as all of your sharing stays managed within Immich.
