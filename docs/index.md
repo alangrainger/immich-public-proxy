@@ -9,6 +9,7 @@ hero:
     - theme: brand
       text: Live demo
       link: https://demo.ipp.nz/s/demo-gallery
+      target: _self
     - theme: alt
       text: Getting started
       link: /introduction

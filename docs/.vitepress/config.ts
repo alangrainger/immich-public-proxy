@@ -20,7 +20,7 @@ export default defineConfig({
     nav: [
       { text: 'About', link: '/introduction' },
       { text: 'Configuration', link: '/config/' },
-      { text: 'Live demo', link: DEMO_URL }
+      { text: 'Github', link: REPO_URL, target: '_self' }
     ],
     sidebar: [
       {
