@@ -28,13 +28,17 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
   // You can specify this in your docker-compose file via the PUBLIC_BASE_URL env var.
   const publicBaseUrl = process.env.PUBLIC_BASE_URL || (res.req.protocol + '://' + res.req.headers.host)
 
-  // Date grouping needs chronological order; sort newest-first when enabled
-  // (overrides any album.order the upstream applied). Sort by the same local
-  // timestamp the grouping buckets on, so buckets stay contiguous / ordered.
+  // Date grouping needs chronological order; follow the album's own sort
+  // direction, defaulting to newest-first when it has none (individual shares).
+  // Sort by the same local timestamp the grouping buckets on, so buckets stay
+  // contiguous / ordered.
   const groupByDate = groupByDateMode()
   if (groupByDate) {
+    const ascending = share.album?.order === 'asc'
     const sortKey = (a: typeof share.assets[number]) => a.localDateTime || a.fileCreatedAt || ''
-    share.assets.sort((a, b) => sortKey(b).localeCompare(sortKey(a)))
+    share.assets.sort((a, b) => ascending
+      ? sortKey(a).localeCompare(sortKey(b))
+      : sortKey(b).localeCompare(sortKey(a)))
   }
 
   // Metadata display flags. Read once here and forwarded to the client via
