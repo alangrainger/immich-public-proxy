@@ -58,13 +58,12 @@ const EXIF_RULES: FieldRule[] = [
   },
   {
     flag: 'dimensions',
-    emit: (out, info) => {
-      if (info.exifImageWidth && info.exifImageHeight) {
-        out.width = info.exifImageWidth
-        out.height = info.exifImageHeight
-        if (info.orientation && ['5', '6', '7', '8'].includes(info.orientation)) {
-          [out.width, out.height] = [out.height, out.width]
-        }
+    emit: (out, _info, asset) => {
+      // Immich has already applied EXIF orientation to the asset-level
+      // dimensions; `exifImage*` holds the raw stored size.
+      if (asset.width && asset.height) {
+        out.width = asset.width
+        out.height = asset.height
       }
     }
   },
