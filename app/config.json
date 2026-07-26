@@ -18,6 +18,7 @@
       },
       "exif": {
         "dateTimeOriginal": false,
+        "timeZone": false,
         "fileName": false,
         "dimensions": false,
         "fileSize": false,

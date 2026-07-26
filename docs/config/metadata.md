@@ -13,6 +13,7 @@ Show the description in the sidebar only (not as a lightbox caption), expose cam
       "description": { "caption": false, "sidebar": true },
       "exif": {
         "dateTimeOriginal": true,
+        "timeZone": true,
         "make": true,
         "model": true,
         "lensModel": true,
@@ -39,7 +40,7 @@ Every per-field flag defaults to `false`. A field is sent to the client only whe
 
 The share owner's **"Show metadata"** toggle in Immich takes precedence over everything here: when it's off, IPP suppresses all description / EXIF / location output and hides the info sidebar (and its toolbar toggle) entirely, regardless of these settings. Note that with "Show metadata" off Immich also strips file creation dates from non-album shares, so [date grouping](/config/gallery#groupbydate) won't work for those shares.
 
-The info sidebar (and its toolbar toggle button) only appear when there is at least one section the operator has opted into - i.e. `description.sidebar` is true, or `exif` / `location` has at least one flag set to `true`. With all three off, the sidebar UI is suppressed.
+The info sidebar (and its toolbar toggle button) only appear when there is at least one section the operator has opted into - i.e. `description.sidebar` is true, or `exif` / `location` has at least one displayable field set to `true`. Dependent flags such as `exif.timeZone` do not activate the sidebar on their own. With all three groups off, the sidebar UI is suppressed.
 
 ## Description
 
@@ -56,19 +57,20 @@ Set both to show in both places; set neither and the description is not included
 
 Under `ipp.showMetadata.exif`. Every flag defaults to `false`.
 
-| Option             | Type   | Description                                   |
-|--------------------|--------|-----------------------------------------------|
-| `dateTimeOriginal` | `bool` | Show the date the photo was taken (per EXIF). |
-| `fileName`         | `bool` | Show the original filename.                   |
-| `dimensions`       | `bool` | Show width x height and megapixel count.      |
-| `fileSize`         | `bool` | Show the file size.                           |
-| `make`             | `bool` | Camera manufacturer (e.g. "Canon").           |
-| `model`            | `bool` | Camera model (e.g. "EOS R5").                 |
-| `lensModel`        | `bool` | Lens model.                                   |
-| `exposureTime`     | `bool` | Shutter speed (e.g. "1/200").                 |
-| `iso`              | `bool` | ISO sensitivity.                              |
-| `fNumber`          | `bool` | Aperture f-number.                            |
-| `focalLength`      | `bool` | Focal length in millimetres.                  |
+| Option             | Type   | Description                                                                                                      |
+|--------------------|--------|------------------------------------------------------------------------------------------------------------------|
+| `dateTimeOriginal` | `bool` | Show the date the photo was taken (per EXIF).                                                                    |
+| `timeZone`         | `bool` | Show and use the photo's timezone when formatting the date. Only applies when `dateTimeOriginal` is also enabled. |
+| `fileName`         | `bool` | Show the original filename.                                                                                      |
+| `dimensions`       | `bool` | Show width x height and megapixel count.                                                                         |
+| `fileSize`         | `bool` | Show the file size.                                                                                              |
+| `make`             | `bool` | Camera manufacturer (e.g. "Canon").                                                                              |
+| `model`            | `bool` | Camera model (e.g. "EOS R5").                                                                                    |
+| `lensModel`        | `bool` | Lens model.                                                                                                      |
+| `exposureTime`     | `bool` | Shutter speed (e.g. "1/200").                                                                                    |
+| `iso`              | `bool` | ISO sensitivity.                                                                                                 |
+| `fNumber`          | `bool` | Aperture f-number.                                                                                               |
+| `focalLength`      | `bool` | Focal length in millimetres.                                                                                     |
 
 ## Location group
 
@@ -93,6 +95,7 @@ Show the description in the sidebar only (not as a lightbox caption), expose cam
       "description": { "caption": false, "sidebar": true },
       "exif": {
         "dateTimeOriginal": true,
+        "timeZone": true,
         "make": true,
         "model": true,
         "lensModel": true,

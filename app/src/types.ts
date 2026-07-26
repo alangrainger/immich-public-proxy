@@ -20,6 +20,7 @@ export interface ExifInfo {
   // Additional EXIF fields surfaced by Immich for the metadata sidebar
   // (gated server-side by ipp.showMetadata.exif.* and .location.* config).
   dateTimeOriginal?: string | null;
+  timeZone?: string | null;
   fileSizeInByte?: number | null;
   make?: string | null;
   model?: string | null;

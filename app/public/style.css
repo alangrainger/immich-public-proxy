@@ -525,7 +525,12 @@ html.ipp-sidebar-open .ipp-sidebar {
 
 .ipp-sidebar-date {
   padding: 12px 0;
+}
+.ipp-sidebar-date-primary {
   font-weight: 500;
+}
+.ipp-sidebar-row-body .ipp-sidebar-date-secondary {
+  margin-bottom: 0;
 }
 
 .ipp-sidebar-coords {
