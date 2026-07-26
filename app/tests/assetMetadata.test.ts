@@ -55,9 +55,9 @@ describe('buildAssetMetadata', () => {
     expect(meta.exif?.city).toBeUndefined()
   })
 
-  // Immich applies EXIF orientation before storing asset.width / asset.height,
+  // Immich 3.x applies EXIF orientation before storing asset.width / height,
   // so a rotated photo reports portrait dimensions there while the exifImage*
-  // pair stays landscape. We must report the former.
+  // pair stays landscape. The asset-level pair must win.
   it('reports dimensions in display orientation', () => {
     setConfig({ ipp: { showMetadata: { exif: { dimensions: true } } } })
     const photo = asset()
@@ -73,13 +73,25 @@ describe('buildAssetMetadata', () => {
     })
   })
 
-  it('omits dimensions when the asset has none', () => {
+  // Immich 2.x has no asset-level width / height, so the raw EXIF pair is
+  // used, swapped when the orientation marks the image as stored rotated.
+  const exifOrientationCases: Array<[string | null, number, number]> = [
+    ['6', 3000, 4000],
+    ['8', 3000, 4000],
+    ['90', 3000, 4000],
+    ['-90', 3000, 4000],
+    ['1', 4000, 3000],
+    [null, 4000, 3000]
+  ]
+
+  it.each(exifOrientationCases)('falls back to swapped exif dimensions without asset dimensions (orientation %s)', (orientation, width, height) => {
     setConfig({ ipp: { showMetadata: { exif: { dimensions: true } } } })
     const photo = asset()
     photo.exifInfo!.exifImageWidth = 4000
     photo.exifInfo!.exifImageHeight = 3000
+    photo.exifInfo!.orientation = orientation
 
-    expect(buildAssetMetadata(photo, share()).exif).toBeUndefined()
+    expect(buildAssetMetadata(photo, share()).exif).toMatchObject({ width, height })
   })
 
   it('returns description when a description surface is enabled', () => {

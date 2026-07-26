@@ -14,7 +14,7 @@ import { Gallery, GalleryItem, GalleryProps } from '../view/gallery'
 import type { GroupByDateMode } from '../shared/types'
 import { downloadFilename } from './filename'
 import { requiresOriginal } from './sizing'
-import { metadataGroupActive, pickExif } from './exif'
+import { displayDimensions, metadataGroupActive, pickExif } from './exif'
 
 /**
  * Render a gallery page for a given SharedLink.
@@ -85,16 +85,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       ? asset.exifInfo.description
       : ''
 
-    let width = asset.width
-    let height = asset.height
-    if (!width || !height) {
-      width = asset.exifInfo?.exifImageWidth
-      height = asset.exifInfo?.exifImageHeight
-      const orientation = asset.exifInfo?.orientation
-      if (orientation && ['5', '6', '7', '8'].includes(orientation) && width && height) {
-        [width, height] = [height, width]
-      }
-    }
+    const { width, height } = displayDimensions(asset)
 
     return {
       id: asset.id,

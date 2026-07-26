@@ -27,10 +27,35 @@ function copy (key: keyof ExifInfo & keyof GalleryExif): FieldRule {
 }
 
 /*
+  EXIF orientation values meaning the image is stored rotated 90/270 degrees,
+  so its displayed width and height are the stored ones swapped. 5-8 are the
+  standard EXIF set (see https://magnushoff.com/articles/jpeg-orientation/);
+  90 / -90 are degree-style values Immich also emits - see `isFlipped` in its
+  `web/src/lib/utils/asset-utils.ts`.
+*/
+const FLIPPED_ORIENTATIONS = [5, 6, 90, 7, 8, -90]
+
+/**
+ * An asset's dimensions as displayed. Prefers the asset-level width/height,
+ * which Immich provides orientation-corrected from 3.0.0
+ */
+export function displayDimensions (asset: Asset): { width?: number, height?: number } {
+  if (asset.width && asset.height) return { width: asset.width, height: asset.height }
+
+  // Fallback for Immich 2.x
+  const info = asset.exifInfo
+  const width = info?.exifImageWidth
+  const height = info?.exifImageHeight
+  if (!width || !height) return {}
+  return FLIPPED_ORIENTATIONS.includes(Number(info?.orientation))
+    ? { width: height, height: width }
+    : { width, height }
+}
+
+/*
   Fields whose config flag, ExifInfo key, and GalleryExif key are all the
-  same string. `copy` handles the whole if/copy dance for each. Fields
-  that need special handling (fileName, dimensions, fileSize, gps) appear
-  inline in the `*_RULES` arrays below.
+  same string, so `copy` handles them. Anything needing special handling is
+  written inline in the `*_RULES` arrays below.
 
   Adding a new metadata field: this rules table is the server-side source
   of truth. Two other places carry parallel knowledge of the field set:
@@ -59,11 +84,10 @@ const EXIF_RULES: FieldRule[] = [
   {
     flag: 'dimensions',
     emit: (out, _info, asset) => {
-      // Immich has already applied EXIF orientation to the asset-level
-      // dimensions; `exifImage*` holds the raw stored size.
-      if (asset.width && asset.height) {
-        out.width = asset.width
-        out.height = asset.height
+      const { width, height } = displayDimensions(asset)
+      if (width && height) {
+        out.width = width
+        out.height = height
       }
     }
   },
