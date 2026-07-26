@@ -62,6 +62,9 @@ const EXIF_RULES: FieldRule[] = [
       if (info.exifImageWidth && info.exifImageHeight) {
         out.width = info.exifImageWidth
         out.height = info.exifImageHeight
+        if (info.orientation && ['5', '6', '7', '8'].includes(info.orientation)) {
+          [out.width, out.height] = [out.height, out.width]
+        }
       }
     }
   },

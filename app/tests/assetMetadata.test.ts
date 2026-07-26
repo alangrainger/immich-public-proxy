@@ -55,6 +55,19 @@ describe('buildAssetMetadata', () => {
     expect(meta.exif?.city).toBeUndefined()
   })
 
+  it('reports dimensions in display orientation', () => {
+    setConfig({ ipp: { showMetadata: { exif: { dimensions: true } } } })
+    const photo = asset()
+    photo.exifInfo!.exifImageWidth = 4000
+    photo.exifInfo!.exifImageHeight = 3000
+    photo.exifInfo!.orientation = '6'
+
+    expect(buildAssetMetadata(photo, share()).exif).toMatchObject({
+      width: 3000,
+      height: 4000
+    })
+  })
+
   it('returns description when a description surface is enabled', () => {
     setConfig({ ipp: { showMetadata: { description: { sidebar: true } } } })
     const meta = buildAssetMetadata(asset(), share())
