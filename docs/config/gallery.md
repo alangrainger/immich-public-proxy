@@ -11,7 +11,7 @@ Show the gallery title and group photos by month:
   "ipp": {
     "gallery": {
       "showTitle": true,
-      "groupByDate": true
+      "groupByDate": "month"
     }
   }
 }
@@ -72,7 +72,7 @@ Locale for [`showExpiryDate`](#showexpirydate) when the format uses name tokens 
 Group the gallery's thumbnails by date, with a header above each group.
 
 - `false` - no grouping (default).
-- `true` / `"month"` - month headers like "December 2024".
+- `"month"` - month headers like "December 2024".
 - `"day"` - day headers like "25 December 2024".
 
 Grouping uses each photo's local "taken" date (matching Immich's own timeline), and sorts photos newest-first. Items missing a creation date end up under an "Undated" bucket at the end (or render without any header when the whole gallery is undated).
