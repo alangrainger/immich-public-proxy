@@ -42,7 +42,7 @@ function copy (key: keyof ExifInfo & keyof GalleryExif): FieldRule {
       `enabled: true` users).
 */
 const EXIF_FIELDS = [
-  'dateTimeOriginal', 'make', 'model', 'lensModel',
+  'make', 'model', 'lensModel',
   'exposureTime', 'iso', 'fNumber', 'focalLength'
 ] as const
 
@@ -50,6 +50,16 @@ const LOCATION_FIELDS = ['city', 'state', 'country'] as const
 
 const EXIF_RULES: FieldRule[] = [
   ...EXIF_FIELDS.map(copy),
+  {
+    flag: 'dateTimeOriginal',
+    emit: (out, info) => {
+      if (info.dateTimeOriginal) {
+        out.dateTimeOriginal = info.dateTimeOriginal
+        // Never expose the timezone independently of the opted-in date.
+        if (fieldFlag('exif', 'timeZone') && info.timeZone) out.timeZone = info.timeZone
+      }
+    }
+  },
   {
     flag: 'fileName',
     emit: (out, _info, asset) => {

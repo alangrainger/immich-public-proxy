@@ -16,6 +16,7 @@ export type GroupByDateMode = 'month' | 'day'
 
 export interface GalleryExif {
   dateTimeOriginal?: string // ISO date string; client formats with Intl.DateTimeFormat
+  timeZone?: string
   fileName?: string
   width?: number
   height?: number

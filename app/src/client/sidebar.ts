@@ -5,7 +5,7 @@
 // by the toolbar info button or the `i` key, persisted via localStorage.
 
 import { state, SIDEBAR_STORAGE_KEY } from './state.js'
-import { ICON_INFO, ICON_CLOSE, ICON_IMAGE, ICON_CAMERA, ICON_IRIS, ICON_MAP } from './icons.js'
+import { ICON_INFO, ICON_CLOSE, ICON_IMAGE, ICON_CALENDAR, ICON_CAMERA, ICON_IRIS, ICON_MAP } from './icons.js'
 import type { GalleryItem, GalleryExif } from '../shared/types.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -200,7 +200,7 @@ function renderDetailRows (exif: GalleryExif): HTMLElement[] {
   const rows: HTMLElement[] = [heading]
 
   if (exif.dateTimeOriginal) {
-    rows.push(renderDateRow(exif.dateTimeOriginal))
+    rows.push(renderDateRow(exif.dateTimeOriginal, exif.timeZone))
   }
   const fileRow = renderFileRow(exif)
   if (fileRow) rows.push(fileRow)
@@ -212,10 +212,21 @@ function renderDetailRows (exif: GalleryExif): HTMLElement[] {
   return rows
 }
 
-function renderDateRow (iso: string): HTMLElement {
-  const row = document.createElement('div')
-  row.className = 'ipp-sidebar-row ipp-sidebar-date'
-  row.textContent = formatDate(iso)
+function renderDateRow (iso: string, timeZone?: string): HTMLElement {
+  const row = makeRow(ICON_CALENDAR)
+  row.classList.add('ipp-sidebar-date')
+  const body = row.querySelector('.ipp-sidebar-row-body') as HTMLElement
+  const formatted = formatDate(iso, timeZone)
+  const date = document.createElement('p')
+  date.className = 'ipp-sidebar-date-primary'
+  date.textContent = formatted.date
+  body.appendChild(date)
+  if (formatted.time) {
+    const time = document.createElement('p')
+    time.className = 'ipp-sidebar-date-secondary'
+    time.textContent = formatted.time
+    body.appendChild(time)
+  }
   return row
 }
 
@@ -367,20 +378,86 @@ function hasAnyLocationField (exif: GalleryExif): boolean {
     (exif.latitude != null && exif.longitude != null))
 }
 
-function formatDate (iso: string): string {
+const DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric'
+}
+
+const TIME_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
+  weekday: 'short',
+  hour: 'numeric',
+  minute: '2-digit',
+  second: '2-digit'
+}
+
+export interface FormattedDate {
+  date: string
+  time: string
+}
+
+export function formatDate (iso: string, timeZone?: string): FormattedDate {
   const d = new Date(iso)
-  if (isNaN(d.getTime())) return iso
-  try {
-    return new Intl.DateTimeFormat(undefined, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit'
-    }).format(d)
-  } catch (e) {
-    return iso
+  if (isNaN(d.getTime())) return { date: iso, time: '' }
+
+  if (timeZone) {
+    try {
+      return {
+        date: new Intl.DateTimeFormat(undefined, { ...DATE_FORMAT_OPTIONS, timeZone }).format(d),
+        time: new Intl.DateTimeFormat(undefined, {
+          ...TIME_FORMAT_OPTIONS,
+          timeZone,
+          timeZoneName: 'longOffset'
+        }).format(d)
+      }
+    } catch (e) {
+      const offsetMinutes = parseFixedOffset(timeZone)
+      if (offsetMinutes != null) {
+        const localWallClock = new Date(d.getTime() + offsetMinutes * 60_000)
+        return {
+          date: new Intl.DateTimeFormat(undefined, { ...DATE_FORMAT_OPTIONS, timeZone: 'UTC' }).format(localWallClock),
+          time: new Intl.DateTimeFormat(undefined, { ...TIME_FORMAT_OPTIONS, timeZone: 'UTC' }).format(localWallClock) +
+            ' ' + formatFixedOffset(offsetMinutes)
+        }
+      }
+
+      try {
+        return {
+          date: new Intl.DateTimeFormat(undefined, { ...DATE_FORMAT_OPTIONS, timeZone }).format(d),
+          time: new Intl.DateTimeFormat(undefined, { ...TIME_FORMAT_OPTIONS, timeZone }).format(d)
+        }
+      } catch (e) {
+        // Invalid/unknown timezone: retain the previous browser-local fallback.
+      }
+    }
   }
+
+  try {
+    return {
+      date: new Intl.DateTimeFormat(undefined, DATE_FORMAT_OPTIONS).format(d),
+      time: new Intl.DateTimeFormat(undefined, TIME_FORMAT_OPTIONS).format(d)
+    }
+  } catch (e) {
+    return { date: iso, time: '' }
+  }
+}
+
+function parseFixedOffset (timeZone: string): number | null {
+  const match = /^(?:UTC|GMT)([+-])(\d{1,2})(?::?(\d{2}))?$/i.exec(timeZone.trim())
+  if (!match) return null
+  const hours = Number(match[2])
+  const minutes = Number(match[3] || 0)
+  if (hours > 14 || minutes > 59 || (hours === 14 && minutes !== 0)) return null
+  const total = hours * 60 + minutes
+  return match[1] === '-' ? -total : total
+}
+
+function formatFixedOffset (offsetMinutes: number): string {
+  const sign = offsetMinutes < 0 ? '-' : '+'
+  const absolute = Math.abs(offsetMinutes)
+  const hours = Math.floor(absolute / 60).toString().padStart(2, '0')
+  const minutes = (absolute % 60).toString().padStart(2, '0')
+  return `GMT${sign}${hours}:${minutes}`
 }
 
 function formatBytes (bytes: number): string {

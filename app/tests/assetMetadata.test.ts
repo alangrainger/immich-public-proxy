@@ -22,6 +22,8 @@ const asset = (): Asset => ({
   originalMimeType: 'image/heic',
   exifInfo: {
     description: 'A nice photo',
+    dateTimeOriginal: '2025-10-18T06:28:54.000Z',
+    timeZone: 'Asia/Singapore',
     make: 'Canon',
     model: 'EOS R5',
     city: 'Paris',
@@ -53,6 +55,19 @@ describe('buildAssetMetadata', () => {
     expect(meta.exif?.model).toBe('EOS R5')
     // location not enabled -> absent
     expect(meta.exif?.city).toBeUndefined()
+  })
+
+  it('returns the photo timezone only when both date and timezone are enabled', () => {
+    setConfig({ ipp: { showMetadata: { exif: { dateTimeOriginal: true, timeZone: true } } } })
+    const meta = buildAssetMetadata(asset(), share())
+    expect(meta.exif?.dateTimeOriginal).toBe('2025-10-18T06:28:54.000Z')
+    expect(meta.exif?.timeZone).toBe('Asia/Singapore')
+
+    setConfig({ ipp: { showMetadata: { exif: { dateTimeOriginal: true } } } })
+    expect(buildAssetMetadata(asset(), share()).exif?.timeZone).toBeUndefined()
+
+    setConfig({ ipp: { showMetadata: { exif: { timeZone: true } } } })
+    expect(buildAssetMetadata(asset(), share()).exif).toBeUndefined()
   })
 
   it('returns description when a description surface is enabled', () => {
