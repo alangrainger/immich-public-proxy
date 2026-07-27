@@ -97,7 +97,7 @@ describe('buildAssetMetadata', () => {
   })
 
   it('returns the photo timezone only when both date and timezone are enabled', () => {
-    setConfig({ ipp: { showMetadata: { exif: { dateTimeOriginal: true, timezone: true } } } })
+    setConfig({ ipp: { showMetadata: { exif: { dateTimeOriginal: true, timeZone: true } } } })
     const meta = buildAssetMetadata(asset(), share())
     expect(meta.exif?.dateTimeOriginal).toBe('2025-10-18T06:28:54.000Z')
     expect(meta.exif?.timeZone).toBe('Asia/Singapore')
@@ -105,7 +105,7 @@ describe('buildAssetMetadata', () => {
     setConfig({ ipp: { showMetadata: { exif: { dateTimeOriginal: true } } } })
     expect(buildAssetMetadata(asset(), share()).exif?.timeZone).toBeUndefined()
 
-    setConfig({ ipp: { showMetadata: { exif: { timezone: true } } } })
+    setConfig({ ipp: { showMetadata: { exif: { timeZone: true } } } })
     expect(buildAssetMetadata(asset(), share()).exif).toBeUndefined()
   })
 

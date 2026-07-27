@@ -186,7 +186,7 @@ describe('metadataEnabled shim', () => {
     const exif = ((config.ipp as Record<string, unknown>).showMetadata as Record<string, unknown>).exif as Record<string, unknown>
     expect(exif.enabled).toBeUndefined()
     expect(exif.dateTimeOriginal).toBe(true)
-    expect(exif.timezone).toBeUndefined()
+    expect(exif.timeZone).toBeUndefined()
     expect(exif.fileName).toBe(true)
     expect(exif.dimensions).toBe(true)
     expect(exif.fileSize).toBe(true)
