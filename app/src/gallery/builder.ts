@@ -4,7 +4,7 @@ import {
   videoUrl
 } from '../immich'
 import { Response } from 'express-serve-static-core'
-import { AssetType, ImageSize, SharedLink } from '../types'
+import { Asset, AssetType, ImageSize, SharedLink } from '../types'
 import { getConfigOption, getNumericConfigOption } from '../config/access'
 import { canDownload, expiryDate, title } from '../share'
 import { toString } from '../utils/text'
@@ -34,11 +34,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
   // contiguous / ordered.
   const groupByDate = groupByDateMode()
   if (groupByDate) {
-    const ascending = share.album?.order === 'asc'
-    const sortKey = (a: typeof share.assets[number]) => a.localDateTime || a.fileCreatedAt || ''
-    share.assets.sort((a, b) => ascending
-      ? sortKey(a).localeCompare(sortKey(b))
-      : sortKey(b).localeCompare(sortKey(a)))
+    share.assets.sort(dateSortComparator(share.album?.order))
   }
 
   // Metadata display flags. Read once here and forwarded to the client via
@@ -169,6 +165,23 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
  */
 function description (share: SharedLink) {
   return share?.album?.description || ''
+}
+
+/**
+ * Comparator for the date-grouping sort: ascending when the album's order is
+ * `'asc'`, otherwise newest-first (individual shares and orderless albums).
+ * Undated assets always sort last regardless of direction, so the client's
+ * "Undated" group renders at the bottom.
+ */
+export function dateSortComparator (order?: string): (a: Asset, b: Asset) => number {
+  const ascending = order === 'asc'
+  const sortKey = (a: Asset) => a.localDateTime || a.fileCreatedAt || ''
+  return (a, b) => {
+    const ka = sortKey(a)
+    const kb = sortKey(b)
+    if (!ka || !kb) return ka ? -1 : kb ? 1 : 0 // undated always last
+    return ascending ? ka.localeCompare(kb) : kb.localeCompare(ka)
+  }
 }
 
 /**
