@@ -523,9 +523,6 @@ html.ipp-sidebar-open .ipp-sidebar {
   opacity: 0.8;
 }
 
-.ipp-sidebar-date {
-  padding: 12px 0;
-}
 .ipp-sidebar-date-primary {
   font-weight: 500;
 }

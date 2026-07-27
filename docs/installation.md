@@ -1,5 +1,8 @@
 # Installation
 
+> [!NOTE]
+> IPP requires **Immich 2.0.0 or newer**. It checks the server version at startup and will exit with an error against an older Immich.
+
 ## Install with Docker / Podman
 
 1. Download the [docker-compose.yml](https://github.com/alangrainger/immich-public-proxy/blob/main/docker-compose.yml)

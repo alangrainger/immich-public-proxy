@@ -381,9 +381,14 @@ function ratioToDimensions (ratio: number): { width: number, height: number } {
  * time portion reads as the photographer's local wall-clock (the `Z` suffix is
  * nominal, as with Immich's own `localDateTime`). Undefined if no timestamp.
  */
-function localDateTimeFromOffset (fileCreatedAt?: string, offsetHours?: number): string | undefined {
+export function localDateTimeFromOffset (fileCreatedAt?: string, offsetHours?: number): string | undefined {
   if (!fileCreatedAt) return undefined
-  const ms = Date.parse(fileCreatedAt)
+  // The timeline bucket API serialises fileCreatedAt as a zone-less UTC
+  // string ('2024-12-11T07:41:54'). Date.parse treats a zone-less date-time
+  // as SERVER-LOCAL time, which would skew every date by the server's UTC
+  // offset (e.g. 12h early on a UTC+12 host) - pin it to UTC explicitly.
+  const utc = /(?:[Zz]|[+-]\d{2}:?\d{2})$/.test(fileCreatedAt) ? fileCreatedAt : fileCreatedAt + 'Z'
+  const ms = Date.parse(utc)
   if (isNaN(ms)) return undefined
   return new Date(ms + (offsetHours || 0) * 3600_000).toISOString()
 }

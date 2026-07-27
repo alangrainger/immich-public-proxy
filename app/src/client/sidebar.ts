@@ -143,7 +143,7 @@ function renderContents (root: HTMLElement, item: GalleryItem | undefined) {
 
   const exif = item.exif
   if (exif && hasAnyExifField(exif)) {
-    root.appendChild(renderSection('details', ...renderDetailRows(exif)))
+    root.appendChild(renderSection('details', ...renderDetailRows(exif, item)))
   }
 
   if (exif && hasAnyLocationField(exif)) {
@@ -192,7 +192,7 @@ function renderDescription (description: string): HTMLElement {
   return el
 }
 
-function renderDetailRows (exif: GalleryExif): HTMLElement[] {
+function renderDetailRows (exif: GalleryExif, item: GalleryItem): HTMLElement[] {
   const heading = document.createElement('h3')
   heading.className = 'ipp-sidebar-heading'
   heading.textContent = 'Details'
@@ -200,7 +200,7 @@ function renderDetailRows (exif: GalleryExif): HTMLElement[] {
   const rows: HTMLElement[] = [heading]
 
   if (exif.dateTimeOriginal) {
-    rows.push(renderDateRow(exif.dateTimeOriginal, exif.timeZone))
+    rows.push(renderDateRow(exif.dateTimeOriginal, exif.timeZone, item.localDateTime))
   }
   const fileRow = renderFileRow(exif)
   if (fileRow) rows.push(fileRow)
@@ -212,11 +212,20 @@ function renderDetailRows (exif: GalleryExif): HTMLElement[] {
   return rows
 }
 
-function renderDateRow (iso: string, timeZone?: string): HTMLElement {
+function renderDateRow (iso: string, timeZone?: string, localDateTime?: string): HTMLElement {
   const row = makeRow(ICON_CALENDAR)
   row.classList.add('ipp-sidebar-date')
   const body = row.querySelector('.ipp-sidebar-row-body') as HTMLElement
-  const formatted = formatDate(iso, timeZone)
+  // Mirror Immich's DetailPanelDate: with a photo timezone, show the capture
+  // instant in that zone (with its UTC offset); without one, show the
+  // photographer's wall-clock (localDateTime) rather than converting the
+  // instant into the viewer's timezone - keeping the sidebar consistent with
+  // the date-group headers, which bucket by the same wall-clock.
+  const formatted = timeZone
+    ? formatDate(iso, timeZone)
+    : localDateTime
+      ? formatWallClock(localDateTime)
+      : formatDate(iso)
   const date = document.createElement('p')
   date.className = 'ipp-sidebar-date-primary'
   date.textContent = formatted.date
@@ -396,49 +405,81 @@ export interface FormattedDate {
   time: string
 }
 
-export function formatDate (iso: string, timeZone?: string): FormattedDate {
+/**
+ * Format a capture timestamp for the sidebar date row, in the photo's own
+ * timezone when one is provided (and enabled server-side).
+ *
+ * `locales` follows the browser locale when undefined; tests pass 'en-US'
+ * so assertions don't depend on the machine running them.
+ */
+export function formatDate (iso: string, timeZone?: string, locales?: string): FormattedDate {
   const d = new Date(iso)
   if (isNaN(d.getTime())) return { date: iso, time: '' }
 
   if (timeZone) {
-    try {
+    if (canFormat({ timeZone })) {
+      // A zone Intl understands (IANA name or "+08:00" style). Show the UTC
+      // offset too, on browsers that support rendering it.
+      const timeOptions = canFormat({ timeZone, timeZoneName: 'longOffset' })
+        ? { ...TIME_FORMAT_OPTIONS, timeZone, timeZoneName: 'longOffset' as const }
+        : { ...TIME_FORMAT_OPTIONS, timeZone }
       return {
-        date: new Intl.DateTimeFormat(undefined, { ...DATE_FORMAT_OPTIONS, timeZone }).format(d),
-        time: new Intl.DateTimeFormat(undefined, {
-          ...TIME_FORMAT_OPTIONS,
-          timeZone,
-          timeZoneName: 'longOffset'
-        }).format(d)
+        date: new Intl.DateTimeFormat(locales, { ...DATE_FORMAT_OPTIONS, timeZone }).format(d),
+        time: new Intl.DateTimeFormat(locales, timeOptions).format(d)
       }
-    } catch (e) {
-      const offsetMinutes = parseFixedOffset(timeZone)
-      if (offsetMinutes != null) {
-        const localWallClock = new Date(d.getTime() + offsetMinutes * 60_000)
-        return {
-          date: new Intl.DateTimeFormat(undefined, { ...DATE_FORMAT_OPTIONS, timeZone: 'UTC' }).format(localWallClock),
-          time: new Intl.DateTimeFormat(undefined, { ...TIME_FORMAT_OPTIONS, timeZone: 'UTC' }).format(localWallClock) +
-            ' ' + formatFixedOffset(offsetMinutes)
-        }
-      }
+    }
 
-      try {
-        return {
-          date: new Intl.DateTimeFormat(undefined, { ...DATE_FORMAT_OPTIONS, timeZone }).format(d),
-          time: new Intl.DateTimeFormat(undefined, { ...TIME_FORMAT_OPTIONS, timeZone }).format(d)
-        }
-      } catch (e) {
-        // Invalid/unknown timezone: retain the previous browser-local fallback.
+    // Fixed-offset values from Immich ("UTC+8") that Intl rejects: shift the
+    // instant manually and append the offset label ourselves. Anything else
+    // unrecognised falls through to browser-local formatting.
+    const offsetMinutes = parseFixedOffset(timeZone)
+    if (offsetMinutes != null) {
+      const localWallClock = new Date(d.getTime() + offsetMinutes * 60_000)
+      return {
+        date: new Intl.DateTimeFormat(locales, { ...DATE_FORMAT_OPTIONS, timeZone: 'UTC' }).format(localWallClock),
+        time: new Intl.DateTimeFormat(locales, { ...TIME_FORMAT_OPTIONS, timeZone: 'UTC' }).format(localWallClock) +
+          ' ' + formatFixedOffset(offsetMinutes)
       }
     }
   }
 
   try {
     return {
-      date: new Intl.DateTimeFormat(undefined, DATE_FORMAT_OPTIONS).format(d),
-      time: new Intl.DateTimeFormat(undefined, TIME_FORMAT_OPTIONS).format(d)
+      date: new Intl.DateTimeFormat(locales, DATE_FORMAT_OPTIONS).format(d),
+      time: new Intl.DateTimeFormat(locales, TIME_FORMAT_OPTIONS).format(d)
     }
-  } catch (e) {
+  } catch {
     return { date: iso, time: '' }
+  }
+}
+
+/**
+ * Format a timezone-agnostic wall-clock timestamp (Immich's `localDateTime`,
+ * whose `Z` suffix is nominal) exactly as written, with no offset label -
+ * every viewer sees what the camera clock showed.
+ */
+export function formatWallClock (iso: string, locales?: string): FormattedDate {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return { date: iso, time: '' }
+  try {
+    return {
+      date: new Intl.DateTimeFormat(locales, { ...DATE_FORMAT_OPTIONS, timeZone: 'UTC' }).format(d),
+      time: new Intl.DateTimeFormat(locales, { ...TIME_FORMAT_OPTIONS, timeZone: 'UTC' }).format(d)
+    }
+  } catch {
+    return { date: iso, time: '' }
+  }
+}
+
+/**
+ * True when this browser's Intl accepts the given DateTimeFormat options -
+ * unknown timezones and unsupported `timeZoneName` values throw.
+ */
+function canFormat (options: Intl.DateTimeFormatOptions): boolean {
+  try {
+    return !!new Intl.DateTimeFormat(undefined, options)
+  } catch {
+    return false
   }
 }
 

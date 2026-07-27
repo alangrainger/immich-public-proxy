@@ -100,12 +100,11 @@ function dateLabel (key: string, mode: GroupByDateMode): string {
   if (!y || !m) return key
   // Intl.DateTimeFormat picks up the browser's locale; UTC timeZone keeps the
   // displayed date consistent with the bucket key (which is already local).
-  return new Intl.DateTimeFormat(undefined, {
-    year: 'numeric',
-    month: 'long',
-    ...(mode === 'day' ? { day: 'numeric' } : {}),
-    timeZone: 'UTC'
-  }).format(new Date(Date.UTC(y, m - 1, mode === 'day' ? (d || 1) : 1)))
+  // Day headers use Immich's timeline format ("Sat, 18 Oct 2025").
+  return new Intl.DateTimeFormat(undefined, mode === 'day'
+    ? { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }
+    : { month: 'long', year: 'numeric', timeZone: 'UTC' }
+  ).format(new Date(Date.UTC(y, m - 1, mode === 'day' ? (d || 1) : 1)))
 }
 
 /**

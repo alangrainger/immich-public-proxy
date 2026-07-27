@@ -81,7 +81,7 @@ const EXIF_RULES: FieldRule[] = [
       if (info.dateTimeOriginal) {
         out.dateTimeOriginal = info.dateTimeOriginal
         // Never expose the timezone independently of the opted-in date.
-        if (fieldFlag('exif', 'timeZone') && info.timeZone) out.timeZone = info.timeZone
+        if (fieldFlag('exif', 'timezone') && info.timeZone) out.timeZone = info.timeZone
       }
     }
   },
