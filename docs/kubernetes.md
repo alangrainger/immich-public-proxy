@@ -1,62 +1,90 @@
 # Install with Kubernetes
 
-Thanks to [@vanchaxy](https://github.com/vanchaxy) for providing these docs in [#42](https://github.com/alangrainger/immich-public-proxy/issues/42).
+See the [official Immich docs](https://immich.app/docs/install/kubernetes/) for additional information. This deployment uses the common chart Immich depends on ([bjw-s common library chart](https://github.com/bjw-s-labs/helm-charts/tree/common-5.0.1/charts/library/common)) to extend the deployment as described in the [Immich docs](https://github.com/immich-app/immich-charts/blob/main/README.md)
 
-See the [official Immich docs](https://immich.app/docs/install/kubernetes/) for additional information.
-
-1. Add `app-template` chart to the dependencies. It's important to use the same `app-template` version as immich (1.4.0) if installing under the same umbrella chart.
+1. Simply modify the values of your immich deployment in the server section. The next example shows using the new Gateway API HTTPRoute, below you can also find the old Ingress version. This uses 
 ```
-apiVersion: v2
-name: immich
-version: 0.0.0
-dependencies:
-  - name: immich
-    repository: https://immich-app.github.io/immich-charts
-    version: 0.9.0
-  - name: app-template
-    repository: https://bjw-s.github.io/helm-charts
-    version: 1.4.0
-    alias: immich-public-proxy
-```
-2. Add deployment and service to values.
-```
-immich:
-   # immich values
-   ...
+server:
+  enabled: true
 
-immich-public-proxy:
-  global:
-    nameOverride: public-proxy
-
-  env:
-    IMMICH_URL: http://immich-server:2283
-
-  image:
-    repository: alangrainger/immich-public-proxy
-    tag: 1.5.4
-    pullPolicy: IfNotPresent
-
-  service:
+  route:
     main:
       enabled: true
-      primary: true
+      kind: HTTPRoute
+      parentRefs:
+        - name: gateway
+          namespace: kube-system
+      hostnames:
+        - your-immich-url.com
+      rules:
+        - backendRefs:
+            - name: immich-server-main
+              port: 2283
+    immich-public-proxy:
+      enabled: true
+      kind: HTTPRoute
+      parentRefs:
+        - name: gateway
+          namespace: kube-system
+      hostnames:
+        - your-proxy-url.com
+      rules:
+        - backendRefs:
+            - name: immich-server-immich-public-proxy
+              port: 3000
+
+  controllers:
+    immich-public-proxy:
+      containers:
+        main:
+          image:
+            repository: alangrainger/immich-public-proxy
+            tag: 3.2.0
+            pullPolicy: IfNotPresent
+          env:
+            IMMICH_URL: https://your-immich-url.com // You could also reference the service here
+            PUBLIC_BASE_URL: https://your-proxy-url.com
+
+  service:
+    immich-public-proxy:
+      controller: immich-public-proxy
       type: ClusterIP
       ports:
         http:
-          enabled: true
-          primary: true
           port: 3000
-          protocol: HTTP
 
+  serviceMonitor: // We modify the ServiceMonitor here, as the bjw-s common chart can get confused with more than 1 service (main and immich-public-proxy)
+    main:
+      enabled: false // Set to true if you need metrics
+      service:
+        identifier: main
+```
+
+Or with Ingress
+```
+server:
+  enabled: true
   ingress:
     main:
       enabled: true
+
       hosts:
-        - host: &host-share immich-share.local
+        - host: your-immich-url.com
           paths:
-            - path: "/"
-      tls:
-        - secretName: immich-share-tls
-          hosts:
-            - *host-share
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: main
+    immich-public-proxy:
+      enabled: true
+      hosts:
+        - host: your-proxy-url.com
+          paths:
+            - path: /
+              pathType: Prefix
+              service:
+                identifier: immich-public-proxy
+...
 ```
+
+
