@@ -1,12 +1,12 @@
 // Per-tile DOM construction: anchor, image, thumbhash blur background, video
-// play icon, selection checkmark, click + long-press handlers.
+// play icon, motion-photo badge, selection checkmark, click + long-press.
 
 // Runtime URL resolved by Express static, not a TS-resolvable module path.
 // @ts-expect-error - browser-only ESM URL
 import { thumbHashToDataURL } from '/share/static/thumbhash/thumbhash.js' // eslint-disable-line import/no-absolute-path
 
 import { state, LONG_PRESS_MS } from './state.js'
-import { CHECK_SVG } from './icons.js'
+import { CHECK_SVG, ICON_MOTION_BADGE } from './icons.js'
 import { enterSelectMode, toggleSelection } from './selection.js'
 import { openLightbox } from './lightbox.js'
 
@@ -39,9 +39,9 @@ function decodeThumbhash (base64: string): string | null {
  * Positioning is taken from the precomputed `state.layout`.
  *
  * The tile shows the thumbhash blur as a background, an `<img>` whose `src`
- * is held back until the tile enters the viewport (see
- * `loadVisibleTiles`), a play overlay for videos, and a selection
- * checkmark + long-press handler if the share allows downloads.
+ * is held back until the tile enters the viewport (see `loadVisibleTiles`),
+ * a play overlay for videos, a corner badge for motion photos, and a
+ * selection checkmark + long-press handler if the share allows downloads.
  *
  * Click opens the lightbox unless selection mode is active, in which case
  * it toggles the item's selection.
@@ -80,6 +80,13 @@ export function createTile (index: number): HTMLAnchorElement {
     const playIcon = document.createElement('div')
     playIcon.className = 'play-icon'
     a.appendChild(playIcon)
+  }
+
+  if (item.motionUrl) {
+    const motion = document.createElement('div')
+    motion.className = 'motion-icon'
+    motion.innerHTML = ICON_MOTION_BADGE
+    a.appendChild(motion)
   }
 
   // Selection checkmark (rendered only when select mode is even possible -

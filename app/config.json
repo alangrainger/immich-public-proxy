@@ -6,6 +6,7 @@
     },
     "maxDownloadQuality": "original",
     "maxZoomQuality": "preview",
+    "motionPhotos": true,
     "downloadedFilename": 0,
     "allowDownload": 0,
     "downloadFromImmichConcurrencyLimit": 20,

@@ -39,6 +39,8 @@ const sharedLinkResponse = (order?: string) => ({
   }
 })
 
+const MOTION_CLIP_ID = 'dddddddd-dddd-dddd-dddd-dddddddddddd'
+
 const bucketsResponse = [{ timeBucket: '2026-06-01', count: 3 }]
 
 // Columnar (struct-of-arrays). Index 1 is trashed and must be filtered out.
@@ -53,7 +55,9 @@ const bucketResponse = {
   thumbhash: ['hashA', null, 'hashC'],
   isTrashed: [false, true, false],
   fileCreatedAt: ['2026-06-03T00:00:00.000Z', '2026-06-02T00:00:00.000Z', '2026-06-01T00:00:00.000Z'],
-  localOffsetHours: [5.5, -8, 0]
+  localOffsetHours: [5.5, -8, 0],
+  // Index 0 is a motion photo; the others are ordinary assets.
+  livePhotoVideoId: [MOTION_CLIP_ID, null, null]
 }
 
 function routeFetch (sharedLink: unknown) {
@@ -99,6 +103,17 @@ describe('album timeline enumeration (Immich 3.0)', () => {
     expect(assets[0].thumbhash).toBe('hashA')
     // dimensions derived from ratio (landscape 1.5 -> wider than tall)
     expect(assets[0].width!).toBeGreaterThan(assets[0].height!)
+  })
+
+  it('carries the motion photo clip id through from the bucket', async () => {
+    // Album shares get livePhotoVideoId for free from the timeline response,
+    // so motion photos cost no extra upstream requests here.
+    vi.stubGlobal('fetch', routeFetch(sharedLinkResponse()))
+    const result = await getShareByKey(uniqueKey(), undefined, KeyType.key)
+    const assets = result.link!.assets
+    expect(assets[0].livePhotoVideoId).toBe(MOTION_CLIP_ID)
+    // null in the columnar response becomes undefined, as with thumbhash
+    expect(assets[1].livePhotoVideoId).toBeUndefined()
   })
 
   it('synthesises localDateTime from fileCreatedAt + localOffsetHours', async () => {

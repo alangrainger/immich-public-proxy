@@ -1,4 +1,4 @@
-import { DownloadAll, SharedLink } from './types'
+import { Asset, DownloadAll, SharedLink } from './types'
 import { getConfigOption } from './config/access'
 import dayjs from 'dayjs'
 
@@ -77,4 +77,18 @@ function expiryDateLocale (): string | undefined {
   } catch {
     return undefined
   }
+}
+
+/**
+ * Find the shared still that a motion photo (Live Photo) clip belongs to.
+ *
+ * The clip is a separate, hidden Immich asset: it never appears in the share's
+ * own asset list, but Immich authorises it under the same shared-link key
+ * (`checkSharedLinkAccess` whitelists each shared asset's `livePhotoVideoId`).
+ * Matching against the share's own assets is what keeps the set of ids IPP will
+ * serve bounded by the share's contents.
+ */
+export function findMotionPhotoStill (share: SharedLink, clipId: string): Asset | undefined {
+  if (!clipId) return undefined
+  return share.assets.find(asset => asset.livePhotoVideoId === clipId)
 }
