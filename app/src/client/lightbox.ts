@@ -1,6 +1,6 @@
 // PhotoSwipe instantiation, data-source construction, history / hash
-// navigation. Individual UI elements (caption, download, fullscreen,
-// sidebar) live in lightbox-ui.ts and sidebar.ts.
+// navigation. Individual UI elements (caption, download, fullscreen, motion
+// photo, sidebar) live in lightbox-ui.ts and sidebar.ts.
 
 // Runtime URL resolved by Express static, not a TS-resolvable module path.
 // @ts-expect-error - browser-only ESM URL
@@ -13,7 +13,8 @@ import {
   registerBackButton,
   registerCaption,
   registerDownloadButton,
-  registerFullscreenButton
+  registerFullscreenButton,
+  registerMotionButton
 } from './lightbox-ui.js'
 import { registerSidebar } from './sidebar.js'
 import { registerLazyDetail } from './metadata.js'
@@ -238,6 +239,9 @@ export function initLightbox () {
   registerBackButton(state.lightbox)
   if (state.lightboxConfig.showDownload) registerDownloadButton(state.lightbox)
   registerFullscreenButton(state.lightbox)
+  // Hides itself on slides with no clip, so no config check is needed here -
+  // the server omits `motionUrl` when `ipp.motionPhotos` is off.
+  registerMotionButton(state.lightbox)
   if (state.metadataConfig.descriptionInCaption) registerCaption(state.lightbox)
   if (state.metadataConfig.sidebarHasContent) registerSidebar(state.lightbox)
   // Lazy album items load their exif / description / filename on open; this

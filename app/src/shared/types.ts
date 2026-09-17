@@ -45,6 +45,9 @@ export interface GalleryItem {
   // Pre-stringified JSON describing the video source (used to build a <video>
   // element for video slides in the PhotoSwipe lightbox)
   videoData?: string
+  // Playback URL for a motion photo's clip, when the asset has one and
+  // ipp.motionPhotos is enabled. Drives the tile badge + lightbox toggle.
+  motionUrl?: string
   // Immich uses "description" but this is our caption
   description?: string
   downloadFilename: string

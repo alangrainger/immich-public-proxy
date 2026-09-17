@@ -48,6 +48,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
   // share's own download toggle (`share.allowDownload`) is on. Deliberately
   // independent of IPP's `allowDownload` config.
   const zoomUpgrade = getConfigOption('ipp.maxZoomQuality', 'preview') === 'fullsize' && share.allowDownload !== false
+  const motionPhotos = !!getConfigOption('ipp.motionPhotos', true)
   const descriptionInCaption = shareMetadataAllowed && !!getConfigOption('ipp.showMetadata.description.caption', false)
   const descriptionInSidebar = shareMetadataAllowed && !!getConfigOption('ipp.showMetadata.description.sidebar', false)
   const sidebarHasContent = shareMetadataAllowed && (descriptionInSidebar || metadataGroupActive('exif') || metadataGroupActive('location'))
@@ -78,6 +79,11 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     const fullUrl = zoomUpgrade && asset.type === AssetType.image && !requiresOriginal(asset)
       ? photoUrl(share.key, asset.id, ImageSize.fullsize)
       : undefined
+    // Motion photo clip. Reuses the video route; Immich authorises the clip
+    // under the same share key.
+    const motionUrl = motionPhotos && asset.type === AssetType.image && asset.livePhotoVideoId
+      ? videoUrl(share.key, asset.livePhotoVideoId)
+      : undefined
     // Plain text; the client uses textContent so no escaping needed here.
     // Description is included if EITHER surface (caption or sidebar) wants it.
     const descriptionEnabled = descriptionInCaption || descriptionInSidebar
@@ -95,6 +101,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       thumbnailUrl,
       downloadUrl,
       videoData,
+      motionUrl,
       description: itemDescription || undefined,
       downloadFilename: downloadFilename(asset),
       width,

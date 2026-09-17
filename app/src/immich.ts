@@ -411,6 +411,7 @@ function timelineBucketToAssets (bucket: TimelineBucketAssets): Asset[] {
       // timeline does when grouping by local day / month.
       localDateTime: localDateTimeFromOffset(fileCreatedAt, bucket.localOffsetHours?.[i]),
       thumbhash: bucket.thumbhash?.[i] || undefined,
+      livePhotoVideoId: bucket.livePhotoVideoId?.[i] || undefined,
       width,
       height,
       needsDetail: true

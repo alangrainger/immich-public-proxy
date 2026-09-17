@@ -57,6 +57,22 @@ Highest quality the lightbox loads when you zoom in past fit-to-screen.
 
 **Independent of [`allowDownload`](#allowdownload)** - your download UI can be off while zoom is on. It only does anything where Immich can serve full resolution: the share's **own** "allow downloads" toggle in Immich must be on (the full-res image comes from the original file, which Immich gates on that toggle), and the format must be **web-displayable** (JPEG/PNG/WebP). Otherwise (RAW/HEIF, or a share with Immich downloads off) the lightbox stays on the preview. To enable zoom-up, leave the Immich share's download permission on and use [`allowDownload`](#allowdownload) to control whether the download buttons appear.
 
+## `motionPhotos`
+
+**Type:** `bool` · **Default:** `true`
+
+Show motion photos (Live Photos) - an indicator on the gallery thumbnail, and a toggle in the lightbox that plays the photo's short clip and returns to the still when it ends.
+
+The clip is only fetched when a visitor presses the toggle, so leaving this on costs no extra bandwidth for visitors who never use it. Set to `false` to serve motion photos as plain stills:
+
+```json
+{
+  "ipp": {
+    "motionPhotos": false
+  }
+}
+```
+
 ## `downloadedFilename`
 
 **Type:** `int` · **Default:** `0`

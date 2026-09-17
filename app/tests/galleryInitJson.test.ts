@@ -34,6 +34,14 @@ function galleryProps (item: Partial<GalleryItem>): GalleryProps {
 
 const payload = '</script><script>alert(1)</script>'
 
+/** Render a gallery and parse back the `#ipp-init` JSON block the client reads. */
+function initParams (props: GalleryProps) {
+  const html = renderPage(h(Gallery, props))
+  const match = html.match(/<script type="application\/json" id="ipp-init">(.*?)<\/script>/s)
+  if (!match) throw new Error('No init JSON block in the rendered gallery')
+  return JSON.parse(match[1])
+}
+
 describe('gallery init JSON escaping', () => {
   it('neutralises </script> in a crafted download filename', () => {
     const html = renderPage(h(Gallery, galleryProps({ downloadFilename: payload })))
@@ -50,10 +58,17 @@ describe('gallery init JSON escaping', () => {
   })
 
   it('still produces JSON the client can parse back to the same items', () => {
-    const html = renderPage(h(Gallery, galleryProps({ downloadFilename: payload })))
-    const match = html.match(/<script type="application\/json" id="ipp-init">(.*?)<\/script>/s)
-    expect(match).not.toBeNull()
-    const params = JSON.parse(match![1])
+    // initParams throws if the block is missing, so reaching the assertion
+    // also proves the block is still there and still parses.
+    const params = initParams(galleryProps({ downloadFilename: payload }))
     expect(params.items[0].downloadFilename).toBe(payload)
+  })
+
+  it('serialises motionUrl for a motion photo, and omits the key otherwise', () => {
+    const motionUrl = '/share/video/k/dddddddd-dddd-dddd-dddd-dddddddddddd'
+    expect(initParams(galleryProps({ motionUrl })).items[0].motionUrl).toBe(motionUrl)
+    // Absent (not null / empty string), so the client's `item.motionUrl` check
+    // and the tile badge stay off for ordinary photos.
+    expect(initParams(galleryProps({})).items[0]).not.toHaveProperty('motionUrl')
   })
 })
