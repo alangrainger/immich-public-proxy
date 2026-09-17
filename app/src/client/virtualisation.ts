@@ -57,13 +57,8 @@ export function virtualize () {
     if (l.top > bottom) break
     neededTiles.add(l.index)
   }
-  // Sticky (already-loaded) tiles: keep them in the "needed" set so
-  // syncRendered never removes them and a scroll-back shows the cached image
-  // with no flicker. Bounded so a very large album can't grow unbounded DOM:
-  //  1. bump currently-visible sticky tiles to most-recently-used (set tail),
-  //  2. evict the oldest overflow that isn't on screen right now,
-  //  3. union whatever remains into neededTiles (all already rendered, so
-  //     this only blocks removal - it never triggers a re-create).
+  // Sticky tiles (see state.stickyTiles): bump in-range ones to the tail,
+  // evict overflow from the head, keep the rest. Only ever blocks removal.
   for (const index of neededTiles) {
     if (state.stickyTiles.delete(index)) state.stickyTiles.add(index)
   }
@@ -149,10 +144,7 @@ export function computeLayoutAndRender () {
   state.renderedTiles.clear()
   for (const [, el] of state.renderedHeaders) el.remove()
   state.renderedHeaders.clear()
-  // Tile positions/sizes have changed, so the old pinned <img> elements are
-  // gone. Drop the sticky set and let tiles re-pin themselves as they reload
-  // for the new layout - otherwise the virtualize() below would rebuild every
-  // previously-seen tile at once.
+  // Otherwise virtualize() would rebuild every seen tile at once
   state.stickyTiles.clear()
 
   virtualize()
@@ -175,8 +167,6 @@ export function loadVisibleTiles () {
   for (const a of state.renderedTiles.values()) {
     const img = a.firstElementChild
     if (!(img instanceof HTMLImageElement)) continue
-    // Fast-path: a finished load with no parked data-src has nothing to
-    // toggle. Matters now that sticky tiles keep this map large.
     if (img.complete && img.src && !img.dataset.src) continue
     const aTopInVp = containerTop + parseFloat(a.style.top || '0')
     const aHeight = parseFloat(a.style.height || '0')
