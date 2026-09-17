@@ -15,6 +15,13 @@ export const MOBILE_COLS = 3
 export const IMAGE_LOAD_MARGIN_PX = 300
 export const SCROLL_SETTLE_MS = 100
 export const BUFFER_VIEWPORTS = 1
+// Upper bound on how many already-loaded tiles we keep permanently mounted
+// (see state.stickyTiles). ~1500 covers dozens of screens of scroll-back so
+// revisiting recently-seen thumbnails never flickers, while capping retained
+// DOM / decoded-image memory so a 100k-photo album can't grow unbounded as
+// the user scrolls. Least-recently-visible tiles past this count fall back to
+// normal virtualisation and re-pin if scrolled back to.
+export const STICKY_TILE_LIMIT = 1500
 // Height reserved for each month header (must agree with .group-header CSS)
 export const HEADER_HEIGHT = 48
 // Vertical gap between groups
@@ -73,6 +80,16 @@ export const state = {
   lastContainerW: 0,
   renderedTiles: new Map<number, HTMLAnchorElement>(),
   renderedHeaders: new Map<string, HTMLElement>(),
+  // Tile indices whose <img> has fired `load` at least once. While an index
+  // is in this set virtualize() never removes its tile, so scrolling back to
+  // an already-seen thumbnail shows the cached image with no placeholder /
+  // fade-in flicker. Insertion order is maintained as most-recently-visible-
+  // last and the set is trimmed to STICKY_TILE_LIMIT each virtualize() pass,
+  // so a huge album can't accumulate unbounded mounted DOM. Tiles that have
+  // not loaded yet get the normal lazy create / remove treatment, so large
+  // albums still lazy-load on first scroll-into-view. Cleared on a layout
+  // recompute (see computeLayoutAndRender) because tile geometry changes.
+  stickyTiles: new Set<number>(),
   // Selection mode (mode-toggle UX: hidden checkmarks until activated)
   selectMode: false,
   selected: new Set<string>(),

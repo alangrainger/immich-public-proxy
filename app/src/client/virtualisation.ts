@@ -7,6 +7,7 @@ import {
   IMAGE_LOAD_MARGIN_PX,
   SCROLL_SETTLE_MS,
   BUFFER_VIEWPORTS,
+  STICKY_TILE_LIMIT,
   type HeaderEntry
 } from './state.js'
 import { computeLayout } from './layout.js'
@@ -56,6 +57,26 @@ export function virtualize () {
     if (l.top > bottom) break
     neededTiles.add(l.index)
   }
+  // Sticky (already-loaded) tiles: keep them in the "needed" set so
+  // syncRendered never removes them and a scroll-back shows the cached image
+  // with no flicker. Bounded so a very large album can't grow unbounded DOM:
+  //  1. bump currently-visible sticky tiles to most-recently-used (set tail),
+  //  2. evict the oldest overflow that isn't on screen right now,
+  //  3. union whatever remains into neededTiles (all already rendered, so
+  //     this only blocks removal - it never triggers a re-create).
+  for (const index of neededTiles) {
+    if (state.stickyTiles.delete(index)) state.stickyTiles.add(index)
+  }
+  if (state.stickyTiles.size > STICKY_TILE_LIMIT) {
+    let overflow = state.stickyTiles.size - STICKY_TILE_LIMIT
+    for (const index of state.stickyTiles) {
+      if (overflow <= 0) break
+      if (neededTiles.has(index)) continue
+      state.stickyTiles.delete(index)
+      overflow--
+    }
+  }
+  for (const index of state.stickyTiles) neededTiles.add(index)
   syncRendered(neededTiles, state.renderedTiles, createTile)
 
   // Group headers (when grouping is enabled; headers is empty otherwise)
@@ -128,6 +149,11 @@ export function computeLayoutAndRender () {
   state.renderedTiles.clear()
   for (const [, el] of state.renderedHeaders) el.remove()
   state.renderedHeaders.clear()
+  // Tile positions/sizes have changed, so the old pinned <img> elements are
+  // gone. Drop the sticky set and let tiles re-pin themselves as they reload
+  // for the new layout - otherwise the virtualize() below would rebuild every
+  // previously-seen tile at once.
+  state.stickyTiles.clear()
 
   virtualize()
   loadVisibleTiles()
@@ -149,6 +175,9 @@ export function loadVisibleTiles () {
   for (const a of state.renderedTiles.values()) {
     const img = a.firstElementChild
     if (!(img instanceof HTMLImageElement)) continue
+    // Fast-path: a finished load with no parked data-src has nothing to
+    // toggle. Matters now that sticky tiles keep this map large.
+    if (img.complete && img.src && !img.dataset.src) continue
     const aTopInVp = containerTop + parseFloat(a.style.top || '0')
     const aHeight = parseFloat(a.style.height || '0')
     const isFar = aTopInVp + aHeight < -IMAGE_LOAD_MARGIN_PX ||
