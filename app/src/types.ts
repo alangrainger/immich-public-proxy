@@ -61,9 +61,7 @@ export interface Asset {
   height?: number;
   // Base64-encoded thumbhash for tasteful blur placeholders during lazy-load
   thumbhash?: string;
-  // Motion photo (Live Photo) clip. A separate, hidden Immich asset; the same
-  // shared-link key authorises it (Immich's checkSharedLinkAccess whitelists
-  // each shared asset's livePhotoVideoId alongside the asset itself).
+  // Motion photo (Live Photo) clip: a hidden asset authorised by the same key
   livePhotoVideoId?: string;
   // True for album assets enumerated via the timeline API, which give us only
   // grid fields (id, type, ratio, thumbhash, isTrashed, fileCreatedAt). Their

@@ -61,9 +61,9 @@ Highest quality the lightbox loads when you zoom in past fit-to-screen.
 
 **Type:** `bool` · **Default:** `true`
 
-Show motion photos (Live Photos) - an indicator on the gallery thumbnail, and a toggle in the lightbox that plays the photo's short clip and returns to the still when it ends.
+Show motion photos (Live Photos) - an indicator on the gallery thumbnail, and a toggle in the lightbox that plays the photo's short clip and returns to the still when it ends. The toggle stays on: each motion photo the visitor moves to plays its clip automatically until they switch it off.
 
-The clip is only fetched when a visitor presses the toggle, so leaving this on costs no extra bandwidth for visitors who never use it. Set to `false` to serve motion photos as plain stills:
+Clips are only fetched while the toggle is on, so leaving this on costs no extra bandwidth for visitors who never use it. Set to `false` to serve motion photos as plain stills:
 
 ```json
 {

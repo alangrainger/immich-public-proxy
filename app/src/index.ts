@@ -131,18 +131,15 @@ async function resolveSharedAsset (req: Request, keyType: KeyType, allowMotion =
   // enforces this via the share key).
   const asset = resolved.link.assets.find(a => a.id === req.params.id)
   if (asset) return { ok: true, link: resolved.link, asset }
-  // A motion photo's clip is a hidden asset that never appears in the share's
-  // own asset list, but Immich authorises it under the same key. Accept it only
-  // for the video route, and only when a shared still actually points at it -
-  // the whitelist stays bounded by the share's contents.
+  // A motion photo's clip is a hidden asset outside the share's asset list.
+  // Serve it on the video route only, and only if a shared still points at it.
   if (allowMotion) {
     const parent = findMotionPhotoStill(resolved.link, req.params.id)
     if (parent) {
       return {
         ok: true,
         link: resolved.link,
-        // The clip streams inline from /video/playback, so the still's filename
-        // and mime must not follow it into Content-Disposition / sizing.
+        // Streams inline, so the still's filename / mime must not carry over.
         asset: { ...parent, id: req.params.id, type: AssetType.video, originalFileName: undefined, originalMimeType: undefined }
       }
     }

@@ -239,8 +239,7 @@ export function initLightbox () {
   registerBackButton(state.lightbox)
   if (state.lightboxConfig.showDownload) registerDownloadButton(state.lightbox)
   registerFullscreenButton(state.lightbox)
-  // Hides itself on slides with no clip, so no config check is needed here -
-  // the server omits `motionUrl` when `ipp.motionPhotos` is off.
+  // No config gate: the server omits `motionUrl` when motion photos are off.
   registerMotionButton(state.lightbox)
   if (state.metadataConfig.descriptionInCaption) registerCaption(state.lightbox)
   if (state.metadataConfig.sidebarHasContent) registerSidebar(state.lightbox)

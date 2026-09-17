@@ -139,14 +139,12 @@ html.pswp-no-arrows .pswp__button--arrow {
   background: #000;
 }
 
-/* Motion photo (Live Photo) clip. It lives inside the slide's zoom wrap, which
-   carries PhotoSwipe's pan/zoom transform, so it stays pinned to the still
-   underneath through zoom, pan and resize with no geometry tracking in JS. */
+/* Motion photo (Live Photo) clip, inside the slide's zoom wrap so it follows
+   PhotoSwipe's pan / zoom. Width / height are set inline from the still. */
 .pswp__motion-video {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: 0;
+  left: 0;
   object-fit: contain;
   pointer-events: none; /* PhotoSwipe keeps handling drag / zoom / swipe */
 }

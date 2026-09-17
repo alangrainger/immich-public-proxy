@@ -6,13 +6,9 @@ import { findMotionPhotoStill } from '../src/share'
 import { gallery } from '../src/gallery/builder'
 
 /*
-  Motion photo (Live Photo) support. Two rules worth pinning down: the set of
-  clip ids the video route will serve stays bounded by the share's own assets,
-  and `motionUrl` reaches the client only for images that have a clip, and only
-  while `ipp.motionPhotos` is on.
-
-  The builder reads config through config/access, so mock that module and set
-  options per test rather than loading a real config file.
+  Motion photos: clip ids stay bounded by the share's own assets, and
+  `motionUrl` is emitted only for images with a clip while `ipp.motionPhotos`
+  is on. Config is mocked per test rather than loaded from a file.
 */
 const cfg: Record<string, unknown> = {}
 vi.mock('../src/config/access', () => ({

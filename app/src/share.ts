@@ -80,13 +80,9 @@ function expiryDateLocale (): string | undefined {
 }
 
 /**
- * Find the shared still that a motion photo (Live Photo) clip belongs to.
- *
- * The clip is a separate, hidden Immich asset: it never appears in the share's
- * own asset list, but Immich authorises it under the same shared-link key
- * (`checkSharedLinkAccess` whitelists each shared asset's `livePhotoVideoId`).
- * Matching against the share's own assets is what keeps the set of ids IPP will
- * serve bounded by the share's contents.
+ * Find the shared still that a motion photo (Live Photo) clip belongs to. The
+ * clip is a hidden asset that Immich authorises under the same share key;
+ * requiring a shared still to point at it keeps the ids IPP serves bounded.
  */
 export function findMotionPhotoStill (share: SharedLink, clipId: string): Asset | undefined {
   if (!clipId) return undefined

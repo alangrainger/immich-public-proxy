@@ -171,32 +171,35 @@ export function registerFullscreenButton (lightbox: LightboxInstance) {
   })
 }
 
-// Set on the zoom wrap while a motion photo's clip is painting, so CSS can
-// fade the still out underneath it.
+// Set on the zoom wrap while a clip is painting, so CSS can fade the still out.
 const MOTION_PLAYING_CLASS = 'pswp--motion-playing'
 
+// Sticky: once on, every motion photo the visitor opens plays its clip until
+// they turn it off. Module-level so it survives reopening the lightbox.
+let motionEnabled = false
+
 /**
- * The `.pswp__zoom-wrap` of the slide currently on screen. Mounting the clip
- * inside it is what makes pan / zoom free: that element carries PhotoSwipe's
- * transform, so an `inset: 0` child stays pinned to the photo without any
- * geometry tracking of our own.
+ * The `.pswp__zoom-wrap` of the current slide. It carries PhotoSwipe's pan /
+ * zoom transform, so a child at its origin follows the still for free. It has
+ * no box of its own though (auto width / height, absolute children), so the
+ * clip can't be sized from it.
  */
 function currentZoomWrap (pswp: PswpInstance): HTMLElement | null {
   const container = pswp.currSlide?.container
-  if (container instanceof HTMLElement) return container
-  // Fallback for PhotoSwipe builds that don't expose the slide off `pswp`.
-  const fallback = pswp.element.querySelector('.pswp__item[aria-hidden="false"] .pswp__zoom-wrap')
-  return fallback instanceof HTMLElement ? fallback : null
+  return container instanceof HTMLElement ? container : null
+}
+
+/** The loaded still in a zoom wrap (not the thumbnail placeholder), if any. */
+function loadedStill (wrap: HTMLElement): HTMLElement | null {
+  const still = wrap.querySelector('.pswp__img:not(.pswp__img--placeholder)')
+  return still instanceof HTMLElement ? still : null
 }
 
 /**
- * Register the motion photo (Live Photo) toggle: swaps the still for its short
- * clip and returns to the still when the clip ends. The button hides itself on
- * slides with no clip, and the server omits `motionUrl` altogether when
- * `ipp.motionPhotos` is off, so it then never appears at all.
- *
- * The `<video>` is created on demand with `preload="none"`: nothing is fetched
- * from Immich until a visitor actually presses the button.
+ * Register the motion photo (Live Photo) toggle. While on, each motion photo
+ * plays its clip over the still on arrival and reverts when the clip ends.
+ * The button hides itself on slides without a clip. Nothing is fetched from
+ * Immich until the toggle is turned on.
  */
 export function registerMotionButton (lightbox: LightboxInstance) {
   lightbox.on('uiRegister', () => {
@@ -207,59 +210,87 @@ export function registerMotionButton (lightbox: LightboxInstance) {
       html: ICON_MOTION_PLAY,
       onInit: (el: HTMLElement, pswp: PswpInstance) => {
         let video: HTMLVideoElement | null = null
+        let sizer: ResizeObserver | null = null
+        let stillWatcher: MutationObserver | null = null
 
         const update = () => {
           el.hidden = !state.items[pswp.currIndex]?.motionUrl
-          const label = video ? 'Stop motion photo' : 'Play motion photo'
-          el.innerHTML = video ? ICON_MOTION_PAUSE : ICON_MOTION_PLAY
+          const label = motionEnabled ? 'Stop playing motion photos' : 'Play motion photos'
+          el.innerHTML = motionEnabled ? ICON_MOTION_PAUSE : ICON_MOTION_PLAY
           el.setAttribute('aria-label', label)
           el.setAttribute('title', label)
         }
 
-        // PhotoSwipe reuses slide DOM, so the clip has to be torn down on slide
-        // change too, not only when it reaches its end.
         const stop = () => {
+          stillWatcher?.disconnect()
+          stillWatcher = null
           const clip = video
           if (!clip) return
           video = null
+          sizer?.disconnect()
+          sizer = null
           clip.pause()
           clip.parentElement?.classList.remove(MOTION_PLAYING_CLASS)
           clip.remove()
-          update()
         }
 
         const play = () => {
+          if (video) return
           const item = state.items[pswp.currIndex]
           const wrap = currentZoomWrap(pswp)
           if (!item?.motionUrl || !wrap) return
+          const still = loadedStill(wrap)
+          if (!still) {
+            // PhotoSwipe appends the still after it loads, which can be after
+            // the slide change. Wait for it.
+            stillWatcher?.disconnect()
+            stillWatcher = new MutationObserver(() => {
+              if (loadedStill(wrap)) play()
+            })
+            stillWatcher.observe(wrap, { childList: true })
+            return
+          }
+          stillWatcher?.disconnect()
+          stillWatcher = null
           const clip = document.createElement('video')
           clip.className = 'pswp__motion-video'
-          // Muted is not optional - browsers refuse programmatic playback of
-          // audible media, and Immich's motion clips are silent regardless.
-          clip.muted = true
+          clip.muted = true // required for programmatic playback
           clip.playsInline = true
           clip.preload = 'none'
           clip.src = item.motionUrl
+          // Mirror the still's inline size, which PhotoSwipe rewrites on
+          // resize and after each zoom gesture.
+          const sizeToStill = () => {
+            clip.style.width = still.offsetWidth + 'px'
+            clip.style.height = still.offsetHeight + 'px'
+          }
+          sizeToStill()
+          sizer = new ResizeObserver(sizeToStill)
+          sizer.observe(still)
           clip.addEventListener('ended', stop, { once: true })
-          // Hide the still only once the clip is actually painting, so a slow
-          // clip never leaves the slide blank. The identity check keeps a late
-          // event from a clip we already stopped from hiding the still for good.
+          clip.addEventListener('error', stop, { once: true })
+          // Hide the still only once the clip is painting, so a slow clip never
+          // leaves the slide blank.
           clip.addEventListener('playing', () => {
             if (video === clip) wrap.classList.add(MOTION_PLAYING_CLASS)
           }, { once: true })
           wrap.appendChild(clip)
           video = clip
-          update()
           clip.play().catch(() => stop())
         }
 
         el.addEventListener('click', () => {
-          if (video) stop()
-          else play()
+          motionEnabled = !motionEnabled
+          if (motionEnabled) play()
+          else stop()
+          update()
         })
+        // Also fires for the opening slide, so this covers reopening with
+        // the toggle on.
         pswp.on('change', () => {
           stop()
           update()
+          if (motionEnabled) play()
         })
         pswp.on('destroy', stop)
         update()

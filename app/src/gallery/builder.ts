@@ -79,8 +79,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     const fullUrl = zoomUpgrade && asset.type === AssetType.image && !requiresOriginal(asset)
       ? photoUrl(share.key, asset.id, ImageSize.fullsize)
       : undefined
-    // Motion photo clip. Reuses the video route; Immich authorises the clip
-    // under the same share key.
+    // Motion photo clip, served through the video route under the same key.
     const motionUrl = motionPhotos && asset.type === AssetType.image && asset.livePhotoVideoId
       ? videoUrl(share.key, asset.livePhotoVideoId)
       : undefined
