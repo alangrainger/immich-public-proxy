@@ -22,9 +22,13 @@ npm run build    # fails on dead internal links; run it before pushing
 ```
 
 The sidebar is hand-maintained in `.vitepress/config.ts`, so a new page is invisible until it is added there.
-Publishing the built site is a manual step done by the maintainer; a push to `main` does not deploy anything
-by itself.
 Static files (images, favicon) live in `public/` and are referenced by absolute path, e.g. `/share-link.webp`.
+`public/CNAME` holds the custom domain; it is copied to the root of the build and must stay there.
+
+Publishing is automatic. Any push to `main` that touches `docs/` runs the `docs.yaml` workflow, which builds the
+site and deploys it to GitHub Pages at [docs.ipp.nz](https://docs.ipp.nz). A dead link fails the build, so the
+workflow fails and the live site stays on the previous version. Run `npm run build` yourself before pushing rather
+than finding out from a red tick.
 
 ## Structure
 
