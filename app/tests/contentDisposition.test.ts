@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { filenameFromContentDisposition } from '../src/stream/download'
+import { attachmentDisposition, filenameFromContentDisposition } from '../src/stream/download'
 
 // Used by the zip download path to recover the real filename for album grid
 // assets (which arrive without originalFileName) from the /original response.
@@ -21,5 +21,21 @@ describe('filenameFromContentDisposition', () => {
   it('returns undefined when no filename is present', () => {
     expect(filenameFromContentDisposition('attachment')).toBeUndefined()
     expect(filenameFromContentDisposition(null)).toBeUndefined()
+  })
+})
+
+describe('attachmentDisposition', () => {
+  it('percent-encodes commas and semicolons so the header stays a single value', () => {
+    const header = attachmentDisposition('Yellow Aster Butte, WA; day 1.zip')
+    expect(header).toBe("attachment; filename*=UTF-8''Yellow%20Aster%20Butte%2C%20WA%3B%20day%201.zip")
+  })
+
+  it('percent-encodes the characters RFC 5987 excludes from attr-char', () => {
+    expect(attachmentDisposition("it's (1)*.jpg")).toBe("attachment; filename*=UTF-8''it%27s%20%281%29%2A.jpg")
+  })
+
+  it('round-trips through filenameFromContentDisposition', () => {
+    const name = "Photo été, #2 & 'friends' (100%).jpg"
+    expect(filenameFromContentDisposition(attachmentDisposition(name))).toBe(name)
   })
 })

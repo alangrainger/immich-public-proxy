@@ -12,6 +12,7 @@ import { isVideoAsset, resolveDownloadEndpoint, resolveImageEndpoint } from '../
 import { pipeline } from 'stream/promises'
 import { readableFromWeb } from '../utils/webStream'
 import { log } from '../utils/log'
+import { attachmentDisposition } from './download'
 
 /**
  * Stream an asset from Immich back to the client.
@@ -104,8 +105,7 @@ export async function assetBuffer (req: IncomingShareRequest, res: Response, ass
       const playbackMime = useVideoPlayback
         ? (data.headers.get('content-type') || '').split(';')[0].trim() || undefined
         : undefined
-      const filename = encodeURI(getFilename(asset, servedSize, playbackMime))
-      res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${filename}`)
+      res.setHeader('Content-Disposition', attachmentDisposition(getFilename(asset, servedSize, playbackMime)))
     }
   }
   headerList.forEach(header => {
