@@ -6,7 +6,7 @@ import archiver, { Archiver } from 'archiver'
 import { sanitize } from '../utils/sanitize'
 import { resolveDownloadEndpoint, ImageEndpoint } from '../gallery/sizing'
 import { title } from '../share'
-import { getFilename, responseMime, servedMimeFrom } from '../gallery/filename'
+import { attachmentDisposition, getFilename, responseMime, servedMimeFrom } from '../gallery/filename'
 import { readableFromWeb } from '../utils/webStream'
 import { respondToInvalidRequest } from '../invalidRequestHandler'
 
@@ -236,14 +236,6 @@ function enrichFromHeaders (asset: Asset, response: globalThis.Response): Asset 
     originalFileName: asset.originalFileName || fileName,
     originalMimeType: asset.originalMimeType || mime
   }
-}
-
-export function attachmentDisposition (filename: string): string {
-  // encodeURI leaves `,` and `;` raw, which split the header: Chrome reads a
-  // comma as a second Content-Disposition and refuses the download.
-  const encoded = encodeURIComponent(filename)
-    .replace(/['()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase())
-  return `attachment; filename*=UTF-8''${encoded}`
 }
 
 /**

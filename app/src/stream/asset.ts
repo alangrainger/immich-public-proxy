@@ -7,12 +7,11 @@ import {
 import { Response } from 'express-serve-static-core'
 import { Asset, ImageSize, IncomingShareRequest, SharedLink } from '../types'
 import { respondToInvalidRequest } from '../invalidRequestHandler'
-import { getFilename, servedMimeFrom } from '../gallery/filename'
+import { attachmentDisposition, getFilename, servedMimeFrom } from '../gallery/filename'
 import { isVideoAsset, resolveDownloadEndpoint, resolveImageEndpoint } from '../gallery/sizing'
 import { pipeline } from 'stream/promises'
 import { readableFromWeb } from '../utils/webStream'
 import { log } from '../utils/log'
-import { attachmentDisposition } from './download'
 
 /**
  * Stream an asset from Immich back to the client.

@@ -103,6 +103,13 @@ export function downloadFilename (asset: Asset): string {
   return getFilename(asset, resolveImageEndpoint(ImageSize.original, asset).servedSize)
 }
 
+/** Download Content-Disposition, RFC 5987-encoded so `,` and `;` can't split the header. */
+export function attachmentDisposition (filename: string): string {
+  const encoded = encodeURIComponent(filename)
+    .replace(/['()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase())
+  return `attachment; filename*=UTF-8''${encoded}`
+}
+
 /** Content-type without its parameters, or undefined if absent. */
 export function responseMime (response: globalThis.Response): string | undefined {
   return (response.headers.get('content-type') || '').split(';')[0].trim() || undefined

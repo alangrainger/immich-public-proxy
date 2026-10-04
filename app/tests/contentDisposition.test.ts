@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { attachmentDisposition, filenameFromContentDisposition } from '../src/stream/download'
+import { filenameFromContentDisposition } from '../src/stream/download'
+import { attachmentDisposition } from '../src/gallery/filename'
 
 // Used by the zip download path to recover the real filename for album grid
 // assets (which arrive without originalFileName) from the /original response.
