@@ -198,9 +198,7 @@ describe('assetBuffer streaming', () => {
     expect(res.headers['content-length']).toBe(String(4 * CHUNK))
   })
 
-  it('names a preview-clamped download after the served bytes, not .jpg (WebP preview generation)', async () => {
-    // maxDownloadQuality=preview with Immich generating WebP previews: the
-    // Content-Disposition extension must follow the response content-type.
+  it('names a WebP preview download .webp', async () => {
     setConfig({ ipp: { maxDownloadQuality: 'preview' } })
     vi.stubGlobal('fetch', vi.fn(async () => new globalThis.Response(
       new ReadableStream({

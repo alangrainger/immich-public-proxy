@@ -41,8 +41,8 @@ to prevent CDN issues, and the gallery page uses its own [`gallery.cacheTime`](/
 Highest quality served for a download (the download button and "download all" zip).
 
 - `"original"` - the full-resolution original file (default).
-- `"fullsize"` - full resolution but always browser-displayable: the original for JPEG/PNG/WebP, Immich's converted JPEG for RAW/HEIF.
-- `"preview"` - only the ~1440px preview. The format is whatever Immich generates for its preview (JPEG or WebP, per the server's image settings), and downloaded filenames follow it.
+- `"fullsize"` - full resolution but always browser-displayable: the original for JPEG/PNG/WebP, Immich's converted full-size image for RAW/HEIF, in JPEG or WebP per the server's image settings.
+- `"preview"` - only the ~1440px preview, in JPEG or WebP per the server's image settings.
 
 ## `maxZoomQuality`
 

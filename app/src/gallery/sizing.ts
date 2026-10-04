@@ -50,7 +50,7 @@ export function isVideoAsset (asset: Asset): boolean {
   MIME types a browser can render directly, mirroring Immich's
   `isWebSupportedImage`. For these the `fullsize` tier resolves to the original
   bytes (`/original`); everything else (RAW/HEIF/TIFF/...) gets Immich's
-  converted full-size JPEG via `?size=fullsize`.
+  converted full-size image (JPEG or WebP) via `?size=fullsize`.
 */
 const WEB_DISPLAYABLE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp'])
 
@@ -156,7 +156,7 @@ function endpointFor (size: ImageSize, asset: Asset, attachment: boolean): Image
       return { subpath: '/original', attachment, servedSize: ImageSize.original }
     case ImageSize.fullsize:
       // Web formats: fullsize is the original bytes, served from /original.
-      // Non-web (RAW/HEIF): Immich's converted full-size JPEG via ?size=fullsize
+      // Non-web (RAW/HEIF): Immich's converted full-size image via ?size=fullsize
       // (falls back to preview unless full-size generation is enabled in Immich).
       return isWebDisplayable(asset)
         ? { subpath: '/original', attachment, servedSize: ImageSize.original }
@@ -164,14 +164,4 @@ function endpointFor (size: ImageSize, asset: Asset, attachment: boolean): Image
     default: // preview
       return { subpath: '/thumbnail', sizeQueryParam: 'preview', attachment, servedSize: ImageSize.preview }
   }
-}
-
-/**
- * Served content-type for filename derivation: everything but /original is
- * Immich-generated (previews can be WebP), so the response headers are the
- * only reliable extension signal.
- */
-export function servedMimeFrom (subpath: string, response: globalThis.Response): string | undefined {
-  if (subpath === '/original') return undefined
-  return (response.headers.get('content-type') || '').split(';')[0].trim() || undefined
 }

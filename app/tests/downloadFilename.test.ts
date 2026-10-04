@@ -56,9 +56,13 @@ describe('getFilename servedMime override (playback-fallback downloads)', () => 
   })
 })
 
-describe('getFilename converted-byte previews (e.g. WebP preview generation)', () => {
+describe('getFilename WebP previews', () => {
   it('swaps the extension to match the served preview bytes', () => {
     expect(getFilename(imageAsset('holiday.heic'), ImageSize.preview, 'image/webp')).toBe('holiday.webp')
+  })
+
+  it('matches the served MIME type case-insensitively', () => {
+    expect(getFilename(imageAsset('holiday.heic'), ImageSize.preview, 'image/WebP')).toBe('holiday.webp')
   })
 
   it('keeps a JPEG extension when the preview is JPEG', () => {
