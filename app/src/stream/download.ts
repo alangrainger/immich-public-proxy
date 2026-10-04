@@ -131,9 +131,7 @@ export async function downloadAssets (res: Response, share: SharedLink, assets: 
 
 function startZipResponse (res: Response, share: SharedLink, archive: Archiver) {
   res.setHeader('Content-Type', 'application/zip')
-  let filename = (sanitize(title(share)) || 'photos') + '.zip'
-  filename = encodeURI(filename)
-  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${filename}`)
+  res.setHeader('Content-Disposition', attachmentDisposition((sanitize(title(share)) || 'photos') + '.zip'))
   // Hint to intermediate proxies (Nginx, etc.) not to buffer this response.
   res.setHeader('X-Accel-Buffering', 'no')
   res.setHeader('Cache-Control', 'no-store')
@@ -238,6 +236,14 @@ function enrichFromHeaders (asset: Asset, response: globalThis.Response): Asset 
     originalFileName: asset.originalFileName || fileName,
     originalMimeType: asset.originalMimeType || mime
   }
+}
+
+export function attachmentDisposition (filename: string): string {
+  // encodeURI leaves `,` and `;` raw, which split the header: Chrome reads a
+  // comma as a second Content-Disposition and refuses the download.
+  const encoded = encodeURIComponent(filename)
+    .replace(/['()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase())
+  return `attachment; filename*=UTF-8''${encoded}`
 }
 
 /**
