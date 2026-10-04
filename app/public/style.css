@@ -180,6 +180,14 @@ html, body {
   }
 }
 
+/* Long-press selects these tiles, so iOS mustn't open its link preview and menu */
+#gallery a:has(.tile-check),
+#gallery a:has(.tile-check) img {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 /* Touch outside select mode: no invisible tap target. Long-press selects */
 @media (hover: none) {
   #gallery:not(.select-mode) .tile-check {

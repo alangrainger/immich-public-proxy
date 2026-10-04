@@ -132,10 +132,12 @@ export function createTile (index: number): HTMLAnchorElement {
 function attachLongPress (tile: HTMLAnchorElement, id: string) {
   let timer: ReturnType<typeof setTimeout> | null = null
   let pressed = false
+  let touch = false
   const cancel = () => {
     if (timer) { clearTimeout(timer); timer = null }
   }
   tile.addEventListener('pointerdown', (e) => {
+    touch = e.pointerType === 'touch'
     // Ignore right/middle clicks
     if (e.button !== undefined && e.button !== 0) return
     pressed = false
@@ -152,6 +154,10 @@ function attachLongPress (tile: HTMLAnchorElement, id: string) {
   tile.addEventListener('pointermove', (e) => {
     // Cancel long-press if pointer moves significantly (scroll, drag)
     if (Math.abs(e.movementX) + Math.abs(e.movementY) > 6) cancel()
+  })
+  // A long touch selects, so Android mustn't open its link menu. Right-click keeps it.
+  tile.addEventListener('contextmenu', (e) => {
+    if (touch) e.preventDefault()
   })
   // Swallow the synthetic click that follows a successful long-press so it
   // doesn't open the lightbox.
