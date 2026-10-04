@@ -4,9 +4,9 @@ import { Asset, SharedLink } from '../types'
 import { log } from '../utils/log'
 import archiver, { Archiver } from 'archiver'
 import { sanitize } from '../utils/sanitize'
-import { resolveDownloadEndpoint, servedMimeFrom, ImageEndpoint } from '../gallery/sizing'
+import { resolveDownloadEndpoint, ImageEndpoint } from '../gallery/sizing'
 import { title } from '../share'
-import { getFilename } from '../gallery/filename'
+import { getFilename, responseMime, servedMimeFrom } from '../gallery/filename'
 import { readableFromWeb } from '../utils/webStream'
 import { respondToInvalidRequest } from '../invalidRequestHandler'
 
@@ -231,7 +231,7 @@ async function fetchOne (share: SharedLink, asset: Asset, signal: AbortSignal): 
  */
 function enrichFromHeaders (asset: Asset, response: globalThis.Response): Asset {
   const fileName = filenameFromContentDisposition(response.headers.get('content-disposition'))
-  const mime = (response.headers.get('content-type') || '').split(';')[0].trim() || undefined
+  const mime = responseMime(response)
   if (!fileName && !mime) return asset
   return {
     ...asset,

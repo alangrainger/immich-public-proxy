@@ -285,9 +285,7 @@ describe('downloadAssets', () => {
     expect(signals.every(s => s.aborted)).toBe(true)
   }, 10_000)
 
-  it('names a preview-clamped entry after the served bytes, not .jpg (WebP preview generation)', async () => {
-    // Immich generates previews in an operator-chosen format; with WebP
-    // selected and maxDownloadQuality=preview, the zip entry must be .webp.
+  it('names a WebP preview zip entry .webp', async () => {
     setConfig({ ipp: { maxDownloadQuality: 'preview' } })
     const fetchMock = vi.fn(async () => new globalThis.Response(new Uint8Array(2048), {
       status: 200,
