@@ -36,6 +36,29 @@ environment:
 If you serve IPP from several domains, leave it unset and make sure your reverse proxy forwards the original `Host`
 header. See [Running on a single domain](/running-on-single-domain).
 
+## Container won't start after mounting `config.json`
+
+Docker refuses to start the container, with an error that ends:
+
+```
+Are you trying to mount a directory onto a file (or vice-versa)? Check if the specified host path exists and is the expected type
+```
+
+The file on the left of the volume line doesn't exist. When the source of a bind mount is missing, Docker creates an
+empty directory in its place, and a directory can't be mounted over the `config.json` file inside the image.
+
+Check that your `config.json` is at that path. A relative path such as `./config.json` resolves from the folder that
+holds `docker-compose.yml`. A Portainer stack resolves it inside Portainer's own data folder instead, so use an
+absolute path there:
+
+```yaml
+    volumes:
+      - /opt/immich-public-proxy/config.json:/app/config.json:ro
+```
+
+Delete the empty directory Docker created, then recreate the container. See
+[#83](https://github.com/alangrainger/immich-public-proxy/issues/83).
+
 ## Can't reach Immich using `localhost:2283`
 
 This is a normal Docker thing, nothing to do with IPP.

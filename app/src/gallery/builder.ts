@@ -160,9 +160,12 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
     metaBase
   }
 
-  // HTML gallery page cache time
-  const cacheTime = Math.max(0, getNumericConfigOption('ipp.gallery.cacheTime', 300))
-  res.header('Cache-Control', 'public, max-age=' + cacheTime)
+  // HTML gallery page cache time. A password-protected gallery keeps the
+  // no-store that handleShareRequest set.
+  if (!share.password) {
+    const cacheTime = Math.max(0, getNumericConfigOption('ipp.gallery.cacheTime', 300))
+    res.header('Cache-Control', 'public, max-age=' + cacheTime)
+  }
   res.send(renderPage(h(Gallery, props)))
 }
 

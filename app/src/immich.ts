@@ -13,7 +13,7 @@ import {
 } from './types'
 import dayjs from 'dayjs'
 import { getConfigOption } from './config/access'
-import { addResponseHeaders } from './http'
+import { addNoStoreHeaders, addResponseHeaders } from './http'
 import { canDownload } from './share'
 import { log } from './utils/log'
 import { assetBuffer } from './stream/asset'
@@ -162,11 +162,7 @@ export async function handleShareRequest (req: IncomingShareRequest, res: Respon
   }
 
   // Don't cache password-protected albums
-  if (sharedLinkRes.passwordRequired || req.password) {
-    res.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
-    res.header('Pragma', 'no-cache')
-    res.header('Expires', '0')
-  }
+  if (sharedLinkRes.passwordRequired || req.password) addNoStoreHeaders(res)
 
   // Password required - show the visitor the password page
   if (sharedLinkRes.passwordRequired) {
@@ -495,14 +491,18 @@ export function fetchAssetDetail (asset: Asset): Promise<Asset | undefined> {
 }
 
 /**
- * Get the content-type of a video, for the lightbox <video> element
+ * Get the content-type of a video, for the lightbox <video> element. Undefined
+ * when Immich can't serve it, so one missing video doesn't break the share #119
  */
-export async function getVideoContentType (asset: Asset) {
+export async function getVideoContentType (asset: Asset): Promise<string | undefined> {
   const headers = await authHeadersForAsset(asset)
   const data = await request(buildUrl('/assets/' + encodeURIComponent(asset.id) + '/video/playback', {
     [asset.keyType]: asset.key
   }), { headers })
-  return data.headers.get('Content-Type')
+  if (!(data instanceof globalThis.Response)) return undefined
+  // Only the header is needed; an unread body keeps the whole video download open
+  await data.body?.cancel()
+  return data.headers.get('Content-Type') || undefined
 }
 
 /**

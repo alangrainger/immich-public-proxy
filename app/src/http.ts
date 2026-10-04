@@ -15,6 +15,13 @@ export function addResponseHeaders (res: Response): void {
     })
 }
 
+/** Stop browsers and shared caches storing a response from a password-protected share. */
+export function addNoStoreHeaders (res: Response): void {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+  res.set('Pragma', 'no-cache')
+  res.set('Expires', '0')
+}
+
 /**
  * Wrap an async route handler so a rejected promise is passed to Express's
  * error chain (and on to `errorHandler`).

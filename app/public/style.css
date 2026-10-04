@@ -169,9 +169,22 @@ html, body {
   justify-content: center;
 }
 
-#gallery a:hover .tile-check,
 #gallery.select-mode .tile-check {
   opacity: 1;
+}
+
+/* Hover reveal only where hover is real: iOS spends a first tap on it #294 */
+@media (hover: hover) {
+  #gallery a:hover .tile-check {
+    opacity: 1;
+  }
+}
+
+/* Touch outside select mode: no invisible tap target. Long-press selects */
+@media (hover: none) {
+  #gallery:not(.select-mode) .tile-check {
+    pointer-events: none;
+  }
 }
 
 .tile-check svg {

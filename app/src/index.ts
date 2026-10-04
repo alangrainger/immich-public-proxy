@@ -22,7 +22,7 @@ import { NextFunction, Request, Response } from 'express-serve-static-core'
 import { Asset, AssetType, ImageSize, KeyType, SharedLink } from './types'
 import { getConfigOption } from './config/access'
 import { loadConfig } from './config/loader'
-import { addResponseHeaders, asyncHandler, errorHandler } from './http'
+import { addNoStoreHeaders, addResponseHeaders, asyncHandler, errorHandler } from './http'
 import { canDownload, findMotionPhotoStill } from './share'
 import { toString } from './utils/text'
 import { decrypt, encrypt } from './encrypt'
@@ -104,7 +104,15 @@ type SharedAssetResolution =
   | { ok: true, link: SharedLink, asset: Asset }
   | { ok: false, status: number, reason: string, passwordRequired?: boolean }
 
+/** Whether this is a slug link and the operator has turned slug links off. */
+function slugLinksDisabled (keyType: KeyType): boolean {
+  return keyType === KeyType.slug && !getConfigOption('ipp.allowSlugLinks', true)
+}
+
 async function resolveShare (req: Request, keyType: KeyType): Promise<ShareResolution> {
+  if (slugLinksDisabled(keyType)) {
+    return { ok: false, status: 404, reason: 'Slug links are disabled in config.json' }
+  }
   if (!isKey(req.params.key)) {
     return { ok: false, status: 404, reason: 'Invalid key for ' + req.path }
   }
@@ -165,8 +173,7 @@ app.get(/^(|\/share)\/healthcheck$/, asyncHandler(async (_req, res) => {
 app.get('/:shareType(share|s)/:key/:mode(download)?', decodeCookie, asyncHandler(async (req, res) => {
   const keyType = getKeyTypeFromShare(req.params.shareType)
 
-  if (keyType === KeyType.slug && !getConfigOption('ipp.allowSlugLinks', true)) {
-    // Slug type links are not allowed
+  if (slugLinksDisabled(keyType)) {
     respondToInvalidRequest(res, 404, 'Slug links are disabled in config.json')
   } else {
     await handleShareRequest({
@@ -275,6 +282,7 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, asyncHandler(
     respondToInvalidRequest(res, resolved.status, resolved.reason)
     return
   }
+  if (resolved.link.password) addNoStoreHeaders(res)
   const asset: Asset = {
     ...resolved.asset,
     type: req.params.type === 'video' ? AssetType.video : resolved.asset.type
@@ -305,6 +313,8 @@ app.get('/:shareType(share|s)/meta/:key/:id', decodeCookie, asyncHandler(async (
     respondToInvalidRequest(res, resolved.status, resolved.reason)
     return
   }
+
+  if (resolved.link.password) addNoStoreHeaders(res)
 
   const detail = await fetchAssetDetail(resolved.asset)
   if (!detail) {
