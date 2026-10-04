@@ -1,5 +1,8 @@
 FROM node:lts-alpine AS builder
 
+# /app must be node-owned for npm ci; WORKDIR leaves it root-owned on some builders
+RUN mkdir /app && chown node:node /app
+
 USER node
 WORKDIR /app
 COPY --chown=node:node app/ ./
@@ -10,7 +13,8 @@ RUN npm ci \
 
 FROM node:lts-alpine AS runner
 
-RUN apk --no-cache add curl
+RUN apk --no-cache add curl \
+    && mkdir /app && chown node:node /app
 
 USER node
 WORKDIR /app
