@@ -165,3 +165,13 @@ function endpointFor (size: ImageSize, asset: Asset, attachment: boolean): Image
       return { subpath: '/thumbnail', sizeQueryParam: 'preview', attachment, servedSize: ImageSize.preview }
   }
 }
+
+/**
+ * Served content-type for filename derivation: everything but /original is
+ * Immich-generated (previews can be WebP), so the response headers are the
+ * only reliable extension signal.
+ */
+export function servedMimeFrom (subpath: string, response: globalThis.Response): string | undefined {
+  if (subpath === '/original') return undefined
+  return (response.headers.get('content-type') || '').split(';')[0].trim() || undefined
+}

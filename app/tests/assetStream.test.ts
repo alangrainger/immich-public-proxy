@@ -2,11 +2,19 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { Writable } from 'stream'
 import type { Request, Response } from 'express-serve-static-core'
 import { assetBuffer } from '../src/stream/asset'
+import { loadConfig } from '../src/config/loader'
 import { Asset, AssetType, ImageSize, IncomingShareRequest, KeyType } from '../src/types'
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  delete process.env.CONFIG
+  loadConfig()
 })
+
+function setConfig (config: unknown) {
+  process.env.CONFIG = JSON.stringify(config)
+  loadConfig()
+}
 
 const CHUNK = 64 * 1024
 
@@ -188,5 +196,21 @@ describe('assetBuffer streaming', () => {
     expect(res.received).toBe(0)
     expect(source.cancelled).toBe(true)
     expect(res.headers['content-length']).toBe(String(4 * CHUNK))
+  })
+
+  it('names a preview-clamped download after the served bytes, not .jpg (WebP preview generation)', async () => {
+    // maxDownloadQuality=preview with Immich generating WebP previews: the
+    // Content-Disposition extension must follow the response content-type.
+    setConfig({ ipp: { maxDownloadQuality: 'preview' } })
+    vi.stubGlobal('fetch', vi.fn(async () => new globalThis.Response(
+      new ReadableStream({
+        start (controller) { controller.enqueue(new Uint8Array(1024)); controller.close() }
+      }),
+      { status: 200, headers: { 'content-type': 'image/webp', 'content-length': '1024' } }
+    )))
+    const res = new FakeRes()
+    await assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.original)
+    expect(res.headers['content-disposition']).toContain('a1.webp')
+    expect(res.headers['content-type']).toBe('image/webp')
   })
 })

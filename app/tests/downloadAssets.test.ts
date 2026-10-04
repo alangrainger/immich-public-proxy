@@ -3,6 +3,7 @@ import { Writable } from 'stream'
 import { once } from 'events'
 import type { Response } from 'express-serve-static-core'
 import { downloadAssets } from '../src/stream/download'
+import { loadConfig } from '../src/config/loader'
 import { Asset, AssetType, KeyType, SharedLink } from '../src/types'
 
 /*
@@ -16,7 +17,14 @@ dies mid-stream).
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
+  delete process.env.CONFIG
+  loadConfig()
 })
+
+function setConfig (config: unknown) {
+  process.env.CONFIG = JSON.stringify(config)
+  loadConfig()
+}
 
 function makeAsset (id: string): Asset {
   return {
@@ -276,4 +284,19 @@ describe('downloadAssets', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(signals.every(s => s.aborted)).toBe(true)
   }, 10_000)
+
+  it('names a preview-clamped entry after the served bytes, not .jpg (WebP preview generation)', async () => {
+    // Immich generates previews in an operator-chosen format; with WebP
+    // selected and maxDownloadQuality=preview, the zip entry must be .webp.
+    setConfig({ ipp: { maxDownloadQuality: 'preview' } })
+    const fetchMock = vi.fn(async () => new globalThis.Response(new Uint8Array(2048), {
+      status: 200,
+      headers: { 'content-type': 'image/webp' }
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+    const res = new FakeRes()
+    await downloadAssets(asResponse(res), share, [makeAsset('a1')])
+    expect(String(fetchMock.mock.calls[0][0])).toContain('size=preview')
+    expect(centralDirectory(res.output)).toEqual([{ name: 'a1.webp', size: 2048 }])
+  })
 })

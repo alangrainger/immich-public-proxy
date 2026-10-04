@@ -8,7 +8,7 @@ import { Response } from 'express-serve-static-core'
 import { Asset, ImageSize, IncomingShareRequest, SharedLink } from '../types'
 import { respondToInvalidRequest } from '../invalidRequestHandler'
 import { getFilename } from '../gallery/filename'
-import { isVideoAsset, resolveDownloadEndpoint, resolveImageEndpoint } from '../gallery/sizing'
+import { isVideoAsset, resolveDownloadEndpoint, resolveImageEndpoint, servedMimeFrom } from '../gallery/sizing'
 import { pipeline } from 'stream/promises'
 import { readableFromWeb } from '../utils/webStream'
 import { log } from '../utils/log'
@@ -99,12 +99,7 @@ export async function assetBuffer (req: IncomingShareRequest, res: Response, ass
   if (attachment) {
     res.setHeader('X-Accel-Buffering', 'no')
     if (asset.originalFileName) {
-      // Playback downloads serve Immich's transcode, so the filename extension
-      // must follow the response's content-type, not the original file's.
-      const playbackMime = useVideoPlayback
-        ? (data.headers.get('content-type') || '').split(';')[0].trim() || undefined
-        : undefined
-      const filename = encodeURI(getFilename(asset, servedSize, playbackMime))
+      const filename = encodeURI(getFilename(asset, servedSize, servedMimeFrom(subpath, data)))
       res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${filename}`)
     }
   }
