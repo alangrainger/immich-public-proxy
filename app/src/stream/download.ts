@@ -4,7 +4,7 @@ import { Asset, SharedLink } from '../types'
 import { log } from '../utils/log'
 import archiver, { Archiver } from 'archiver'
 import { sanitize } from '../utils/sanitize'
-import { resolveDownloadEndpoint, ImageEndpoint } from '../gallery/sizing'
+import { resolveDownloadEndpoint, servedMimeFrom, ImageEndpoint } from '../gallery/sizing'
 import { title } from '../share'
 import { getFilename } from '../gallery/filename'
 import { readableFromWeb } from '../utils/webStream'
@@ -220,13 +220,7 @@ async function fetchOne (share: SharedLink, asset: Asset, signal: AbortSignal): 
   // so recover them from the headers we already fetched - no extra calls.
   const namedAsset = asset.originalFileName ? asset : enrichFromHeaders(asset, fetched.response)
 
-  // Playback-fallback downloads serve Immich's transcode; carry the response
-  // content-type so the zip entry's extension matches the actual bytes.
-  const servedMime = endpoint.subpath === '/video/playback'
-    ? (fetched.response.headers.get('content-type') || '').split(';')[0].trim() || undefined
-    : undefined
-
-  return { response: fetched.response, asset: namedAsset, endpoint, servedMime, url }
+  return { response: fetched.response, asset: namedAsset, endpoint, servedMime: servedMimeFrom(endpoint.subpath, fetched.response), url }
 }
 
 /**

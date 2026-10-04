@@ -53,10 +53,9 @@ function withMimeExtension (filename: string, mime: string | undefined): string 
 /**
  * Generate a filename for the downloaded asset based on the configuration option chosen.
  *
- * The extension reflects what bytes the user will receive, not what the
- * original was - when Immich downgrades an image-original to preview (see
- * resolveImageEndpoint), the served bytes are JPEG even if the original is
- * HEIC/DNG/RAW, and the filename must match the bytes.
+ * The extension reflects the served bytes, not the original: converted
+ * bytes follow Immich's image settings, so pass the upstream content-type
+ * as `servedMimeOverride`.
  *
  * @param asset
  * @param [servedSize] - what size Immich will actually serve. Defaults to
