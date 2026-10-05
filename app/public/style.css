@@ -1,17 +1,4 @@
-/* Theme tokens, the Inter font and the page base come from @ipp/core's theme.css */
-
-:root {
-  /* Horizontal inset for textual page content (title, description, group
-     headers). The grid itself goes edge-to-edge on mobile so it doesn't use
-     this value. */
-  --gutter: 32px;
-}
-
-@media (max-width: 640px) {
-  :root {
-    --gutter: 8px;
-  }
-}
+/* Theme tokens, the Inter font, the page base and the page header come from @ipp/core's theme.css */
 
 /* ===== Justified-rows / square-grid gallery (tiles are absolute-positioned by JS) ===== */
 
@@ -193,62 +180,6 @@
   height: 100%;
 }
 
-/* ===== Header (title + asset count + download action) ===== */
-
-#header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 28px var(--gutter) 12px;
-  color: var(--color-fg);
-}
-
-.header-text {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-#header h1 {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 500;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  overflow-wrap: break-word;
-}
-
-#header .subtitle {
-  margin: 4px 0 0;
-  font-size: 14px;
-  font-weight: 400;
-  opacity: 0.55;
-}
-
-#download-all {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  text-decoration: none;
-  color: var(--color-fg);
-  transition: background-color 0.15s;
-}
-
-#download-all:hover,
-#download-all:focus-visible {
-  background-color: color-mix(in srgb, var(--color-fg) 10%, transparent);
-  outline: none;
-}
-
-#download-all svg {
-  width: 22px;
-  height: 22px;
-}
-
 #album-description {
   margin: 0;
   padding: 0 var(--gutter) 16px;
@@ -260,13 +191,6 @@
 }
 
 @media (max-width: 640px) {
-  #header {
-    padding-top: 16px;
-    padding-bottom: 8px;
-  }
-  #header h1 {
-    font-size: 22px;
-  }
   #album-description {
     padding-bottom: 12px;
     font-size: 14px;

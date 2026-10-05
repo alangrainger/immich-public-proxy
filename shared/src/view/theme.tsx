@@ -1,5 +1,6 @@
 // Mirrors Immich's FOUC-prevention pattern: read color-theme from localStorage
 // (or fall back to OS preference), then add/remove .dark on <html> before paint.
+// `data-theme` is pico's switch, so pages that use pico follow the same choice.
 // Source: immich-app/immich v2.7.5 web/src/app.html (2026-05-23).
 const themeScript = `
   const key = 'color-theme';
@@ -18,6 +19,7 @@ const themeScript = `
   }
   if (v === 'dark') document.documentElement.classList.add('dark');
   else document.documentElement.classList.remove('dark');
+  document.documentElement.dataset.theme = v;
 `
 
 export function ThemeScript () {

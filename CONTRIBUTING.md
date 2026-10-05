@@ -48,7 +48,7 @@ shared/                   @ipp/core - read-side only, knows nothing about galler
     version.ts            App version from APP_VERSION or the app's package.json
     utils/                log, sanitize (filenames), text (escaping), ttlLruCache, webStream (incl. streaming request bodies)
     view/                 Page renderer, theme script, password page
-  public/                 Static assets both apps serve: pico, Inter font, favicon, theme.css (tokens and page base)
+  public/                 Static assets both apps serve: pico, Inter font, favicon, theme.css (tokens, page base, page header)
   tests/                  Vitest unit tests for core
 app/
   config.json             Runtime configuration, overrideable via volume or inline
@@ -91,8 +91,9 @@ upload-app/               immich-public-proxy-upload - one page per share; strea
     filename.ts           Stored filename: sanitised, prefixed, extension kept
     notify.ts             Optional JSON webhook per stored file
     idleTimeoutStream.ts  Drops a request body that stalls
-    view/upload.tsx       The upload page
-    shared/               Rules and types shared by the server and the page client
+    view/upload.tsx       The upload page, in the look of Immich's upload UI
+    client/upload.ts      The page client: queue, XHR uploads with retry, the upload panel
+    shared/               Rules, types and icons shared by the server and the page client
   tests/                  Vitest unit tests for the upload app
 docs/                     User docs site (VitePress); docs/README.md explains its structure
 Dockerfile                Multi-stage build; IPP runs from /app as the non-root `node` user

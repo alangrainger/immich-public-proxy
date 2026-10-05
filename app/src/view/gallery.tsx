@@ -84,7 +84,7 @@ export function Gallery (props: GalleryProps) {
               </div>
             )}
             {props.showDownloadZip && (
-              <a id="download-all" href={props.path + '/download'} title="Download all" aria-label="Download all">
+              <a id="download-all" class="header-action" href={props.path + '/download'} title="Download all" aria-label="Download all">
                 <svg viewBox="0 0 24 24" aria-hidden="true">
                   <path fill="currentColor" d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/>
                 </svg>

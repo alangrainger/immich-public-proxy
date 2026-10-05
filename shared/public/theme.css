@@ -37,7 +37,18 @@
   --color-primary: rgb(var(--immich-primary));
   --color-gray: rgb(var(--immich-gray));
 
+  /* Status colours from @immich/ui 0.90.0 (dist/theme/default.css), the -500 shades */
+  --color-success: oklch(0.708 0.204 147.56);
+  --color-danger: oklch(0.633 0.24 28.79);
+  --color-warning: oklch(0.812 0.17 76.3);
+  /* @immich/ui's `subtle` surface */
+  --color-subtle: oklch(97% 0 271);
+
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Horizontal inset for textual page content. IPP's grid goes edge-to-edge
+     on mobile so it doesn't use this value. */
+  --gutter: 32px;
 
   color-scheme: light;
 }
@@ -47,8 +58,18 @@ html.dark {
   --color-fg: rgb(var(--immich-dark-fg));
   --color-primary: rgb(var(--immich-dark-primary));
   --color-gray: rgb(var(--immich-dark-gray));
+  --color-success: oklch(0.842 0.181 156.04);
+  --color-danger: oklch(0.727 0.149 21.41);
+  --color-warning: oklch(0.888 0.089 72.24);
+  --color-subtle: oklch(17.89% 0.0104 276.38);
 
   color-scheme: dark;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --gutter: 8px;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -59,4 +80,75 @@ html, body {
   background: var(--color-bg);
   color: var(--color-fg);
   font-family: var(--font-sans);
+}
+
+/* ===== Page header: title, subtitle and round icon actions, shared by both apps ===== */
+
+#header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 28px var(--gutter) 12px;
+  color: var(--color-fg);
+}
+
+.header-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  overflow-wrap: break-word;
+}
+
+#header .subtitle {
+  margin: 4px 0 0;
+  font-size: 14px;
+  font-weight: 400;
+  opacity: 0.55;
+}
+
+/* Round icon button in the header: an anchor or a button */
+.header-action {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--color-fg);
+  transition: background-color 0.15s;
+}
+
+.header-action:hover,
+.header-action:focus-visible {
+  background-color: color-mix(in srgb, var(--color-fg) 10%, transparent);
+  outline: none;
+}
+
+.header-action svg {
+  width: 22px;
+  height: 22px;
+}
+
+@media (max-width: 640px) {
+  #header {
+    padding-top: 16px;
+    padding-bottom: 8px;
+  }
+  #header h1 {
+    font-size: 22px;
+  }
 }
