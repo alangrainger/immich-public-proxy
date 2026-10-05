@@ -1,8 +1,15 @@
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
-import { applyMigrations } from './migrations'
 
 export type Config = Record<string, unknown>
+
+/** Where each app keeps its config file, and how it upgrades legacy config shapes. */
+export interface LoadConfigOptions {
+  /** Absolute path of the bundled config file, used when `IPP_CONFIG` is unset. */
+  defaultPath?: string
+  /** Rewrites legacy keys in place before the config is cached. */
+  migrate?: (config: Config) => void
+}
 
 // Module-level cache populated by `loadConfig()`. Access through
 // `getCurrentConfig()` rather than importing directly; that gives
@@ -13,32 +20,35 @@ let currentConfig: Config = {}
 /**
  * Read the runtime configuration from `process.env.CONFIG` (an inline JSON
  * string, typically set in docker-compose) or from the config file. Applies
- * backward-compatibility migrations, caches the result, and returns it.
+ * the app's `migrate` hook, caches the result, and returns it.
  *
- * Called once from `index.ts` at startup. Safe to call again in tests with
- * a fresh env to reset state.
+ * The default path comes from the app, not from this module's location:
+ * core is compiled into its own package, so a path relative to `__dirname`
+ * would point inside `@ipp/core` instead of at the app's bundled file.
+ *
+ * Called once from each app's `index.ts` at startup. Safe to call again in
+ * tests with a fresh env to reset state.
  */
-export function loadConfig (): Config {
+export function loadConfig ({ defaultPath, migrate }: LoadConfigOptions = {}): Config {
   let config: Config = {}
   try {
     if (process.env.CONFIG) {
       // Attempt to parse docker-compose config string into JSON (if specified)
       config = JSON.parse(process.env.CONFIG)
     } else {
-      // Default config.json sits one level above the compiled dist/ output.
       // IPP_CONFIG (if set) is taken as-is for absolute paths, or resolved
       // against the current working directory for relative paths.
-      const configPath = process.env.IPP_CONFIG
-        ? resolve(process.env.IPP_CONFIG)
-        : resolve(__dirname, '../../config.json')
-      const configJson = JSON.parse(readFileSync(configPath, 'utf8'))
-      if (typeof configJson === 'object') config = configJson
+      const configPath = process.env.IPP_CONFIG ? resolve(process.env.IPP_CONFIG) : defaultPath
+      if (configPath) {
+        const configJson = JSON.parse(readFileSync(configPath, 'utf8'))
+        if (typeof configJson === 'object') config = configJson
+      }
     }
   } catch (e) {
     console.log(e)
   }
 
-  applyMigrations(config)
+  migrate?.(config)
   currentConfig = config
   return config
 }

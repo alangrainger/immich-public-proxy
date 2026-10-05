@@ -1,6 +1,5 @@
-import { Asset, ImageSize } from '../types'
-import { getConfigOption } from '../config/access'
-import { sanitize } from '../utils/sanitize'
+import { Asset, getConfigOption, sanitize } from '@ipp/core'
+import { ImageSize } from '../types'
 import { resolveImageEndpoint } from './sizing'
 
 /**

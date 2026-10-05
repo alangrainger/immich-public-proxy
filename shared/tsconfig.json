@@ -1,12 +1,14 @@
 {
   "compilerOptions": {
-    "baseUrl": "src",
+    "composite": true,
+    "declaration": true,
+    "rootDir": "src",
     "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo",
     "inlineSourceMap": true,
     "inlineSources": true,
     "module": "CommonJS",
     "target": "ES6",
-    "allowJs": true,
     "noImplicitAny": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
@@ -25,17 +27,7 @@
     "jsxImportSource": "preact"
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "tests",
-    "vitest.config.ts",
-    "src/client"
-  ],
-  "references": [
-    { "path": "../shared" }
+    "src/**/*.ts",
+    "src/**/*.tsx"
   ]
 }

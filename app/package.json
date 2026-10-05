@@ -2,9 +2,10 @@
   "name": "immich-public-proxy",
   "version": "3.4.1",
   "scripts": {
-    "dev": "concurrently -n server,client -c blue,green \"tsx watch src/index.ts\" \"tsc -w -p tsconfig.client.json\"",
-    "build": "tsc && tsc -p tsconfig.client.json",
-    "build:server": "tsc",
+    "predev": "tsc -b ../shared",
+    "dev": "concurrently -n core,server,client -c magenta,blue,green \"tsc -b -w --preserveWatchOutput ../shared\" \"tsx watch src/index.ts\" \"tsc -w -p tsconfig.client.json\"",
+    "build": "tsc -b && tsc -p tsconfig.client.json",
+    "build:server": "tsc -b",
     "build:client": "tsc -p tsconfig.client.json",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -21,13 +22,12 @@
   "main": "dist/index.js",
   "bin": "dist/index.js",
   "dependencies": {
+    "@ipp/core": "*",
     "archiver": "^7.0.1",
-    "cookie-session": "^2.1.0",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "preact": "^10.29.2",
-    "preact-render-to-string": "^6.7.0",
     "tslib": "^2.8.1"
   },
   "devDependencies": {

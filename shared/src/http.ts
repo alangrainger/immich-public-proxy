@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express-serve-static-core'
 import { getConfigOption } from './config/access'
-import { respondToInvalidRequest } from './invalidRequestHandler'
+import { respondToInvalidRequest } from './invalidRequest'
 import { log } from './utils/log'
 
 /**

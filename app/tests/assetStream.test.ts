@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
+import { Asset, AssetType, KeyType, loadConfig } from '@ipp/core'
 import { Writable } from 'stream'
 import type { Request, Response } from 'express-serve-static-core'
 import { assetBuffer } from '../src/stream/asset'
-import { loadConfig } from '../src/config/loader'
-import { Asset, AssetType, ImageSize, IncomingShareRequest, KeyType } from '../src/types'
+import { ImageSize, IncomingShareRequest } from '../src/types'
 
 afterEach(() => {
   vi.unstubAllGlobals()

@@ -2,30 +2,33 @@ import {
   AlbumType,
   Asset,
   AssetType,
-  ImageSize,
-  ImmichVersion,
-  IncomingShareRequest,
   KeyType,
-  SharedLink,
   SharedLinkResult,
-  TimelineBucket,
-  TimelineBucketAssets
-} from './types'
-import dayjs from 'dayjs'
-import { getConfigOption } from './config/access'
-import { addNoStoreHeaders, addResponseHeaders } from './http'
+  addNoStoreHeaders,
+  addResponseHeaders,
+  apiUrl,
+  authHeaders,
+  buildUrl,
+  cachedPromise,
+  fetchSharedLink,
+  getConfigOption,
+  invalidPasswordResponse,
+  isKey,
+  log,
+  Password,
+  renderPage,
+  request,
+  respondToInvalidRequest,
+  storeUnlock,
+  TtlLruCache
+} from '@ipp/core'
+import { ImageSize, IncomingShareRequest, TimelineBucket, TimelineBucketAssets } from './types'
 import { canDownload } from './share'
-import { log } from './utils/log'
 import { assetBuffer } from './stream/asset'
 import { downloadAll } from './stream/download'
 import { gallery } from './gallery/builder'
 import { Response } from 'express-serve-static-core'
 import { h } from 'preact'
-import { renderPage } from './view/render'
-import { Password } from './view/password'
-import { respondToInvalidRequest } from './invalidRequestHandler'
-import { encrypt } from './encrypt'
-import { TtlLruCache } from './utils/ttlLruCache'
 
 /*
   In-process cache for share-link lookups. Each direct-asset request (e.g.
@@ -47,18 +50,6 @@ import { TtlLruCache } from './utils/ttlLruCache'
 const shareCache = new TtlLruCache<Promise<SharedLinkResult>>({ ttlMs: 120_000, max: 100 })
 
 /*
-  Immich replaced the deprecated `?password=...` query-param auth for shared
-  links with `POST /shared-links/login`, which returns an
-  `immich_shared_link_token` cookie used on subsequent calls. This cache holds
-  one such token per (keyType, key, password) so the gallery's many asset
-  requests reuse a single login round-trip. Keying by password is load-bearing
-  for security: a request without the correct password produces a different
-  cache key (often empty) and falls through to a fresh login that Immich will
-  reject - IPP never serves cached tokens to unauthenticated visitors.
-*/
-const tokenCache = new TtlLruCache<Promise<string | null>>({ ttlMs: 120_000, max: 100 })
-
-/*
   Per-asset detail cache for the lazy album flow. When a `needsDetail` album
   item opens in the lightbox, the `/meta/` route fetches the full asset from
   `GET /assets/:id` for its exif / filename. Paging quickly through a gallery
@@ -67,64 +58,6 @@ const tokenCache = new TtlLruCache<Promise<string | null>>({ ttlMs: 120_000, max
   opens of the same asset share one upstream call.
 */
 const assetDetailCache = new TtlLruCache<Promise<Asset | undefined>>({ ttlMs: 120_000, max: 500 })
-
-/**
- * Memoise an in-flight Promise in `cache`, coalescing concurrent callers onto
- * a single upstream call. The entry is evicted as soon as it resolves to an
- * invalid value (per `isValid`, default "falsy is invalid") or rejects, so a
- * transient Immich blip never poisons the cache with a negative result.
- *
- * This is the shared form of the "should this stay cached?" policy that
- * TtlLruCache deliberately leaves to its callers (see its doc-comment): the
- * cache stays storage-only; the eviction rule lives here, once, instead of
- * being hand-copied at each call site.
- */
-function cachedPromise<T> (
-  cache: TtlLruCache<Promise<T>>,
-  key: string,
-  factory: () => Promise<T>,
-  isValid: (value: T) => boolean = (value) => !!value
-): Promise<T> {
-  const cached = cache.get(key)
-  if (cached) return cached
-
-  const promise = factory()
-  cache.set(key, promise)
-  promise.then(
-    (value) => { if (!isValid(value)) cache.delete(key) },
-    () => { cache.delete(key) }
-  )
-  return promise
-}
-
-/**
- * Make a request to Immich API. We're not using the SDK to limit
- * the possible attack surface of this app.
- */
-export async function request (endpoint: string, init?: RequestInit) {
-  try {
-    const res = await fetch(apiUrl() + endpoint, init)
-    if (res.status === 200) {
-      const contentType = res.headers.get('Content-Type') || ''
-      if (contentType.includes('application/json')) {
-        return res.json()
-      } else {
-        return res
-      }
-    } else {
-      log('Immich API status ' + res.status)
-      console.log(await res.text())
-    }
-  } catch (e) {
-    log('Unable to reach Immich on ' + process.env.IMMICH_URL)
-    log(`From the container IPP is running in, run this and check you receive a JSON result: node -e "fetch('${apiUrl()}/server/ping').then(r => r.text()).then(console.log).catch(console.error)"`)
-    log('Avoid testing with curl - curl uses its own DNS resolver and can succeed even when the resolver Node/IPP uses (musl getaddrinfo) fails. See https://github.com/alangrainger/immich-public-proxy/issues/263')
-  }
-}
-
-export function apiUrl () {
-  return (process.env.IMMICH_URL || '').replace(/\/*$/, '') + '/api'
-}
 
 /**
  * Handle an incoming request for a shared link `key`. This is the main function which
@@ -155,10 +88,7 @@ export async function handleShareRequest (req: IncomingShareRequest, res: Respon
 
   // A password is required, but the visitor-provided one doesn't match
   if (sharedLinkRes.passwordRequired && req.password) {
-    log('Invalid password for key ' + req.key)
-    res.status(401)
-    // Delete the cookie-session data, so that it doesn't keep saying "Invalid password"
-    if (req.req?.session) delete req.req.session[req.key]
+    invalidPasswordResponse(req.req, res, req.key)
   }
 
   // Don't cache password-protected albums
@@ -183,10 +113,7 @@ export async function handleShareRequest (req: IncomingShareRequest, res: Respon
 
   // If this was a password-protected slug link, we need to also store session information for the ID-based key
   if (req.password && req.req.session && !req.req.session[link.key]) {
-    req.req.session[link.key] = encrypt(JSON.stringify({
-      password: req.password,
-      expires: dayjs().add(1, 'hour').format()
-    }))
+    storeUnlock(req.req, link.key, req.password)
   }
 
   // Everything is ok - output the shared link data
@@ -242,108 +169,57 @@ export function getShareByKey (key: string, password?: string, keyType: KeyType 
  * coalescing on cold misses.
  */
 async function fetchShareByKey (key: string, password?: string, keyType: KeyType = KeyType.key): Promise<SharedLinkResult> {
-  let link
-  const url = buildUrl(apiUrl() + '/shared-links/me', {
-    [keyType]: key
-  })
-  const headers = await authHeaders(keyType, key, password)
-  const res = await fetch(url, { headers })
-  if ((res.headers.get('Content-Type') || '').toLowerCase().includes('application/json')) {
-    const jsonBody = await res.json()
-    if (jsonBody) {
-      if (res.status === 200) {
-        // Normal response - get the shared assets
-        link = jsonBody as SharedLink
-        link.keyType = keyType
+  const result = await fetchSharedLink(key, keyType, password)
+  if (!result.link) return result
+  const link = result.link
 
-        // For an album, `/shared-links/me` returns an empty `assets` array
-        // (Immich 3.0 dropped album assets from both that response and
-        // `AlbumResponseDto`). We enumerate the album's assets from the
-        // timeline API instead - the same approach Immich's own web client
-        // uses for shared albums. This yields grid-only assets; their full
-        // detail (exif, filename) is fetched lazily on lightbox open. The
-        // album cover id we need for og:image is already on `link.album`
-        // (mapAlbum still returns albumThumbnailAssetId).
-        if (link.type === AlbumType.album) {
-          if (!link.album?.id) {
-            log('Album share missing album id for key ' + key)
-            return {
-              valid: false
-            }
-          }
-          const albumAssets = await fetchAlbumAssets(link.album.id, keyType, key, headers)
-          if (albumAssets === null) {
-            // Enumeration failed upstream. Return invalid (not cached) rather
-            // than caching an empty album for the next 120s on a transient blip.
-            return {
-              valid: false
-            }
-          }
-          link.assets = albumAssets
-        }
-
-        link.password = password
-        if (link.expiresAt && dayjs(link.expiresAt) < dayjs()) {
-          // This link has expired
-          log('Expired link ' + key)
-        } else {
-          if (!Array.isArray(link.assets)) {
-            // Defensive guard: the returned album should always(?) populate this array
-            log('Shared link ' + key + ' returned no assets array (type ' + link.type + ')')
-            link.assets = []
-          }
-          // Filter assets to exclude trashed assets
-          link.assets = link.assets.filter(asset => !asset.isTrashed)
-          // Populate the shared assets with the public key/password
-          link.assets.forEach(asset => {
-            asset.key = key
-            asset.keyType = keyType
-            asset.password = password
-          })
-          // Sort album if there is a sort order specified
-          const sortOrder = link.album?.order
-          if (sortOrder === 'asc') {
-            link.assets.sort((a, b) => a?.fileCreatedAt?.localeCompare(b.fileCreatedAt || '') || 0)
-          } else if (sortOrder === 'desc') {
-            link.assets.sort((a, b) => b?.fileCreatedAt?.localeCompare(a.fileCreatedAt || '') || 0)
-          }
-          return {
-            valid: true,
-            link
-          }
-        }
-      } else if (res.status === 401) {
-        // Immich returns 401 for both invalid keys and password-protected shares.
-        // Check the message to distinguish between the two cases.
-        if (jsonBody?.message === 'Invalid share key' || jsonBody?.message === 'Invalid share slug') {
-          // Known invalid key/slug - treat as invalid request
-          log('Invalid share key ' + key)
-        } else {
-          // Default: treat as password required (fail-safe)
-          return {
-            valid: true,
-            passwordRequired: true
-          }
-        }
-      } else {
-        console.log(JSON.stringify(jsonBody))
+  // For an album, `/shared-links/me` returns an empty `assets` array
+  // (Immich 3.0 dropped album assets from both that response and
+  // `AlbumResponseDto`). We enumerate the album's assets from the
+  // timeline API instead - the same approach Immich's own web client
+  // uses for shared albums. This yields grid-only assets; their full
+  // detail (exif, filename) is fetched lazily on lightbox open. The
+  // album cover id we need for og:image is already on `link.album`
+  // (mapAlbum still returns albumThumbnailAssetId).
+  if (link.type === AlbumType.album) {
+    if (!link.album?.id) {
+      log('Album share missing album id for key ' + key)
+      return {
+        valid: false
       }
     }
-  } else {
-    // Otherwise return failure
-    log('Immich response ' + res.status + ' for key ' + key)
-    try {
-      console.log(res.headers.get('Content-Type'))
-      console.log((await res.text()).slice(0, 500))
-      log('Unexpected response from Immich API at ' + apiUrl())
-      log('Please make sure the IPP container is able to reach this path.')
-    } catch (e) {
-      console.log(e)
+    const albumAssets = await fetchAlbumAssets(link.album.id, keyType, key, await authHeaders(keyType, key, password))
+    if (albumAssets === null) {
+      // Enumeration failed upstream. Return invalid (not cached) rather
+      // than caching an empty album for the next 120s on a transient blip.
+      return {
+        valid: false
+      }
     }
+    link.assets = albumAssets
   }
-  return {
-    valid: false
+
+  if (!Array.isArray(link.assets)) {
+    // Defensive guard: the returned album should always(?) populate this array
+    log('Shared link ' + key + ' returned no assets array (type ' + link.type + ')')
+    link.assets = []
   }
+  // Filter assets to exclude trashed assets
+  link.assets = link.assets.filter(asset => !asset.isTrashed)
+  // Populate the shared assets with the public key/password
+  link.assets.forEach(asset => {
+    asset.key = key
+    asset.keyType = keyType
+    asset.password = password
+  })
+  // Sort album if there is a sort order specified
+  const sortOrder = link.album?.order
+  if (sortOrder === 'asc') {
+    link.assets.sort((a, b) => a?.fileCreatedAt?.localeCompare(b.fileCreatedAt || '') || 0)
+  } else if (sortOrder === 'desc') {
+    link.assets.sort((a, b) => b?.fileCreatedAt?.localeCompare(a.fileCreatedAt || '') || 0)
+  }
+  return result
 }
 
 // Base resolution used to turn an Immich `ratio` (width/height) into concrete
@@ -506,18 +382,6 @@ export async function getVideoContentType (asset: Asset): Promise<string | undef
 }
 
 /**
- * Build the `Cookie` header that authenticates to Immich for a
- * password-protected share. Returns `{}` (no Cookie header) when the share
- * has no password or login failed; in those cases Immich will respond 401
- * for protected resources, which the caller handles as "password required".
- */
-export async function authHeaders (keyType: KeyType, key: string, password?: string): Promise<Record<string, string>> {
-  if (!password) return {}
-  const token = await getSharedLinkToken(key, password, keyType)
-  return token ? { Cookie: `immich_shared_link_token=${token}` } : {}
-}
-
-/**
  * `authHeaders` for an asset whose key/keyType/password are already stamped on
  * it (the common case for share-scoped fetches).
  */
@@ -538,57 +402,6 @@ export function assetFetchUrl (asset: Asset, subpath: string, sizeQueryParam?: s
 }
 
 /**
- * Cached login: fetch an `immich_shared_link_token` for the given password,
- * or return null on failure. The cache is per (keyType, key, password) so
- * that a request without the correct password can't reuse another visitor's
- * authenticated session. See `tokenCache` doc-comment for the security
- * argument.
- */
-function getSharedLinkToken (key: string, password: string, keyType: KeyType): Promise<string | null> {
-  const cacheKey = `${keyType}:${key}:${password}`
-  // Default eviction (falsy is invalid) drops a null/empty token, so a failed
-  // login is never cached.
-  return cachedPromise(tokenCache, cacheKey, () => sharedLinkLogin(key, password, keyType))
-}
-
-/**
- * `POST /shared-links/login`. Replaces the deprecated `?password=...` query
- * param. Returns the cookie value on success, null on any failure.
- */
-async function sharedLinkLogin (key: string, password: string, keyType: KeyType): Promise<string | null> {
-  const url = buildUrl(apiUrl() + '/shared-links/login', { [keyType]: key })
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password })
-    })
-    if (res.status !== 201) return null
-    const setCookie = res.headers.get('set-cookie') || ''
-    const match = setCookie.match(/immich_shared_link_token=([^;,]+)/)
-    return match ? match[1] : null
-  } catch (e) {
-    return null
-  }
-}
-
-/**
- * Build safely-encoded URL string.
- */
-export function buildUrl (baseUrl: string, params: { [key: string]: string | undefined } = {}) {
-  // Remove empty properties
-  params = Object.fromEntries(Object.entries(params).filter(([_, value]) => !!value))
-  let query = ''
-  // Safely encode query parameters
-  if (Object.entries(params).length) {
-    query = '?' + (new URLSearchParams(params as {
-      [key: string]: string
-    })).toString()
-  }
-  return baseUrl + query
-}
-
-/**
  * Return the image data URL for a photo
  */
 export function photoUrl (key: string, id: string, size?: ImageSize) {
@@ -605,76 +418,6 @@ export function videoUrl (key: string, id: string) {
 }
 
 /**
- * Check if a provided ID matches the Immich ID format
- */
-export function isId (id: string) {
-  return !!id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
-}
-
-/**
- * Check if a provided key matches the Immich shared-link key format.
- * It appears that the key is always 67 chars long, but since I don't know that this
- * will always be the case, I've left it open-ended.
- */
-export function isKey (key: string) {
-  return !!key.match(/^[\w-]+$/)
-}
-
-/**
- * Reachability ping for the `/share/healthcheck` route.
- */
-export async function accessible () {
-  return !!(await request('/server/ping'))
-}
-
-// Minimum Immich server version IPP is compatible with
-export const MIN_IMMICH_VERSION: ImmichVersion = { major: 2, minor: 0, patch: 0 }
-
-const formatVersion = (v: ImmichVersion) => `${v.major}.${v.minor}.${v.patch}`
-
-/**
- * Fetch the Immich server version from the public `/server/version` endpoint
- * (no auth required). Returns null if Immich is unreachable or the response
- * isn't the expected `{ major, minor, patch }` shape.
- */
-export async function getImmichVersion (): Promise<ImmichVersion | null> {
-  const res = await request('/server/version')
-  if (res && typeof res.major === 'number' && typeof res.minor === 'number' && typeof res.patch === 'number') {
-    return { major: res.major, minor: res.minor, patch: res.patch }
-  }
-  return null
-}
-
-/**
- * True if `version` is at least MIN_IMMICH_VERSION. A prerelease of the
- * minimum version (e.g. 3.0.0-beta) counts as supported.
- */
-export function isImmichVersionSupported (version: ImmichVersion): boolean {
-  if (version.major !== MIN_IMMICH_VERSION.major) return version.major > MIN_IMMICH_VERSION.major
-  if (version.minor !== MIN_IMMICH_VERSION.minor) return version.minor > MIN_IMMICH_VERSION.minor
-  return version.patch >= MIN_IMMICH_VERSION.patch
-}
-
-/**
- * Startup guard. If we can positively confirm the Immich server is older than
- * IPP supports, log and exit rather than silently serving broken album shares.
- * If the version can't be determined (Immich not yet reachable at boot, or an
- * unexpected response), log a warning and continue - a transient blip must not
- * crash-loop the container, and per-request handling still copes.
- */
-export async function enforceMinimumImmichVersion (): Promise<void> {
-  const version = await getImmichVersion()
-  if (!version) {
-    log('Could not determine the Immich server version. Check that Immich is reachable and running ' + formatVersion(MIN_IMMICH_VERSION) + ' or newer.')
-    return
-  }
-  if (!isImmichVersionSupported(version)) {
-    console.error(dayjs().format() + ' FATAL: Immich server is version ' + formatVersion(version) + ', but IPP requires Immich ' + formatVersion(MIN_IMMICH_VERSION) + ' or newer.')
-    process.exit(1)
-  }
-}
-
-/**
  * Coerce an unknown `size` parameter from a URL into a valid ImageSize,
  * defaulting to preview when the input is missing or unrecognised.
  */
@@ -684,11 +427,4 @@ export function validateImageSize (size: unknown) {
   } else {
     return size as ImageSize
   }
-}
-
-/**
- * Map the URL path prefix (`share` or `s`) to the corresponding `KeyType`.
- */
-export function getKeyTypeFromShare (shareType: string) {
-  return shareType === 's' ? KeyType.slug : KeyType.key
 }

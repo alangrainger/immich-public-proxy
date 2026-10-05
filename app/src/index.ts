@@ -2,54 +2,56 @@
 
 import 'dotenv/config'
 import express from 'express'
-import cookieSession from 'cookie-session'
+import { resolve } from 'path'
 import {
   accessible,
+  addNoStoreHeaders,
+  addResponseHeaders,
+  Asset,
+  AssetType,
+  asyncHandler,
+  decodeCookie,
   enforceMinimumImmichVersion,
-  fetchAssetDetail,
+  errorHandler,
+  getConfigOption,
   getKeyTypeFromShare,
-  getShareByKey,
-  handleShareRequest,
   isId,
-  isKey
-} from './immich'
+  isKey,
+  KeyType,
+  loadConfig,
+  renderPage,
+  respondToInvalidRequest,
+  sessionMiddleware,
+  setInvalidRequestHandler,
+  SharedLink,
+  unlockHandler
+} from '@ipp/core'
+import { fetchAssetDetail, getShareByKey, handleShareRequest } from './immich'
 import { buildAssetMetadata } from './gallery/metadata'
-import crypto from 'crypto'
 import { assetBuffer } from './stream/asset'
 import { downloadAssets } from './stream/download'
 import dayjs from 'dayjs'
-import { NextFunction, Request, Response } from 'express-serve-static-core'
-import { Asset, AssetType, ImageSize, KeyType, SharedLink } from './types'
-import { getConfigOption } from './config/access'
-import { loadConfig } from './config/loader'
-import { addNoStoreHeaders, addResponseHeaders, asyncHandler, errorHandler } from './http'
+import { Request } from 'express-serve-static-core'
+import { ImageSize } from './types'
+import { applyMigrations } from './config/migrations'
 import { canDownload, findMotionPhotoStill } from './share'
-import { toString } from './utils/text'
-import { decrypt, encrypt } from './encrypt'
-import { respondToInvalidRequest } from './invalidRequestHandler'
+import { respondToInvalidRequest as ippInvalidRequestHandler } from './invalidRequestHandler'
 import { ASSET_VERSION } from './version'
 import { h } from 'preact'
-import { renderPage } from './view/render'
 import { Home } from './view/home'
 
-// Extend the Request type with a `password` property
-declare module 'express-serve-static-core' {
-  interface Request {
-    password?: string;
-  }
-}
-
 // Read config.json (or the inline CONFIG env var) and apply backward-compat
-// migrations. Must run before any code that calls getConfigOption.
-loadConfig()
+// migrations. Must run before any code that calls getConfigOption. The
+// bundled config.json sits one level above this file (src/ in dev, dist/ in
+// the image), which is /app/config.json in the image.
+loadConfig({ defaultPath: resolve(__dirname, '../config.json'), migrate: applyMigrations })
+
+// Route every invalid response, including core's, through IPP's handler file,
+// so an operator's mounted replacement applies everywhere.
+setInvalidRequestHandler(ippInvalidRequestHandler)
 
 const app = express()
-app.use(cookieSession({
-  name: 'session',
-  httpOnly: true,
-  sameSite: 'lax',
-  secret: crypto.randomBytes(32).toString('base64url')
-}))
+app.use(sessionMiddleware({ name: 'session' }))
 // For parsing the password unlock form and POSTed JSON payloads
 app.use(express.json())
 // For parsing the selective-download form POST (form-encoded body)
@@ -67,26 +69,6 @@ app.use('/share/static', express.static('public', { setHeaders: addResponseHeade
 app.use(express.static('public', { setHeaders: addResponseHeaders }))
 // Remove the X-Powered-By ExpressJS header
 app.disable('x-powered-by')
-
-/**
- * Middleware to decode the encrypted data stored in the session cookie
- */
-const decodeCookie = (req: Request, _res: Response, next: NextFunction) => {
-  const shareKey = req.params.key
-  const session = req.session?.[shareKey]
-  if (shareKey && session?.iv && session?.cr) {
-    try {
-      const payload = JSON.parse(decrypt({
-        iv: toString(session.iv),
-        cr: toString(session.cr)
-      }))
-      if (payload?.expires && dayjs(payload.expires) > dayjs()) {
-        req.password = payload.password
-      }
-    } catch (e) { }
-  }
-  next()
-}
 
 /*
  * Shared route guards. Several routes need the same "resolve a share, reject
@@ -189,21 +171,8 @@ app.get('/:shareType(share|s)/:key/:mode(download)?', decodeCookie, asyncHandler
 /*
  * [ROUTE] Receive an unlock request from the password page
  * Stores a cookie with an encrypted payload which expires in 1 hour.
- * After that time, the visitor will need to provide the password again.
- *
- * The data is encrypted/decrypted on the server as a db-less way of
- * managing user session data. The data is provided to the server by the
- * user's browser in its encrypted state.
  */
-app.post('/share/unlock', asyncHandler(async (req, res) => {
-  if (req.session && req.body.key) {
-    req.session[req.body.key] = encrypt(JSON.stringify({
-      password: req.body.password,
-      expires: dayjs().add(1, 'hour').format()
-    }))
-  }
-  res.send()
-}))
+app.post('/share/unlock', unlockHandler)
 
 /*
  * [ROUTE] Selective download - POST a list of asset IDs, get a zip of just those.

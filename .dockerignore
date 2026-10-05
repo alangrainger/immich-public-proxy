@@ -1,4 +1,7 @@
+/node_modules/
 /app/node_modules/
 /app/dist/
 /app/public/js/
 /app/.env
+/shared/node_modules/
+/shared/dist/

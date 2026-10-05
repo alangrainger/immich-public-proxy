@@ -1,0 +1,15 @@
+{
+  "name": "immich-public-proxy-workspace",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "app"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm test --workspaces",
+    "lint": "eslint shared app --ext .ts,.tsx",
+    "dev": "npm run dev --workspace=app",
+    "bump": "npm version --no-git-tag-version --workspaces"
+  }
+}

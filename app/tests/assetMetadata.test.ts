@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import { Asset, AssetType, KeyType, loadConfig, SharedLink } from '@ipp/core'
 import { buildAssetMetadata } from '../src/gallery/metadata'
-import { loadConfig } from '../src/config/loader'
-import { Asset, AssetType, KeyType, SharedLink } from '../src/types'
 
 // buildAssetMetadata is the lazy-flow counterpart to the gallery builder's
 // per-item baking; it must apply the same showMetadata kill-switch and

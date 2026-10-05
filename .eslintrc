@@ -25,7 +25,7 @@
   },
   "overrides": [
     {
-      "files": ["public/web.js"],
+      "files": ["app/public/web.js"],
       "env": { "browser": true, "node": false },
       "rules": {
         "import/no-absolute-path": "off"

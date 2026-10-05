@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { AssetType, KeyType } from '../src/types'
-import type { Asset, SharedLink } from '../src/types'
+import { AssetType, KeyType } from '@ipp/core'
+import type { Asset, SharedLink } from '@ipp/core'
 import type { Response } from 'express-serve-static-core'
 import { findMotionPhotoStill } from '../src/share'
 import { gallery } from '../src/gallery/builder'
@@ -11,7 +11,8 @@ import { gallery } from '../src/gallery/builder'
   is on. Config is mocked per test rather than loaded from a file.
 */
 const cfg: Record<string, unknown> = {}
-vi.mock('../src/config/access', () => ({
+vi.mock('@ipp/core', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@ipp/core')>(),
   getConfigOption: (path: string, fallback?: unknown) => (path in cfg ? cfg[path] : fallback),
   getNumericConfigOption: (path: string, fallback: number) => (path in cfg ? Number(cfg[path]) : fallback)
 }))

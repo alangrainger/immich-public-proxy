@@ -1,16 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { AssetType, ImageSize } from '../src/types'
-import type { Asset } from '../src/types'
+import { AssetType } from '@ipp/core'
+import type { Asset } from '@ipp/core'
+import { ImageSize } from '../src/types'
 import { isVideoAsset, resolveDownloadEndpoint, resolveImageEndpoint, requiresOriginal } from '../src/gallery/sizing'
 
 /*
   resolveImageEndpoint reads `ipp.maxDownloadQuality` and `ipp.maxZoomQuality`
-  via getConfigOption, so we mock the config-access module and set the tiers per
+  via getConfigOption, so we mock it in @ipp/core and set the tiers per
   test rather than loading a real config file. vitest hoists vi.mock above the
-  imports, so the mock is in place by the time sizing.ts resolves config/access.
+  imports, so the mock is in place by the time sizing.ts resolves @ipp/core.
 */
 const cfg: Record<string, unknown> = {}
-vi.mock('../src/config/access', () => ({
+vi.mock('@ipp/core', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@ipp/core')>(),
   getConfigOption: (path: string, fallback?: unknown) =>
     path in cfg ? cfg[path] : fallback
 }))

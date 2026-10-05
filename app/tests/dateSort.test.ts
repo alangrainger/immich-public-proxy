@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { Asset, AssetType, KeyType } from '@ipp/core'
 import { dateSortComparator } from '../src/gallery/builder'
-import { Asset, AssetType, KeyType } from '../src/types'
 
 /*
   The date-grouping sort must follow the album's own order while

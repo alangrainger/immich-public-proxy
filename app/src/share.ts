@@ -1,16 +1,6 @@
-import { Asset, DownloadAll, SharedLink } from './types'
-import { getConfigOption } from './config/access'
+import { Asset, getConfigOption, SharedLink } from '@ipp/core'
+import { DownloadAll } from './types'
 import dayjs from 'dayjs'
-
-/**
- * Display title for a shared link. Prefers the user-set link description,
- * falls back to the album name (for album shares), or a generic placeholder.
- * Used by the gallery view-model and as the zip filename in the download
- * pipeline.
- */
-export function title (share: SharedLink): string {
-  return share.description || share?.album?.albumName || 'Gallery'
-}
 
 /**
  * Decide whether the given shared link's download UI is shown (the "download

@@ -1,14 +1,16 @@
 import { describe, it, expect, vi } from 'vitest'
-import { AssetType, ImageSize, KeyType } from '../src/types'
-import type { Asset } from '../src/types'
+import { AssetType, KeyType } from '@ipp/core'
+import type { Asset } from '@ipp/core'
+import { ImageSize } from '../src/types'
 import { getFilename } from '../src/gallery/filename'
 
 /*
-getFilename reads `ipp.downloadedFilename` via getConfigOption; mock the
-config-access module so tests exercise the default (original filename) mode
+getFilename reads `ipp.downloadedFilename` via getConfigOption; mock it in
+@ipp/core so tests exercise the default (original filename) mode
 without loading a real config file.
 */
-vi.mock('../src/config/access', () => ({
+vi.mock('@ipp/core', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@ipp/core')>(),
   getConfigOption: (_path: string, fallback?: unknown) => fallback
 }))
 

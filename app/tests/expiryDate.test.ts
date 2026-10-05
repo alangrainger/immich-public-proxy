@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import { KeyType, loadConfig, SharedLink } from '@ipp/core'
 import dayjs from 'dayjs'
 import 'dayjs/locale/de' // load German so the localised-format assertions are deterministic
 import { expiryDate } from '../src/share'
-import { loadConfig } from '../src/config/loader'
-import { KeyType, SharedLink } from '../src/types'
 
 // expiryDate formats the share's Immich expiry for the gallery subtitle. It is
 // gated behind ipp.gallery.showExpiryDate (default off) and formatted with

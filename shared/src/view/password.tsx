@@ -1,13 +1,17 @@
+import { jsonForInlineScript } from '../utils/text'
+
 interface PasswordProps {
   shareKey: string
   notifyInvalidPassword: boolean
+  /** Path prefix the app is mounted under, without a trailing slash. Empty at the root. */
+  basePath?: string
 }
 
-const submitScript = `
+const submitScript = (unlockUrl: string) => `
   async function submitForm (formElement) {
     const formData = new FormData(formElement)
     try {
-      const res = await fetch('/share/unlock', {
+      const res = await fetch(${jsonForInlineScript(unlockUrl)}, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(Object.fromEntries(formData.entries()))
@@ -25,14 +29,14 @@ const submitScript = `
     })
 `
 
-export function Password ({ shareKey, notifyInvalidPassword }: PasswordProps) {
+export function Password ({ shareKey, notifyInvalidPassword, basePath = '' }: PasswordProps) {
   return (
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
         <title>Password required</title>
-        <link rel="icon" href="/share/static/favicon.ico" type="image/x-icon"/>
-        <link type="text/css" rel="stylesheet" href="/share/static/pico.min.css"/>
+        <link rel="icon" href={basePath + '/share/static/favicon.ico'} type="image/x-icon"/>
+        <link type="text/css" rel="stylesheet" href={basePath + '/share/static/pico.min.css'}/>
       </head>
       <body>
         <header></header>
@@ -65,7 +69,7 @@ export function Password ({ shareKey, notifyInvalidPassword }: PasswordProps) {
             <div></div>
           </div>
         </main>
-        <script dangerouslySetInnerHTML={{ __html: submitScript }}/>
+        <script dangerouslySetInnerHTML={{ __html: submitScript(basePath + '/share/unlock') }}/>
       </body>
     </html>
   )

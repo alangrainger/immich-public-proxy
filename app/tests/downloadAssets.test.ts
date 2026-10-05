@@ -1,10 +1,9 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
+import { Asset, AssetType, KeyType, loadConfig, SharedLink } from '@ipp/core'
 import { Writable } from 'stream'
 import { once } from 'events'
 import type { Response } from 'express-serve-static-core'
 import { downloadAssets } from '../src/stream/download'
-import { loadConfig } from '../src/config/loader'
-import { Asset, AssetType, KeyType, SharedLink } from '../src/types'
 
 /*
 "Download all" streams each asset from Immich straight into the zip on the

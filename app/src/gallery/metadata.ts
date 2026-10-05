@@ -1,6 +1,5 @@
-import { Asset, SharedLink } from '../types'
+import { Asset, getConfigOption, SharedLink } from '@ipp/core'
 import { AssetMetadata } from '../shared/types'
-import { getConfigOption } from '../config/access'
 import { pickExif } from './exif'
 import { downloadFilename } from './filename'
 

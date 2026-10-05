@@ -2,11 +2,14 @@
 This function is in its own file so that *if desired* someone can replace the entire
 function with their own custom one, by replacing the invalidRequestHandler.js file
 through a Docker volume mount.
+
+index.ts registers it with @ipp/core at startup, so a replacement also applies to
+the invalid responses that core sends. Core keeps a copy of this logic as its
+default (shared/src/invalidRequest.ts); keep the two in step.
  */
 
 import { Response } from 'express-serve-static-core'
-import { getConfigOption } from './config/access'
-import { log } from './utils/log'
+import { getConfigOption, log } from '@ipp/core'
 
 /**
  * Respond to any request that IPP would otherwise serve content for but cannot

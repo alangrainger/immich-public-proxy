@@ -1,6 +1,5 @@
-import { Asset, ExifInfo } from '../types'
+import { Asset, ExifInfo, getConfigOption } from '@ipp/core'
 import { GalleryExif } from '../shared/types'
-import { getConfigOption } from '../config/access'
 
 type Group = 'exif' | 'location'
 

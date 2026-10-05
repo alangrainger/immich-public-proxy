@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { renderPage } from '@ipp/core'
 import { h } from 'preact'
 import { Gallery, GalleryProps, GalleryItem } from '../src/view/gallery'
-import { renderPage } from '../src/view/render'
 
 /*
   Regression test for the init-JSON XSS: asset strings (originalFileName, EXIF

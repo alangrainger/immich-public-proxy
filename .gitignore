@@ -6,3 +6,4 @@ app/public/js/
 .directory
 /app/config.dev.json
 .npm-cache/
+*.tsbuildinfo

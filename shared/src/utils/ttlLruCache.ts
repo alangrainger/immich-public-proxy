@@ -1,5 +1,5 @@
 /*
-  Time-to-live + size-bounded LRU cache. Used by `immich.ts` to memoise
+  Time-to-live + size-bounded LRU cache. Used by the Immich share client to memoise
   share-link lookups and `POST /shared-links/login` tokens, where:
 
   - TTL gives us freshness without rebuilding share state on every asset
@@ -65,4 +65,33 @@ export class TtlLruCache<V> {
   delete (key: string): void {
     this.entries.delete(key)
   }
+}
+
+/**
+ * Memoise an in-flight Promise in `cache`, coalescing concurrent callers onto
+ * a single upstream call. The entry is evicted as soon as it resolves to an
+ * invalid value (per `isValid`, default "falsy is invalid") or rejects, so a
+ * transient Immich blip never poisons the cache with a negative result.
+ *
+ * This is the shared form of the "should this stay cached?" policy that
+ * TtlLruCache deliberately leaves to its callers (see its doc-comment): the
+ * cache stays storage-only; the eviction rule lives here, once, instead of
+ * being hand-copied at each call site.
+ */
+export function cachedPromise<T> (
+  cache: TtlLruCache<Promise<T>>,
+  key: string,
+  factory: () => Promise<T>,
+  isValid: (value: T) => boolean = (value) => !!value
+): Promise<T> {
+  const cached = cache.get(key)
+  if (cached) return cached
+
+  const promise = factory()
+  cache.set(key, promise)
+  promise.then(
+    (value) => { if (!isValid(value)) cache.delete(key) },
+    () => { cache.delete(key) }
+  )
+  return promise
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { KeyType } from '@ipp/core'
 import { getShareByKey, utcBucketKey } from '../src/immich'
-import { KeyType } from '../src/types'
 
 // 3.0-shaped responses: album `/shared-links/me` returns an empty assets[],
 // and the album's assets are enumerated from the timeline API. This exercises

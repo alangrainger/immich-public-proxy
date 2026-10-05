@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { getImmichVersion, isImmichVersionSupported, MIN_IMMICH_VERSION } from '../src/immich'
+import { getImmichVersion, isImmichVersionSupported, MIN_IMMICH_VERSION } from '../src/immich/client'
 
 // The startup guard that refuses to run against an Immich server older than
 // IPP supports. The floor is 2.0.0 - the columnar timeline API IPP relies on

@@ -1,8 +1,6 @@
-import { AssetType } from '../types'
-import { ThemeScript } from './theme'
+import { AssetType, jsonForInlineScript, ThemeScript } from '@ipp/core'
 import { GalleryItem, LightboxConfig, MetadataConfig, GroupByDateMode } from '../shared/types'
 import { ASSET_VERSION } from '../version'
-import { jsonForInlineScript } from '../utils/text'
 
 export type { GalleryItem, LightboxConfig, MetadataConfig, GroupByDateMode }
 

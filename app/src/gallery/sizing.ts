@@ -1,5 +1,5 @@
-import { Asset, AssetType, ImageSize } from '../types'
-import { getConfigOption } from '../config/access'
+import { Asset, AssetType, getConfigOption } from '@ipp/core'
+import { ImageSize } from '../types'
 
 /*
   Single source of truth for image-size policy: given a requested ImageSize
