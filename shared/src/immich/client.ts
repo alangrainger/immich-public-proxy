@@ -78,7 +78,7 @@ export async function accessible () {
 }
 
 // Minimum Immich server version IPP is compatible with
-export const MIN_IMMICH_VERSION: ImmichVersion = { major: 2, minor: 0, patch: 0 }
+export const MIN_IMMICH_VERSION: ImmichVersion = { major: 3, minor: 0, patch: 0 }
 
 const formatVersion = (v: ImmichVersion) => `${v.major}.${v.minor}.${v.patch}`
 

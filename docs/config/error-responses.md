@@ -26,6 +26,8 @@ If you want to send a custom 404 page, you would do that with either of the belo
 If you want to go even further, you can write your own custom function. Do this by taking a copy of the `app/dist/invalidRequestHandler.js` file,
 then mounting it back as a Docker volume into the correct location for the container to use.
 
+Take the copy from the image of the IPP major version you run. A copy from an earlier major version can fail to load.
+
 ## Customising the response using your Reverse Proxy
 
 You can also choose to customise these responses using your reverse proxy, which might give you more flexibility depending on your use-case.

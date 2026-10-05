@@ -51,7 +51,7 @@ started because it is what people read first, not because it is a tutorial. If e
 
 | You are adding…                                | Put it in |
 |------------------------------------------------|-----------|
-| A config key                                   | The page for its group, in `config.json` order, with type and default. If you renamed a key, add a row to Legacy config keys and a shim in `app/src/config/migrations.ts`. |
+| A config key                                   | The page for its group, in `config.json` order, with type and default. Rename a key only in a major version, and add a row for it to Renamed config keys (`config/upgrading.md`). |
 | An environment variable                        | `config/environment-variables.md` |
 | Something visitors to a share will notice      | `how-to-use.md` (Sharing from Immich) |
 | A reverse-proxy or hosting recipe              | A new page under Guides |

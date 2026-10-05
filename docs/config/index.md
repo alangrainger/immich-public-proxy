@@ -11,7 +11,7 @@ Connection settings (the Immich URL, public URL, port and config file location) 
 - [Lightbox](/config/lightbox) - the PhotoSwipe image viewer.
 - [Metadata](/config/metadata) - description / EXIF / location reveal controls.
 - [Error responses](/config/error-responses) - customise what invalid requests return.
-- [Legacy config keys](/config/upgrading) - renamed keys and compatibility shims.
+- [Renamed config keys](/config/upgrading) - old keys and their current names.
 
 ## How to provide a config override
 

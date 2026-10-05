@@ -25,30 +25,21 @@ function copy (key: keyof ExifInfo & keyof GalleryExif): FieldRule {
   }
 }
 
-/*
-  EXIF orientation values meaning the image is stored rotated 90/270 degrees,
-  so its displayed width and height are the stored ones swapped. 5-8 are the
-  standard EXIF set (see https://magnushoff.com/articles/jpeg-orientation/);
-  90 / -90 are degree-style values Immich also emits - see `isFlipped` in its
-  `web/src/lib/utils/asset-utils.ts`.
-*/
-const FLIPPED_ORIENTATIONS = [5, 6, 90, 7, 8, -90]
-
 /**
- * An asset's dimensions as displayed. Prefers the asset-level width/height,
- * which Immich provides orientation-corrected from 3.0.0
+ * Config paths of any `ipp.showMetadata.{exif,location}.enabled` key. IPP
+ * refuses to start while one is set: per-field flags are the only gate, and
+ * `true` flags beside such a key may not be meant for visitors.
  */
+export function removedMetadataSwitches (): string[] {
+  return ['exif', 'location']
+    .map(group => 'ipp.showMetadata.' + group + '.enabled')
+    .filter(path => getConfigOption(path) !== undefined)
+}
+
+/** An asset's dimensions as displayed; Immich stores them orientation-corrected. */
 export function displayDimensions (asset: Asset): { width?: number, height?: number } {
   if (asset.width && asset.height) return { width: asset.width, height: asset.height }
-
-  // Fallback for Immich 2.x
-  const info = asset.exifInfo
-  const width = info?.exifImageWidth
-  const height = info?.exifImageHeight
-  if (!width || !height) return {}
-  return FLIPPED_ORIENTATIONS.includes(Number(info?.orientation))
-    ? { width: height, height: width }
-    : { width, height }
+  return {}
 }
 
 /*
@@ -57,13 +48,8 @@ export function displayDimensions (asset: Asset): { width?: number, height?: num
   written inline in the `*_RULES` arrays below.
 
   Adding a new metadata field: this rules table is the server-side source
-  of truth. Two other places carry parallel knowledge of the field set:
-    - `client/sidebar.ts` (renderRow specs decide where the field appears
-      in the info sidebar UI)
-    - `config/migrations.ts` LEGACY_* arrays (frozen v2.x field list used
-      by the `enabled -> per-field` shim; do NOT extend when adding new
-      fields - new fields should not retroactively appear for legacy
-      `enabled: true` users).
+  of truth. `client/sidebar.ts` carries parallel knowledge of the field set
+  (renderRow specs decide where the field appears in the info sidebar UI).
 */
 const EXIF_FIELDS = [
   'make', 'model', 'lensModel',

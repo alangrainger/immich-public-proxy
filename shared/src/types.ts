@@ -10,11 +10,6 @@ export enum KeyType {
 
 export interface ExifInfo {
   description?: string;
-  exifImageWidth?: number;
-  exifImageHeight?: number;
-  // EXIF orientation string ("1".."8") or null. Values 5-8 indicate the image
-  // is rotated 90°/270°, so the displayed aspect ratio swaps width/height.
-  orientation?: string | null;
   // Additional EXIF fields surfaced by Immich for the metadata sidebar
   // (gated server-side by ipp.showMetadata.exif.* and .location.* config).
   dateTimeOriginal?: string | null;

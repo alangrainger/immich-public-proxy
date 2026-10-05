@@ -1,7 +1,7 @@
 # Installation
 
 > [!NOTE]
-> IPP requires **Immich 2.0.0 or newer**. It checks the server version at startup and will exit with an error against an older Immich.
+> IPP requires **Immich 3.0.0 or newer**. It checks the server version at startup and will exit with an error against an older Immich.
 
 ## Install with Docker / Podman
 

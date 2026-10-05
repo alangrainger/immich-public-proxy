@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { Asset, AssetType, KeyType, loadConfig, SharedLink } from '@ipp/core'
 import { buildAssetMetadata } from '../src/gallery/metadata'
+import { removedMetadataSwitches } from '../src/gallery/exif'
 
 // buildAssetMetadata is the lazy-flow counterpart to the gallery builder's
 // per-item baking; it must apply the same showMetadata kill-switch and
@@ -56,17 +57,11 @@ describe('buildAssetMetadata', () => {
     expect(meta.exif?.city).toBeUndefined()
   })
 
-  // Immich 3.x applies EXIF orientation before storing asset.width / height,
-  // so a rotated photo reports portrait dimensions there while the exifImage*
-  // pair stays landscape. The asset-level pair must win.
-  it('reports dimensions in display orientation', () => {
+  it('reports the asset-level dimensions', () => {
     setConfig({ ipp: { showMetadata: { exif: { dimensions: true } } } })
     const photo = asset()
     photo.width = 3000
     photo.height = 4000
-    photo.exifInfo!.exifImageWidth = 4000
-    photo.exifInfo!.exifImageHeight = 3000
-    photo.exifInfo!.orientation = '6'
 
     expect(buildAssetMetadata(photo, share()).exif).toMatchObject({
       width: 3000,
@@ -74,25 +69,17 @@ describe('buildAssetMetadata', () => {
     })
   })
 
-  // Immich 2.x has no asset-level width / height, so the raw EXIF pair is
-  // used, swapped when the orientation marks the image as stored rotated.
-  const exifOrientationCases: Array<[string | null, number, number]> = [
-    ['6', 3000, 4000],
-    ['8', 3000, 4000],
-    ['90', 3000, 4000],
-    ['-90', 3000, 4000],
-    ['1', 4000, 3000],
-    [null, 4000, 3000]
-  ]
+  it('finds the removed metadata master switches, whatever their value', () => {
+    setConfig({ ipp: { showMetadata: { exif: { enabled: false, gps: true }, location: { enabled: true } } } })
+    expect(removedMetadataSwitches()).toEqual(['ipp.showMetadata.exif.enabled', 'ipp.showMetadata.location.enabled'])
 
-  it.each(exifOrientationCases)('falls back to swapped exif dimensions without asset dimensions (orientation %s)', (orientation, width, height) => {
+    setConfig({ ipp: { showMetadata: { exif: { make: true } } } })
+    expect(removedMetadataSwitches()).toEqual([])
+  })
+
+  it('omits dimensions when Immich has no asset-level width / height', () => {
     setConfig({ ipp: { showMetadata: { exif: { dimensions: true } } } })
-    const photo = asset()
-    photo.exifInfo!.exifImageWidth = 4000
-    photo.exifInfo!.exifImageHeight = 3000
-    photo.exifInfo!.orientation = orientation
-
-    expect(buildAssetMetadata(photo, share()).exif).toMatchObject({ width, height })
+    expect(buildAssetMetadata(asset(), share()).exif?.width).toBeUndefined()
   })
 
   it('returns the photo timezone only when both date and timezone are enabled', () => {

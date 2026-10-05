@@ -1,7 +1,5 @@
 import { NextFunction, Request, Response } from 'express-serve-static-core'
 import { getConfigOption } from './config/access'
-import { respondToInvalidRequest } from './invalidRequest'
-import { log } from './utils/log'
 
 /**
  * Apply the response headers configured under `ipp.responseHeaders` to the
@@ -15,7 +13,7 @@ export function addResponseHeaders (res: Response): void {
     })
 }
 
-/** Stop browsers and shared caches storing a response from a password-protected share. */
+/** Stop browsers and shared caches storing a response: a password-protected share, or an error. */
 export function addNoStoreHeaders (res: Response): void {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
   res.set('Pragma', 'no-cache')
@@ -30,18 +28,4 @@ export function asyncHandler (fn: (req: Request, res: Response, next: NextFuncti
   return (req: Request, res: Response, next: NextFunction): void => {
     fn(req, res, next).catch(next)
   }
-}
-
-/**
- * Terminal Express error middleware. Logs the error server-side, then applies the
- * same privacy policy as any other invalid request.
- */
-export function errorHandler (err: unknown, req: Request, res: Response, _next: NextFunction): void {
-  log.error('Error handling ' + req.method + ' ' + req.path + ' - ' +
-    (err instanceof Error ? (err.stack || err.message) : String(err)))
-  if (res.headersSent) {
-    res.end()
-    return
-  }
-  respondToInvalidRequest(res, 404, 'Unhandled error for ' + req.path)
 }

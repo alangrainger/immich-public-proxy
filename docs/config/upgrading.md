@@ -1,12 +1,12 @@
-# Legacy config keys
+# Renamed config keys
 
-A few config keys have been renamed or reshaped across versions. Old configs keep working through backward-compatibility shims, with a deprecation notice logged at startup; update to the current names to silence it. For how to update IPP itself, see [Upgrading](/upgrading).
+IPP 4.0 no longer reads the old config keys below. Earlier versions mapped them to their current names at startup; 4.0
+ignores them, and the option falls back to its default. Check your `config.json` for each key in the left column and
+move its value to the right column. For how to update IPP itself, see [Upgrading](/upgrading).
 
-## Gallery keys moved under `ipp.gallery.*` (v2.0)
+## Gallery keys
 
-The old top-level keys are mapped automatically:
-
-| Legacy key                   | New key                          |
+| Old key                      | Current key                      |
 |------------------------------|----------------------------------|
 | `ipp.singleImageGallery`     | `ipp.gallery.singleImage`        |
 | `ipp.singleItemAutoOpen`     | `ipp.gallery.singleItemAutoOpen` |
@@ -14,23 +14,33 @@ The old top-level keys are mapped automatically:
 | `ipp.showGalleryDescription` | `ipp.gallery.showDescription`    |
 | `ipp.groupGalleryByDate`     | `ipp.gallery.groupByDate`        |
 
-## `showMetadata.description` is now an object
+## Lightbox keys
 
-It used to be a single boolean. A legacy `description: true` migrates to `{ caption: true, sidebar: true }` (and `false` to both `false`). Move to the explicit form to silence the deprecation notice and so you can target the caption vs. the sidebar independently.
+The `lightGallery` section from IPP 1.x became `ipp.lightbox`.
 
-## `showMetadata.{exif,location}.enabled` was removed (v2.3.1)
+| Old key                                | Current key                 |
+|----------------------------------------|-----------------------------|
+| `lightGallery.controls`                | `ipp.lightbox.showArrows`   |
+| `lightGallery.download`                | `ipp.lightbox.showDownload` |
+| `lightGallery.mobileSettings.controls` | `ipp.lightbox.mobileArrows` |
 
-Per-field flags are now the only gate, and all default to `false`. The shim preserves behaviour for legacy configs by rewriting them in memory at startup:
+## Downloads
 
-- Legacy `enabled: true` defaults every unset per-field flag in the group to `true`, matching the old "everything visible" behaviour. Per-field flags you had explicitly set to `false` (the "all except X" pattern) are kept.
-- Legacy `enabled: false` clears any per-field flags that were `true`, matching the old "nothing visible" behaviour and stopping leftover documentation flags from the shipped 2.3 config from becoming live opt-ins.
+| Old key                     | Current key                                                     |
+|-----------------------------|-----------------------------------------------------------------|
+| `ipp.allowDownloadAll`      | `ipp.allowDownload`, same `0` / `1` / `2` values                |
+| `ipp.downloadOriginalPhoto` | `ipp.maxDownloadQuality`: `true` is `"original"`, `false` is `"preview"` |
 
-A deprecation notice is printed at startup. Update your `config.json` to the explicit per-field form to silence it.
+## Metadata
 
-## `downloadOriginalPhoto` → `maxDownloadQuality` (v3.0)
+`ipp.showMetadata.description` is an object, `{ "caption": <bool>, "sidebar": <bool> }`. A plain `true` or `false` is
+ignored, so the description is hidden in both places until you change it.
 
-The boolean becomes the quality tier: `true` maps to `"original"`, `false` to `"preview"`. The shim will be removed in v4.0.
+`ipp.showMetadata.exif.enabled` and `ipp.showMetadata.location.enabled` are gone. The per-field flags are the only
+gate, and each one defaults to `false`.
 
-## `allowDownloadAll` → `allowDownload` (v3.0)
-
-Renamed, same `0` / `1` / `2` values. The shim will be removed in v4.0.
+> [!WARNING]
+> IPP will not start while either `enabled` key is in your config. A config from IPP 2.3 can have `"enabled": false`
+> together with per-field flags set to `true`. Earlier versions kept those fields hidden, but 4.0 shows every field
+> whose flag is `true`, GPS coordinates included. Remove the `enabled` key, and set to `true` only the fields you
+> want visitors to see.

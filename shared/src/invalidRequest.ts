@@ -1,5 +1,6 @@
-import { Response } from 'express-serve-static-core'
+import { NextFunction, Request, Response } from 'express-serve-static-core'
 import { getConfigOption } from './config/access'
+import { addNoStoreHeaders } from './http'
 import { log } from './utils/log'
 
 /** The public contract of a 404 handler, kept stable for operator replacements. */
@@ -60,7 +61,25 @@ export function setInvalidRequestHandler (fn: InvalidRequestHandler): void {
 /**
  * Answer an invalid request through the registered handler. Every caller, in
  * core and in the apps, goes through here so a replacement applies everywhere.
+ *
+ * Never cacheable: routes apply `ipp.responseHeaders` (a 30-day public TTL by
+ * default) before they know the request is valid.
  */
 export function respondToInvalidRequest (res: Response, defaultResponse: number | string | null, logMessage = ''): void {
+  addNoStoreHeaders(res)
   handler(res, defaultResponse, logMessage)
+}
+
+/**
+ * Terminal Express error middleware. Logs the error server-side, then applies the
+ * same privacy policy as any other invalid request.
+ */
+export function errorHandler (err: unknown, req: Request, res: Response, _next: NextFunction): void {
+  log.error('Error handling ' + req.method + ' ' + req.path + ' - ' +
+    (err instanceof Error ? (err.stack || err.message) : String(err)))
+  if (res.headersSent) {
+    res.end()
+    return
+  }
+  respondToInvalidRequest(res, 404, 'Unhandled error for ' + req.path)
 }

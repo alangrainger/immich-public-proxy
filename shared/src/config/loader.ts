@@ -3,12 +3,10 @@ import { resolve } from 'path'
 
 export type Config = Record<string, unknown>
 
-/** Where each app keeps its config file, and how it upgrades legacy config shapes. */
+/** Where each app keeps its config file. */
 export interface LoadConfigOptions {
   /** Absolute path of the bundled config file, used when `IPP_CONFIG` is unset. */
   defaultPath?: string
-  /** Rewrites legacy keys in place before the config is cached. */
-  migrate?: (config: Config) => void
 }
 
 // Module-level cache populated by `loadConfig()`. Access through
@@ -19,8 +17,8 @@ let currentConfig: Config = {}
 
 /**
  * Read the runtime configuration from `process.env.CONFIG` (an inline JSON
- * string, typically set in docker-compose) or from the config file. Applies
- * the app's `migrate` hook, caches the result, and returns it.
+ * string, typically set in docker-compose) or from the config file, cache
+ * the result, and return it.
  *
  * The default path comes from the app, not from this module's location:
  * core is compiled into its own package, so a path relative to `__dirname`
@@ -29,7 +27,7 @@ let currentConfig: Config = {}
  * Called once from each app's `index.ts` at startup. Safe to call again in
  * tests with a fresh env to reset state.
  */
-export function loadConfig ({ defaultPath, migrate }: LoadConfigOptions = {}): Config {
+export function loadConfig ({ defaultPath }: LoadConfigOptions = {}): Config {
   let config: Config = {}
   try {
     if (process.env.CONFIG) {
@@ -48,7 +46,6 @@ export function loadConfig ({ defaultPath, migrate }: LoadConfigOptions = {}): C
     console.log(e)
   }
 
-  migrate?.(config)
   currentConfig = config
   return config
 }

@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest'
 import express from 'express'
 import type { Server } from 'http'
 import type { AddressInfo } from 'net'
-import { asyncHandler, errorHandler } from '../src/http'
+import { asyncHandler } from '../src/http'
+import { errorHandler } from '../src/invalidRequest'
 
 /*
   Regression tests for the per-request crash class: under Express 4 a rejected
@@ -26,6 +27,10 @@ describe('asyncHandler + errorHandler', () => {
     app.get('/boom', asyncHandler(async () => {
       throw new TypeError("Cannot read properties of undefined (reading 'headers')")
     }))
+    app.get('/public-boom', asyncHandler(async (_req, res) => {
+      res.set('Cache-Control', 'public, max-age=2592000')
+      throw new Error('failed after the operator headers were applied')
+    }))
     app.get('/mid-stream', asyncHandler(async (_req, res) => {
       res.status(200)
       res.write('partial')
@@ -48,6 +53,12 @@ describe('asyncHandler + errorHandler', () => {
     const res = await fetch(base + '/boom')
     expect(res.status).toBe(404)
     expect(await res.text()).toBe('')
+  })
+
+  it('sends the 404 no-store, replacing the public TTL a route set first', async () => {
+    const res = await fetch(base + '/public-boom')
+    expect(res.status).toBe(404)
+    expect(res.headers.get('cache-control')).toContain('no-store')
   })
 
   it('keeps serving other requests after a route has thrown', async () => {

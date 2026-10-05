@@ -39,10 +39,10 @@ shared/                   @ipp/core - read-side only, knows nothing about galler
     types.ts              Share-level types (SharedLink, Asset, KeyType, ...)
     immich/client.ts      Immich API request helper, URL building, key/id checks, version guard
     immich/share.ts       fetchSharedLink, password login + token cache, auth headers, title
-    config/loader.ts      loadConfig() reads env / file; the app passes its default path and migrations
+    config/loader.ts      loadConfig() reads env / file; the app passes its default path
     config/access.ts      getConfigOption() reads the loaded config
-    http.ts               Operator-configured response headers, asyncHandler, errorHandler
-    invalidRequest.ts     The 404 policy, with setInvalidRequestHandler for the app's own handler file
+    http.ts               Operator-configured and no-store response headers, asyncHandler
+    invalidRequest.ts     The 404 policy (never cached), errorHandler, and setInvalidRequestHandler for the app's own handler file
     session.ts            Cookie session, decodeCookie, unlock handler, invalid-password response
     encrypt.ts            Cookie-session encryption for password-protected shares
     utils/                log, sanitize (filenames), text (escaping), ttlLruCache, webStream
@@ -61,8 +61,6 @@ app/
     share.ts              Share-level policy (canDownload, expiry date, motion photos)
     types.ts              Gallery-only server types
     version.ts            Release version and the static-asset cache-busting segment
-    config/
-      migrations.ts       Backward-compat shims for legacy config-key shapes
     gallery/
       builder.ts          Gallery view-model construction
       exif.ts             EXIF / location whitelisting for the sidebar
@@ -160,7 +158,7 @@ Beyond unit tests, exercise the gallery end-to-end against a real Immich instanc
 
 **Streaming.** Assets are streamed from Immich to the client without buffering to disk. Keep it that way. The `archiver` zip flow is also fully streamed (with per-asset retry, an idle-timeout transform, and abort-on-failure semantics).
 
-**File organisation.** Group functions by cohesion, not by file count. A file deserves its own name when it carries a coherent concept worth a separate filename - "filename sanitization" or "config loader" pass; "narrow unknown to string" does not. When several small helpers share a theme, group them in one file (`utils/text.ts` for escaping + narrowing; `share.ts` for share-level info + policy). When a single concern is substantial enough to dominate a file on its own, give it its own name (`config/migrations.ts`, `stream/download.ts`). IPP optimises for audit reading rather than tree-shakeable reuse, so fewer cohesive files beat many one-export micro-modules. Same lens applies on the client (`app/src/client/`): each module is a viewport-of-code that earns its name.
+**File organisation.** Group functions by cohesion, not by file count. A file deserves its own name when it carries a coherent concept worth a separate filename - "filename sanitization" or "config loader" pass; "narrow unknown to string" does not. When several small helpers share a theme, group them in one file (`utils/text.ts` for escaping + narrowing; `share.ts` for share-level info + policy). When a single concern is substantial enough to dominate a file on its own, give it its own name (`stream/download.ts`). IPP optimises for audit reading rather than tree-shakeable reuse, so fewer cohesive files beat many one-export micro-modules. Same lens applies on the client (`app/src/client/`): each module is a viewport-of-code that earns its name.
 
 Where to put a new function: ask what category of thing it is, not where it gets called from. Share-level policy decisions and share-derived info go in `share.ts`. Per-asset view-model transforms (filename derivation, EXIF whitelisting) go alongside `gallery/builder.ts`. HTTP response setup driven by operator config goes in core's `http.ts`. Streaming pipelines go in `stream/`. If a new function doesn't fit any existing category, prefer adding to the closest existing file over creating a new single-function module - revisit when a real second member of the category appears.
 

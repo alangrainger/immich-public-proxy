@@ -211,4 +211,39 @@ describe('assetBuffer streaming', () => {
     expect(res.headers['content-disposition']).toContain('a1.webp')
     expect(res.headers['content-type']).toBe('image/webp')
   })
+
+  describe('original tier on an album asset', () => {
+    // Album assets come from the timeline with no originalFileName or mime.
+    const albumAsset: Asset = { id: 'a2', key: 'testkey', keyType: KeyType.key, type: AssetType.image, isTrashed: false }
+
+    function svgFetch (headers: Record<string, string>) {
+      return vi.fn(async () => new globalThis.Response('<svg xmlns="http://www.w3.org/2000/svg"/>', {
+        status: 200,
+        headers: { 'content-type': 'image/svg+xml', ...headers }
+      }))
+    }
+
+    it('sends an attachment named from Immich\'s header, with nosniff', async () => {
+      vi.stubGlobal('fetch', svgFetch({ 'content-disposition': 'attachment; filename="drawing.svg"' }))
+      const res = new FakeRes()
+      await assetBuffer(makeRequest(), asResponse(res), albumAsset, ImageSize.original)
+      expect(res.headers['content-disposition']).toBe("attachment; filename*=UTF-8''drawing.svg")
+      expect(res.headers['x-content-type-options']).toBe('nosniff')
+    })
+
+    it('falls back to the asset id when Immich sends no filename', async () => {
+      vi.stubGlobal('fetch', svgFetch({}))
+      const res = new FakeRes()
+      await assetBuffer(makeRequest(), asResponse(res), albumAsset, ImageSize.original)
+      expect(res.headers['content-disposition']).toBe("attachment; filename*=UTF-8''a2.svg")
+    })
+  })
+
+  it('serves display sizes inline, still with nosniff', async () => {
+    vi.stubGlobal('fetch', pullFetch(CHUNK, newSource()))
+    const res = new FakeRes()
+    await assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.preview)
+    expect(res.headers['content-disposition']).toBeUndefined()
+    expect(res.headers['x-content-type-options']).toBe('nosniff')
+  })
 })

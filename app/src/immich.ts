@@ -23,7 +23,7 @@ import {
   TtlLruCache
 } from '@ipp/core'
 import { ImageSize, IncomingShareRequest, TimelineBucket, TimelineBucketAssets } from './types'
-import { canDownload } from './share'
+import { canDownload, servableAssets } from './share'
 import { assetBuffer } from './stream/asset'
 import { downloadAll } from './stream/download'
 import { gallery } from './gallery/builder'
@@ -204,8 +204,8 @@ async function fetchShareByKey (key: string, password?: string, keyType: KeyType
     log('Shared link ' + key + ' returned no assets array (type ' + link.type + ')')
     link.assets = []
   }
-  // Filter assets to exclude trashed assets
-  link.assets = link.assets.filter(asset => !asset.isTrashed)
+  // Drop trashed assets, and any Immich hasn't finished processing
+  link.assets = servableAssets(link.assets)
   // Populate the shared assets with the public key/password
   link.assets.forEach(asset => {
     asset.key = key

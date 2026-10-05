@@ -28,23 +28,32 @@ import {
 } from '@ipp/core'
 import { fetchAssetDetail, getShareByKey, handleShareRequest } from './immich'
 import { buildAssetMetadata } from './gallery/metadata'
+import { removedMetadataSwitches } from './gallery/exif'
 import { assetBuffer } from './stream/asset'
 import { downloadAssets } from './stream/download'
 import dayjs from 'dayjs'
 import { Request } from 'express-serve-static-core'
 import { ImageSize } from './types'
-import { applyMigrations } from './config/migrations'
 import { canDownload, findMotionPhotoStill } from './share'
 import { respondToInvalidRequest as ippInvalidRequestHandler } from './invalidRequestHandler'
 import { ASSET_VERSION } from './version'
 import { h } from 'preact'
 import { Home } from './view/home'
 
-// Read config.json (or the inline CONFIG env var) and apply backward-compat
-// migrations. Must run before any code that calls getConfigOption. The
-// bundled config.json sits one level above this file (src/ in dev, dist/ in
-// the image), which is /app/config.json in the image.
-loadConfig({ defaultPath: resolve(__dirname, '../config.json'), migrate: applyMigrations })
+// Read config.json (or the inline CONFIG env var). Must run before any code
+// that calls getConfigOption. The bundled config.json sits one level above
+// this file (src/ in dev, dist/ in the image), which is /app/config.json in
+// the image.
+loadConfig({ defaultPath: resolve(__dirname, '../config.json') })
+
+const removedSwitches = removedMetadataSwitches()
+if (removedSwitches.length) {
+  console.error(dayjs().format() + ' FATAL: The config has ' + removedSwitches.join(' and ') +
+    ', which IPP no longer reads. Every per-field flag set to true in that group would now be shown to visitors. ' +
+    'Remove the key, and set to true only the fields you want visitors to see. ' +
+    'See https://docs.ipp.nz/config/upgrading')
+  process.exit(1)
+}
 
 // Route every invalid response, including core's, through IPP's handler file,
 // so an operator's mounted replacement applies everywhere.

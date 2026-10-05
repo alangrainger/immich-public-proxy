@@ -127,8 +127,7 @@ function writePersistedState (open: boolean) {
 // ----- content rendering ---------------------------------------------------
 //
 // Sidebar UI placement for each metadata field. Server-side gating lives in
-// `gallery/exif.ts` (rules table); legacy-config migration lives in
-// `config/migrations.ts`. Adding a new field requires updating all three.
+// `gallery/exif.ts` (rules table). Adding a new field requires updating both.
 
 function renderContents (root: HTMLElement, item: GalleryItem | undefined) {
   root.replaceChildren()

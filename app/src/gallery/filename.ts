@@ -118,3 +118,40 @@ export function responseMime (response: globalThis.Response): string | undefined
 export function servedMimeFrom (subpath: string, response: globalThis.Response): string | undefined {
   return subpath === '/original' ? undefined : responseMime(response)
 }
+
+/**
+ * Fill in originalFileName / originalMimeType from an asset response's
+ * `Content-Disposition` / `Content-Type` headers, for assets that arrived
+ * without them (lazy album grid assets). Returns a shallow copy so the cached
+ * share asset is never mutated.
+ */
+export function enrichFromHeaders (asset: Asset, response: globalThis.Response): Asset {
+  const fileName = filenameFromContentDisposition(response.headers.get('content-disposition'))
+  const mime = responseMime(response)
+  if (!fileName && !mime) return asset
+  return {
+    ...asset,
+    originalFileName: asset.originalFileName || fileName,
+    originalMimeType: asset.originalMimeType || mime
+  }
+}
+
+/**
+ * Extract a filename from a `Content-Disposition` header. Prefers the RFC 5987
+ * `filename*=UTF-8''...` form (percent-decoded) over the plain `filename=`.
+ * Returns undefined when neither is present.
+ */
+export function filenameFromContentDisposition (header: string | null): string | undefined {
+  if (!header) return undefined
+  const extended = header.match(/filename\*=(?:UTF-8'')?([^;]+)/i)
+  if (extended) {
+    const raw = extended[1].trim().replace(/^"|"$/g, '')
+    try {
+      return decodeURIComponent(raw)
+    } catch (e) {
+      return raw
+    }
+  }
+  const plain = header.match(/filename="?([^";]+)"?/i)
+  return plain ? plain[1].trim() : undefined
+}

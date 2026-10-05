@@ -2,8 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { getImmichVersion, isImmichVersionSupported, MIN_IMMICH_VERSION } from '../src/immich/client'
 
 // The startup guard that refuses to run against an Immich server older than
-// IPP supports. The floor is 2.0.0 - the columnar timeline API IPP relies on
-// to enumerate album shares landed in Immich 2.0.
+// IPP supports (3.0.0).
 
 function jsonResponse (body: unknown, status = 200) {
   return {
@@ -20,13 +19,14 @@ describe('isImmichVersionSupported', () => {
     expect(isImmichVersionSupported(MIN_IMMICH_VERSION)).toBe(true)
   })
 
-  it('accepts newer major/minor/patch across the 2.x and 3.x lines', () => {
-    expect(isImmichVersionSupported({ major: 2, minor: 7, patch: 5 })).toBe(true)
+  it('accepts newer major/minor/patch', () => {
     expect(isImmichVersionSupported({ major: 3, minor: 0, patch: 2 })).toBe(true)
+    expect(isImmichVersionSupported({ major: 3, minor: 4, patch: 0 })).toBe(true)
     expect(isImmichVersionSupported({ major: 4, minor: 0, patch: 0 })).toBe(true)
   })
 
-  it('rejects 1.x, which predates the columnar timeline API', () => {
+  it('rejects 2.x and 1.x', () => {
+    expect(isImmichVersionSupported({ major: 2, minor: 7, patch: 5 })).toBe(false)
     expect(isImmichVersionSupported({ major: 1, minor: 137, patch: 3 })).toBe(false)
     expect(isImmichVersionSupported({ major: 1, minor: 125, patch: 7 })).toBe(false)
   })

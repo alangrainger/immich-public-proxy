@@ -66,6 +66,7 @@ class FakeRes extends Writable {
   }
 
   setHeader (name: string, value: string) { this.headers[name] = value; return this }
+  set (name: string, value: string) { return this.setHeader(name, value) }
   status (code: number) { this.statusCode = code; return this }
   send () { this.end(); return this }
 
@@ -245,6 +246,7 @@ describe('downloadAssets', () => {
     expect(res.writableEnded).toBe(true)
     expect(res.received).toBe(0)
     expect(res.headers['Content-Type']).toBeUndefined()
+    expect(res.headers['Cache-Control']).toContain('no-store')
   }, 10_000)
 
   it('destroys the response when a later asset keeps failing', async () => {

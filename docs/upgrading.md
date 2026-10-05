@@ -15,9 +15,16 @@ If you pin a version tag rather than `latest`, bump it in your `docker-compose.y
 Check the [release notes](https://github.com/alangrainger/immich-public-proxy/releases) before moving to a new major
 version. Breaking changes and renamed config keys land in major versions and are listed there.
 
+## Upgrading to 4.0
+
+- **Immich 3.0.0 or newer is required.** Upgrade Immich first.
+- **Old config keys are no longer read.** Check your `config.json` against [Renamed config keys](/config/upgrading).
+- **A custom `invalidRequestHandler.js` must be copied again from the 4.0 image.** A copy taken from 3.x fails to
+  load. See [Custom function](/config/error-responses#custom-function).
+
 ## Immich version
 
-IPP requires **Immich 2.0.0 or newer** and checks the server version at startup. Against an older Immich it logs a
+IPP requires **Immich 3.0.0 or newer** and checks the server version at startup. Against an older Immich it logs a
 fatal error and exits; if it can't determine the version at all (Immich unreachable), it logs a warning and carries on.
 
 When you upgrade Immich, check the IPP release notes for a matching release, as changes to Immich's API are picked up
@@ -25,5 +32,5 @@ there.
 
 ## Config keys
 
-Renamed or reshaped config keys keep working through backward-compatibility shims, with a deprecation notice logged
-at startup. [Legacy config keys](/config/upgrading) maps each old form to its current name.
+Config keys are renamed only in major versions, and the old name stops working then. [Renamed config
+keys](/config/upgrading) maps each old key to its current name.

@@ -52,7 +52,7 @@ export default defineConfig({
           { text: 'Lightbox', link: '/config/lightbox' },
           { text: 'Metadata', link: '/config/metadata' },
           { text: 'Error responses', link: '/config/error-responses' },
-          { text: 'Legacy config keys', link: '/config/upgrading' }
+          { text: 'Renamed config keys', link: '/config/upgrading' }
         ]
       },
       {

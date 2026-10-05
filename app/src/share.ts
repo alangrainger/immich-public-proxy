@@ -1,4 +1,4 @@
-import { Asset, getConfigOption, SharedLink } from '@ipp/core'
+import { Asset, getConfigOption, log, SharedLink, TtlLruCache } from '@ipp/core'
 import { DownloadAll } from './types'
 import dayjs from 'dayjs'
 
@@ -10,17 +10,38 @@ import dayjs from 'dayjs'
  * does not affect image quality (see `gallery/sizing.ts`).
  */
 export function canDownload (share: SharedLink): boolean {
-  const allowDownloadConfig = getConfigOption('ipp.allowDownload', 0) as DownloadAll
-  if (!allowDownloadConfig) {
-    // Downloading is disabled in config.json
-    return false
-  } else if (allowDownloadConfig === DownloadAll.always) {
-    // Always allowed to download in config.json
-    return true
-  } else {
-    // Return Immich's setting for this shared link
-    return !!share.allowDownload
+  const policy = getConfigOption('ipp.allowDownload', DownloadAll.disabled)
+  if (policy === DownloadAll.always) return true
+  if (policy === DownloadAll.perImmich) return !!share.allowDownload
+  if (policy !== DownloadAll.disabled && !warnedInvalidDownloadPolicy) {
+    warnedInvalidDownloadPolicy = true
+    log.warn('ipp.allowDownload is ' + JSON.stringify(policy) + ', which is not 0, 1 or 2. Downloads are off.')
   }
+  return false
+}
+
+let warnedInvalidDownloadPolicy = false
+
+// Asset ids already warned about, so each warns at most once a day
+const warnedUnprocessed = new TtlLruCache<true>({ ttlMs: 24 * 60 * 60_000, max: 1000 })
+
+/**
+ * Narrow a share's assets to what IPP can render: not trashed, and finished
+ * processing in Immich. `thumbhash` is the readiness signal: Immich's
+ * thumbnail job writes the files and only then sets it, so until it appears
+ * every image URL IPP hands out would 404.
+ */
+export function servableAssets (assets: Asset[]): Asset[] {
+  return assets.filter(asset => {
+    if (asset.isTrashed) return false
+    if (asset.thumbhash) return true
+    if (!warnedUnprocessed.get(asset.id)) {
+      warnedUnprocessed.set(asset.id, true)
+      log.warn('Asset ' + asset.id + ' is hidden because Immich has not generated its thumbnail yet. ' +
+        'If it never appears, check the thumbnail job for that asset in Immich.')
+    }
+    return false
+  })
 }
 
 const DEFAULT_EXPIRY_FORMAT = 'YYYY-MM-DD'
