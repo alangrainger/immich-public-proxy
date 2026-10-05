@@ -1,4 +1,4 @@
-import { Asset, log, readableFromWeb, respondToInvalidRequest, SharedLink } from '@ipp/core'
+import { abortOnClose, Asset, log, readableFromWeb, respondToInvalidRequest, SharedLink } from '@ipp/core'
 import {
   assetFetchUrl,
   authHeadersForAsset,
@@ -20,14 +20,8 @@ import { pipeline } from 'stream/promises'
  * to serve them, and the upstream failure surfaces as a client 404.
  */
 export async function assetBuffer (req: IncomingShareRequest, res: Response, asset: Asset, size?: ImageSize | string, share?: SharedLink, forceVideoPlayback = false) {
-  /*
-  Abort the upstream fetch as soon as the visitor goes away, so a cancelled
-  download doesn't leave Immich streaming #288.
-  */
-  const upstream = new AbortController()
-  const onClose = () => { if (!res.writableFinished) upstream.abort() }
-  res.once('close', onClose)
-  if (res.closed) onClose()
+  // A cancelled download must not leave Immich streaming #288
+  const upstream = abortOnClose(res)
 
   const headerList = ['content-type', 'content-length', 'last-modified', 'etag']
   const fetchHeaders: Record<string, string> = {}
@@ -78,9 +72,9 @@ export async function assetBuffer (req: IncomingShareRequest, res: Response, ass
   const reqHeaders = await authHeadersForAsset(asset)
   let data: globalThis.Response
   try {
-    data = await fetch(url, { headers: { ...fetchHeaders, ...reqHeaders }, signal: upstream.signal })
+    data = await fetch(url, { headers: { ...fetchHeaders, ...reqHeaders }, signal: upstream })
   } catch (e) {
-    if (upstream.signal.aborted) return // visitor left before Immich answered
+    if (upstream.aborted) return // visitor left before Immich answered
     throw e
   }
 

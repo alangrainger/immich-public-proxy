@@ -63,6 +63,7 @@ export function Gallery (props: GalleryProps) {
           <meta name="twitter:card" content="summary_large_image"/>
         </>}
         <link rel="icon" href="/share/static/favicon.ico" type="image/x-icon"/>
+        <link type="text/css" rel="stylesheet" href={`/share/static/${ASSET_VERSION}/theme.css`}/>
         <link type="text/css" rel="stylesheet" href={`/share/static/${ASSET_VERSION}/style.css`}/>
         <link type="text/css" rel="stylesheet" href="/share/static/photoswipe/photoswipe.css"/>
         <link type="text/css" rel="stylesheet" href={`/share/static/${ASSET_VERSION}/photoswipe-overrides.css`}/>

@@ -1,5 +1,9 @@
 import { NextFunction, Request, Response } from 'express-serve-static-core'
+import { resolve } from 'path'
 import { getConfigOption } from './config/access'
+
+/** Static assets both apps serve from core: pico, the Inter font, the favicon and theme.css. */
+export const CORE_PUBLIC_DIR = resolve(__dirname, '../public')
 
 /**
  * Apply the response headers configured under `ipp.responseHeaders` to the
@@ -18,6 +22,18 @@ export function addNoStoreHeaders (res: Response): void {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
   res.set('Pragma', 'no-cache')
   res.set('Expires', '0')
+}
+
+/**
+ * A signal that aborts when the visitor's connection closes before the
+ * response has finished, so the request to Immich stops with it.
+ */
+export function abortOnClose (res: Response): AbortSignal {
+  const controller = new AbortController()
+  const onClose = () => { if (!res.writableFinished) controller.abort() }
+  res.once('close', onClose)
+  if (res.closed) onClose()
+  return controller.signal
 }
 
 /**

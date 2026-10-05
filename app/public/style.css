@@ -1,75 +1,16 @@
-/*
-  Tokens ported from immich-app/immich v2.7.5 (web/src/app.css, 2026-05-23).
-  Re-check approximately once a year for visual drift.
-
-  Font note: Immich uses "GoogleSans" (Google's proprietary font, not freely
-  distributed). We use a system font stack with Inter from Google Fonts as a
-  visually-close substitute. Same approach Immich's open-source consumers use.
-*/
-
-/* Inter (OFL-1.1, see fonts/Inter-LICENSE.txt). Single variable WOFF2 covers
-   all weights from 100-900, so we can use any weight in CSS without an extra
-   network request. Vendored locally so IPP runs cleanly air-gapped. */
-@font-face {
-  font-family: 'Inter';
-  src: url('/share/static/fonts/inter-latin-wght-normal.woff2') format('woff2-variations');
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
+/* Theme tokens, the Inter font and the page base come from @ipp/core's theme.css */
 
 :root {
-  /* Immich light-mode tokens (RGB triplets so they compose via rgb(var(...))) */
-  --immich-primary: 66 80 175;
-  --immich-bg: 255 255 255;
-  --immich-fg: 0 0 0;
-  --immich-gray: 235 235 235;
-
-  /* Immich dark-mode tokens */
-  --immich-dark-primary: 172 203 250;
-  --immich-dark-bg: 10 10 10;
-  --immich-dark-fg: 229 231 235;
-  --immich-dark-gray: 33 33 33;
-
-  /* Active palette - light by default; html.dark overrides below */
-  --color-bg: rgb(var(--immich-bg));
-  --color-fg: rgb(var(--immich-fg));
-  --color-primary: rgb(var(--immich-primary));
-  --color-gray: rgb(var(--immich-gray));
-
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-
   /* Horizontal inset for textual page content (title, description, group
      headers). The grid itself goes edge-to-edge on mobile so it doesn't use
      this value. */
   --gutter: 32px;
-
-  color-scheme: light;
 }
 
 @media (max-width: 640px) {
   :root {
     --gutter: 8px;
   }
-}
-
-html.dark {
-  --color-bg: rgb(var(--immich-dark-bg));
-  --color-fg: rgb(var(--immich-dark-fg));
-  --color-primary: rgb(var(--immich-dark-primary));
-  --color-gray: rgb(var(--immich-dark-gray));
-
-  color-scheme: dark;
-}
-
-* { box-sizing: border-box; }
-
-html, body {
-  margin: 0;
-  height: 100%;
-  background: var(--color-bg);
-  color: var(--color-fg);
-  font-family: var(--font-sans);
 }
 
 /* ===== Justified-rows / square-grid gallery (tiles are absolute-positioned by JS) ===== */

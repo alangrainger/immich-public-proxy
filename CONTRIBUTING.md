@@ -41,12 +41,13 @@ shared/                   @ipp/core - read-side only, knows nothing about galler
     immich/share.ts       fetchSharedLink, password login + token cache, auth headers, title
     config/loader.ts      loadConfig() reads env / file; the app passes its default path
     config/access.ts      getConfigOption() reads the loaded config
-    http.ts               Operator-configured and no-store response headers, asyncHandler
+    http.ts               Operator-configured and no-store response headers, abortOnClose, asyncHandler, CORE_PUBLIC_DIR
     invalidRequest.ts     The 404 policy (never cached), errorHandler, and setInvalidRequestHandler for the app's own handler file
     session.ts            Cookie session, decodeCookie, unlock handler, invalid-password response
     encrypt.ts            Cookie-session encryption for password-protected shares
     utils/                log, sanitize (filenames), text (escaping), ttlLruCache, webStream
     view/                 Page renderer, theme script, password page
+  public/                 Static assets both apps serve: pico, Inter font, favicon, theme.css (tokens and page base)
   tests/                  Vitest unit tests for core
 app/
   config.json             Runtime configuration, overrideable via volume or inline
@@ -73,7 +74,7 @@ app/
     client/               Client gallery, virtualisation, lightbox, sidebar
   public/                 Static assets served as-is
     photoswipe/           Vendored PhotoSwipe v5
-    thumbhash/, fonts/, images/
+    thumbhash/, images/
     style.css, photoswipe-overrides.css
   tests/                  Vitest unit tests for IPP
 docs/                     User docs site (VitePress); docs/README.md explains its structure

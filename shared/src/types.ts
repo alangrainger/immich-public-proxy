@@ -73,12 +73,17 @@ export interface ImmichVersion {
 }
 
 export interface SharedLink {
+  // Immich's id for the link itself, not the album
+  id?: string;
   key: string;
   keyType: KeyType;
+  slug?: string | null;
   type: string;
   description?: string;
   assets: Asset[];
   allowDownload?: boolean;
+  // The owner's "Allow public user to upload" toggle
+  allowUpload?: boolean;
   showMetadata?: boolean;
   password?: string;
   album?: {

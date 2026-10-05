@@ -10,6 +10,7 @@ import {
   Asset,
   AssetType,
   asyncHandler,
+  CORE_PUBLIC_DIR,
   decodeCookie,
   enforceMinimumImmichVersion,
   errorHandler,
@@ -65,17 +66,18 @@ app.use(sessionMiddleware({ name: 'session' }))
 app.use(express.json())
 // For parsing the selective-download form POST (form-encoded body)
 app.use(express.urlencoded({ extended: false, limit: '1mb' }))
+/** Serve IPP's own `public` folder, then core's, at `path`. */
+function serveStatic (path: string, options: Parameters<typeof express.static>[1] = {}) {
+  for (const dir of ['public', CORE_PUBLIC_DIR]) {
+    app.use(path, express.static(dir, { ...options, setHeaders: addResponseHeaders }))
+  }
+}
 // Cache-busted, immutable static assets under a per-release version segment.
 const inProduction = process.env.NODE_ENV === 'production'
-app.use('/share/static/' + ASSET_VERSION, express.static('public', {
-  immutable: inProduction,
-  maxAge: inProduction ? '365d' : 0,
-  setHeaders: addResponseHeaders
-}))
-// Serve static assets from the 'public' folder as /share/static
-app.use('/share/static', express.static('public', { setHeaders: addResponseHeaders }))
-// Serve the same assets on /, to allow for /robots.txt and /favicon.ico
-app.use(express.static('public', { setHeaders: addResponseHeaders }))
+serveStatic('/share/static/' + ASSET_VERSION, { immutable: inProduction, maxAge: inProduction ? '365d' : 0 })
+serveStatic('/share/static')
+// The same assets on /, to allow for /robots.txt and /favicon.ico
+serveStatic('/')
 // Remove the X-Powered-By ExpressJS header
 app.disable('x-powered-by')
 
