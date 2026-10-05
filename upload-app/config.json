@@ -1,0 +1,15 @@
+{
+  "ipp": {
+    "allowSlugLinks": true,
+    "customInvalidResponse": false,
+    "upload": {
+      "maxFileSize": 500,
+      "rateLimit": 60,
+      "byteBudget": 10240,
+      "filenamePrefix": "ipp_upload_",
+      "notifyUrl": "",
+      "notifyHeaders": {},
+      "notifyTimeout": 10000
+    }
+  }
+}

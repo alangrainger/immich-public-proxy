@@ -1,5 +1,8 @@
 import { Transform } from 'stream'
 
+/** The error an idle stream is destroyed with. */
+export class IdleTimeoutError extends Error {}
+
 /**
  * A pass-through Transform that destroys itself if no data flows through for
  * `idleMs`. The timer is set when the transform is created and reset on every
@@ -11,7 +14,7 @@ export function createIdleTimeoutStream (idleMs: number): Transform {
   const transform: Transform = new Transform({
     transform (chunk, _, cb) {
       if (timer) clearTimeout(timer)
-      timer = setTimeout(() => transform.destroy(new Error(`No data received for ${idleMs}ms`)), idleMs)
+      timer = setTimeout(() => transform.destroy(new IdleTimeoutError(`No data received for ${idleMs}ms`)), idleMs)
       cb(null, chunk)
     },
     flush (cb) {
@@ -21,6 +24,6 @@ export function createIdleTimeoutStream (idleMs: number): Transform {
   })
   // Arm the timer immediately so a response that returns headers but never
   // sends a body also times out.
-  timer = setTimeout(() => transform.destroy(new Error(`No data received for ${idleMs}ms`)), idleMs)
+  timer = setTimeout(() => transform.destroy(new IdleTimeoutError(`No data received for ${idleMs}ms`)), idleMs)
   return transform
 }

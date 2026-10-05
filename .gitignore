@@ -7,3 +7,4 @@ app/public/js/
 /app/config.dev.json
 .npm-cache/
 *.tsbuildinfo
+upload-app/public/js/

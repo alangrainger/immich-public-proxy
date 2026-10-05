@@ -4,7 +4,6 @@ import 'dotenv/config'
 import express from 'express'
 import { resolve } from 'path'
 import {
-  accessible,
   addNoStoreHeaders,
   addResponseHeaders,
   Asset,
@@ -16,6 +15,7 @@ import {
   errorHandler,
   getConfigOption,
   getKeyTypeFromShare,
+  healthcheck,
   isId,
   isKey,
   KeyType,
@@ -25,6 +25,7 @@ import {
   sessionMiddleware,
   setInvalidRequestHandler,
   SharedLink,
+  slugLinksDisabled,
   unlockHandler
 } from '@ipp/core'
 import { fetchAssetDetail, getShareByKey, handleShareRequest } from './immich'
@@ -97,11 +98,6 @@ type SharedAssetResolution =
   | { ok: true, link: SharedLink, asset: Asset }
   | { ok: false, status: number, reason: string, passwordRequired?: boolean }
 
-/** Whether this is a slug link and the operator has turned slug links off. */
-function slugLinksDisabled (keyType: KeyType): boolean {
-  return keyType === KeyType.slug && !getConfigOption('ipp.allowSlugLinks', true)
-}
-
 async function resolveShare (req: Request, keyType: KeyType): Promise<ShareResolution> {
   if (slugLinksDisabled(keyType)) {
     return { ok: false, status: 404, reason: 'Slug links are disabled in config.json' }
@@ -152,13 +148,7 @@ async function resolveSharedAsset (req: Request, keyType: KeyType, allowMotion =
  * [ROUTE] Healthcheck
  * The path matches for /share/healthcheck, and also the legacy /healthcheck
  */
-app.get(/^(|\/share)\/healthcheck$/, asyncHandler(async (_req, res) => {
-  if (await accessible()) {
-    res.send('ok')
-  } else {
-    res.status(503).send()
-  }
-}))
+app.get(/^(|\/share)\/healthcheck$/, asyncHandler(healthcheck))
 
 /*
  * [ROUTE] This is the main URL that someone would visit if they are opening a shared link

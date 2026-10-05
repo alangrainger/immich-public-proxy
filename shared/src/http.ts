@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express-serve-static-core'
 import { resolve } from 'path'
 import { getConfigOption } from './config/access'
+import { accessible } from './immich/client'
 
 /** Static assets both apps serve from core: pico, the Inter font, the favicon and theme.css. */
 export const CORE_PUBLIC_DIR = resolve(__dirname, '../public')
@@ -34,6 +35,15 @@ export function abortOnClose (res: Response): AbortSignal {
   res.once('close', onClose)
   if (res.closed) onClose()
   return controller.signal
+}
+
+/** `GET /healthcheck`: `ok` while Immich answers, else 503. */
+export async function healthcheck (_req: Request, res: Response): Promise<void> {
+  if (await accessible()) {
+    res.send('ok')
+  } else {
+    res.status(503).send()
+  }
 }
 
 /**

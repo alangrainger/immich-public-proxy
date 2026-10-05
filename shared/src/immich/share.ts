@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import { KeyType, SharedLink, SharedLinkResult } from '../types'
+import { getConfigOption } from '../config/access'
 import { log } from '../utils/log'
 import { cachedPromise, TtlLruCache } from '../utils/ttlLruCache'
 import { apiUrl, buildUrl } from './client'
@@ -15,6 +16,11 @@ import { apiUrl, buildUrl } from './client'
   reject - IPP never serves cached tokens to unauthenticated visitors.
 */
 const tokenCache = new TtlLruCache<Promise<string | null>>({ ttlMs: 120_000, max: 100 })
+
+/** Whether this is a slug link and the operator has turned slug links off. */
+export function slugLinksDisabled (keyType: KeyType): boolean {
+  return keyType === KeyType.slug && !getConfigOption('ipp.allowSlugLinks', true)
+}
 
 /**
  * Display title for a shared link. Prefers the user-set link description,

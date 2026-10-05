@@ -26,26 +26,27 @@ Request flow for a typical share URL like `https://proxy.example.com/share/<key>
 
 ### Repository layout
 
-The repo is an npm workspace with two packages: `shared/` is `@ipp/core`, the read-side code that IPP shares with the planned upload service, and `app/` is IPP itself. Run `npm install` at the root; there is one lockfile.
+The repo is an npm workspace with three packages: `shared/` is `@ipp/core`, the read-side code both apps share; `app/` is IPP itself; and `upload-app/` is the optional upload service, the only code that writes to Immich. Run `npm install` at the root; there is one lockfile.
 
 ```
 .github/workflows/        CI: builds and pushes Docker image on v* tags
 package.json              Workspace root: scripts that delegate to the workspaces; no dependencies
 package-lock.json         The one lockfile for every workspace
-.eslintrc                 Lint config for both workspaces
+.eslintrc                 Lint config for every workspace
 shared/                   @ipp/core - read-side only, knows nothing about galleries
   src/
     index.ts              Barrel: everything the apps import comes from '@ipp/core'
     types.ts              Share-level types (SharedLink, Asset, KeyType, ...)
     immich/client.ts      Immich API request helper, URL building, key/id checks, version guard
-    immich/share.ts       fetchSharedLink, password login + token cache, auth headers, title
+    immich/share.ts       fetchSharedLink, password login + token cache, auth headers, title, slug-link gate
     config/loader.ts      loadConfig() reads env / file; the app passes its default path
     config/access.ts      getConfigOption() reads the loaded config
     http.ts               Operator-configured and no-store response headers, abortOnClose, asyncHandler, CORE_PUBLIC_DIR
     invalidRequest.ts     The 404 policy (never cached), errorHandler, and setInvalidRequestHandler for the app's own handler file
     session.ts            Cookie session, decodeCookie, unlock handler, invalid-password response
     encrypt.ts            Cookie-session encryption for password-protected shares
-    utils/                log, sanitize (filenames), text (escaping), ttlLruCache, webStream
+    version.ts            App version from APP_VERSION or the app's package.json
+    utils/                log, sanitize (filenames), text (escaping), ttlLruCache, webStream (incl. streaming request bodies)
     view/                 Page renderer, theme script, password page
   public/                 Static assets both apps serve: pico, Inter font, favicon, theme.css (tokens and page base)
   tests/                  Vitest unit tests for core
@@ -77,6 +78,22 @@ app/
     thumbhash/, images/
     style.css, photoswipe-overrides.css
   tests/                  Vitest unit tests for IPP
+upload-app/               immich-public-proxy-upload - one page per share; streams visitor files to Immich's POST /assets
+  config.json             Default ipp.upload.* options; no responseHeaders
+  src/
+    index.ts              Express setup and routes, mounted under PUBLIC_BASE_URL's path
+    config.ts             Env and ipp.upload.* readers, base path
+    share.ts              Share lookup through core, cached 60 s
+    gate.ts               The upload permit: the share's Immich toggle and the slug-link gate
+    receive.ts            Validates one upload request: rate limit, length, filename, type, byte budget
+    forward.ts            The only Immich write call: multipart POST /assets under the share key
+    limits.ts             Fixed-window budgets for the rate limit and the byte budget
+    filename.ts           Stored filename: sanitised, prefixed, extension kept
+    notify.ts             Optional JSON webhook per stored file
+    idleTimeoutStream.ts  Drops a request body that stalls
+    view/upload.tsx       The upload page
+    shared/               Rules and types shared by the server and the page client
+  tests/                  Vitest unit tests for the upload app
 docs/                     User docs site (VitePress); docs/README.md explains its structure
 Dockerfile                Multi-stage build; IPP runs from /app as the non-root `node` user
 docker-compose.yml        Reference deployment
@@ -128,7 +145,7 @@ At the repo root:
 ```bash
 npm run build           # core, then IPP's server and client; output to dist/ and app/public/js/
 npm test                # vitest run in every workspace (unit tests on pure functions)
-npm run lint            # ESLint over both workspaces
+npm run lint            # ESLint over every workspace
 npm run bump -- 4.0.1   # set the version in every workspace manifest and the lockfile
 ```
 
