@@ -9,6 +9,7 @@
     "motionPhotos": true,
     "downloadedFilename": 0,
     "allowDownload": 0,
+    "uploadUrl": "",
     "allowSlugLinks": true,
     "showHomePage": true,
     "showMetadata": {

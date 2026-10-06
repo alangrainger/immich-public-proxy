@@ -114,6 +114,13 @@ html, body {
   opacity: 0.55;
 }
 
+/* The round icon buttons at the end of the header */
+.header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+}
+
 /* Round icon button in the header: an anchor or a button */
 .header-action {
   flex: 0 0 auto;

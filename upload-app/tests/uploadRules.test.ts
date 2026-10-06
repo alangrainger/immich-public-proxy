@@ -27,6 +27,14 @@ describe('fileType', () => {
     expect(fileType('IMG_0042.HEIC', 'image/heic')).toBe('image/heic')
   })
 
+  it('derives a type from the extension when the browser gives a generic one', () => {
+    expect(fileType('IMG_0042.HEIC', 'application/octet-stream')).toBe('image/heic')
+  })
+
+  it('keeps a generic type it cannot improve on, so the client refuses the file', () => {
+    expect(fileType('notes.txt', 'application/octet-stream')).toBe('application/octet-stream')
+  })
+
   it('derives a type from the extension when the browser gives none', () => {
     expect(fileType('IMG_0042.HEIC', '')).toBe('image/heic')
     expect(fileType('DSC_0001.NEF', '')).toBe('image/x-nikon-nef')

@@ -5,3 +5,7 @@
 /app/.env
 /shared/node_modules/
 /shared/dist/
+/upload-app/node_modules/
+/upload-app/dist/
+/upload-app/public/js/
+/upload-app/.env

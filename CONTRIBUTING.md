@@ -97,6 +97,7 @@ upload-app/               immich-public-proxy-upload - one page per share; strea
   tests/                  Vitest unit tests for the upload app
 docs/                     User docs site (VitePress); docs/README.md explains its structure
 Dockerfile                Multi-stage build; IPP runs from /app as the non-root `node` user
+Dockerfile.upload         The same for the upload service; it also runs from /app
 docker-compose.yml        Reference deployment
 ```
 
@@ -193,7 +194,7 @@ The root `README.md` is a front door only: pitch, demo, quick start and links. N
 
 ## Release process
 
-Releases are triggered by pushing a `v*` tag. The `.github/workflows/ci.yaml` workflow builds a multi-arch (`linux/amd64`, `linux/arm64`) image, pushes to both GHCR and Docker Hub, and attaches a build-provenance attestation to each registry.
+Releases are triggered by pushing a `v*` tag. The `.github/workflows/ci.yaml` workflow builds both multi-arch (`linux/amd64`, `linux/arm64`) images, `immich-public-proxy` and `immich-public-proxy-upload`, with the same version tags, pushes them to both GHCR and Docker Hub, and attaches a build-provenance attestation to each image in each registry.
 
 Maintainer workflow for a release:
 

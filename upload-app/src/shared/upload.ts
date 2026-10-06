@@ -19,7 +19,7 @@ export function isUploadableType (mimeType: string): boolean {
 }
 
 /*
-  Types for files a desktop browser reports with an empty `File.type`: HEIC,
+  Types for files a desktop browser reports with an empty or generic `File.type`: HEIC,
   HEIF, camera RAW and some video containers. Immich types the asset by its
   extension, so these only need to pass `isUploadableType`.
 */
@@ -46,11 +46,15 @@ const TYPE_BY_EXTENSION: Record<string, string> = {
   insv: 'video/mp4'
 }
 
-/** The browser's type for a file, or one derived from its extension when the browser gives none. */
+/**
+ * The browser's type for a file, or one derived from its extension when the
+ * browser gives none or a generic one (Chrome reports HEIC from the file
+ * picker as `application/octet-stream`).
+ */
 export function fileType (name: string, browserType: string): string {
-  if (browserType) return browserType
+  if (isUploadableType(browserType)) return browserType
   const extension = name.split('.').pop()?.toLowerCase() || ''
-  return TYPE_BY_EXTENSION[extension] || ''
+  return TYPE_BY_EXTENSION[extension] || browserType
 }
 
 /** Bytes as a short human-readable string. */

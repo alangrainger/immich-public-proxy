@@ -1,4 +1,4 @@
-import { Asset, getConfigOption, log, SharedLink, TtlLruCache } from '@ipp/core'
+import { Asset, getConfigOption, KeyType, log, SharedLink, TtlLruCache } from '@ipp/core'
 import { DownloadAll } from './types'
 import dayjs from 'dayjs'
 
@@ -21,6 +21,21 @@ export function canDownload (share: SharedLink): boolean {
 }
 
 let warnedInvalidDownloadPolicy = false
+
+/**
+ * The "Add photos" link to this share on the upload service, or undefined
+ * when `ipp.uploadUrl` is unset or not an http(s) URL, or the owner has not
+ * turned on "Allow public user to upload". A share opened by its slug links
+ * by its slug, so the upload service resolves it the same way.
+ */
+export function uploadLink (share: SharedLink): string | undefined {
+  const configured = getConfigOption('ipp.uploadUrl', '')
+  if (!share.allowUpload || typeof configured !== 'string' || !/^https?:\/\//i.test(configured.trim())) return undefined
+  const base = configured.trim().replace(/\/+$/, '')
+  return share.keyType === KeyType.slug && share.slug
+    ? base + '/s/' + encodeURIComponent(share.slug)
+    : base + '/share/' + encodeURIComponent(share.key)
+}
 
 // Asset ids already warned about, so each warns at most once a day
 const warnedUnprocessed = new TtlLruCache<true>({ ttlMs: 24 * 60 * 60_000, max: 1000 })

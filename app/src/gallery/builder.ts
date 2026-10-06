@@ -6,7 +6,7 @@ import {
 } from '../immich'
 import { Response } from 'express-serve-static-core'
 import { ImageSize } from '../types'
-import { canDownload, expiryDate } from '../share'
+import { canDownload, expiryDate, uploadLink } from '../share'
 import { h } from 'preact'
 import { Gallery, GalleryItem, GalleryProps } from '../view/gallery'
 import type { GroupByDateMode } from '../shared/types'
@@ -155,7 +155,8 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       locationWebLink: !!getConfigOption('ipp.showMetadata.location.webLink', true)
     },
     groupByDate,
-    metaBase
+    metaBase,
+    uploadLink: uploadLink(share)
   }
 
   // HTML gallery page cache time. A password-protected gallery keeps the

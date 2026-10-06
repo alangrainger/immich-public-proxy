@@ -84,3 +84,46 @@ jobs:
           subject-name: docker.io/${{ github.repository }}
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
+
+      - name: Extract upload image metadata
+        id: upload-metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ github.repository }}-upload
+            ghcr.io/${{ github.repository }}-upload
+          tags: |
+            type=semver,pattern={{version}},value=v${{ env.PACKAGE_VERSION }}
+            type=semver,pattern={{major}}.{{minor}},value=v${{ env.PACKAGE_VERSION }}
+            type=semver,pattern={{major}},value=v${{ env.PACKAGE_VERSION }}
+            type=raw,value=latest,enable=${{ !contains(env.PACKAGE_VERSION, '-') }}
+
+      - name: Build and push upload image
+        id: upload-build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Dockerfile.upload
+          push: true
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            PACKAGE_VERSION=${{ env.PACKAGE_VERSION }}
+          tags: ${{ steps.upload-metadata.outputs.tags }}
+          labels: ${{ steps.upload-metadata.outputs.labels }}
+          annotations: ${{ steps.upload-metadata.outputs.annotations }}
+          cache-from: type=gha,scope=upload
+          cache-to: type=gha,mode=max,scope=upload
+
+      - name: Attest GHCR upload image
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ghcr.io/${{ github.repository }}-upload
+          subject-digest: ${{ steps.upload-build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Attest Docker Hub upload image
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: docker.io/${{ github.repository }}-upload
+          subject-digest: ${{ steps.upload-build.outputs.digest }}
+          push-to-registry: true
