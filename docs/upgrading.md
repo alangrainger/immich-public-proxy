@@ -19,8 +19,15 @@ version. Breaking changes and renamed config keys land in major versions and are
 
 - **Immich 3.0.0 or newer is required.** Upgrade Immich first.
 - **Old config keys are no longer read.** Check your `config.json` against [Renamed config keys](/config/upgrading).
+- **IPP will not start while the config has `showMetadata.exif.enabled` or `showMetadata.location.enabled`.** Remove
+  the key, and keep only the per-field flags for what visitors may see. See [Metadata](/config/upgrading#metadata).
+- **`allowDownload` takes only `0`, `1` or `2`.** Any other value, such as `true`, now turns downloads off. See
+  [`allowDownload`](/config/ipp-options#allowdownload).
 - **A custom `invalidRequestHandler.js` must be copied again from the 4.0 image.** A copy taken from 3.x fails to
   load. See [Custom function](/config/error-responses#custom-function).
+
+Visitor uploads are new in 4.0. An existing install is not affected until you add the upload service; see
+[Let visitors send photos back](/visitor-uploads).
 
 ## Immich version
 

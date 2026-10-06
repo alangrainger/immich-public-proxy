@@ -6,11 +6,12 @@
 Connection settings (the Immich URL, public URL, port and config file location) are
 [environment variables](/config/environment-variables). Everything else is JSON config under `ipp.*`, grouped into:
 
-- [General options](/config/ipp-options) - downloads, zoom quality, slug links, response headers.
+- [General options](/config/ipp-options) - downloads, zoom quality, slug links, the upload link, response headers.
 - [Gallery](/config/gallery) - how the gallery page is rendered.
 - [Lightbox](/config/lightbox) - the PhotoSwipe image viewer.
 - [Metadata](/config/metadata) - description / EXIF / location reveal controls.
 - [Error responses](/config/error-responses) - customise what invalid requests return.
+- [Upload service](/config/upload-service) - the optional container that lets visitors send photos back.
 - [Renamed config keys](/config/upgrading) - old keys and their current names.
 
 ## How to provide a config override

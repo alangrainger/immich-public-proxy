@@ -47,13 +47,21 @@ If you use Cloudflare, set your `/share/video/*` path to Bypass Cache or videos 
 
 Full instructions, including Kubernetes: **[Installation](https://docs.ipp.nz/installation)**.
 
+### Let visitors send photos back
+
+Visitors can add their own photos and videos to a share, for example guests at a wedding. This needs a second,
+optional container, `immich-public-proxy-upload`, and the "Allow public user to upload" option on the share in Immich.
+The IPP container itself stays read-only. See
+**[Let visitors send photos back](https://docs.ipp.nz/visitor-uploads)**.
+
 ## Documentation
 
 Everything is at **[docs.ipp.nz](https://docs.ipp.nz)**:
 
 - [Installation](https://docs.ipp.nz/installation) and [Sharing from Immich](https://docs.ipp.nz/how-to-use)
 - [Configuration](https://docs.ipp.nz/config/): downloads, gallery layout, lightbox, metadata privacy, error responses
-- Guides: [single domain with Immich](https://docs.ipp.nz/running-on-single-domain),
+- Guides: [let visitors send photos back](https://docs.ipp.nz/visitor-uploads),
+  [single domain with Immich](https://docs.ipp.nz/running-on-single-domain),
   [redirect your root domain to a share](https://docs.ipp.nz/redirect-root-to-share),
   [securing Immich with mTLS](https://docs.ipp.nz/securing-immich-with-mtls)
 - [Troubleshooting](https://docs.ipp.nz/troubleshooting)
@@ -64,4 +72,5 @@ You can [add feature requests here](https://github.com/alangrainger/immich-publi
 however my goal with this project is to keep it as lean as possible.
 
 IPP has **read-only** access to Immich and stores nothing: anything that needs an API key, modifies Immich, or would
-require storing a share key won't be considered. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full list.
+require storing a share key won't be considered. Visitor uploads are the one write path, and they live in their own
+optional container. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full list.

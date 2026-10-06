@@ -43,8 +43,11 @@ Those two variables are all most people need. The port and the config file locat
 
 Images are published to Docker Hub (`alangrainger/immich-public-proxy`) and GitHub Container Registry
 (`ghcr.io/alangrainger/immich-public-proxy`) for `linux/amd64` and `linux/arm64`. Each release is tagged with its
-full version (for example `3.3.0`), its minor version (`3.3`) and its major version (`3`), and `latest` always points
+full version (for example `4.0.0`), its minor version (`4.0`) and its major version (`4`), and `latest` always points
 at the newest release.
+
+The optional upload service, `alangrainger/immich-public-proxy-upload`, is published in the same places with the same
+version tags. You only need it to [let visitors send photos back](/visitor-uploads).
 
 ### Running alongside Immich on a single domain
 

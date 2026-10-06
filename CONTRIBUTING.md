@@ -10,6 +10,8 @@ Immich Public Proxy (IPP) exists to share Immich photos publicly without exposin
 
 **Read-only access to Immich. This is non-negotiable.** IPP must never modify Immich, its data, or its files. It does not use an Immich API key. The only Immich endpoints it calls are the ones reachable via a public share key. This rule rules out a large class of feature requests; see "What will not be accepted" below.
 
+**The one write path lives in its own image.** Visitor uploads are the single exception, and they live in `upload-app/` (the `immich-public-proxy-upload` image), which operators add only if they want it. The upload service writes with the visitor's share key, so Immich enforces the share's "Allow public user to upload" toggle; it still has no API key and no state, and its only Immich write is `POST /assets` in `upload-app/src/forward.ts`. `app/` and `@ipp/core` stay read-only: no code that accepts a file or writes to Immich goes there.
+
 **Stateless.** No database, no user accounts, no long-lived secrets beyond an encrypted cookie session for share passwords. Avoid adding persistent state. If you think you need a cache, estimate the real cost of not having it first.
 
 **Privacy at the boundary.** Any invalid, expired, or upstream-failed request returns 404. Do not leak upstream Immich status codes, error bodies, or share existence to the client.
@@ -198,8 +200,8 @@ Releases are triggered by pushing a `v*` tag. The `.github/workflows/ci.yaml` wo
 
 Maintainer workflow for a release:
 
-1. Update `app/package.json` version with `npm version <patch|minor|major>` from inside `app/`.
-2. Push the resulting tag. CI does the rest.
+1. Run `npm run bump -- <version>` at the root. It sets the version in every workspace manifest and the lockfile.
+2. Commit, tag `v<version>` and push the tag. CI does the rest.
 
 Do not push tags as part of a PR; releases are cut by the maintainer.
 
@@ -215,9 +217,9 @@ For anything non-trivial, open a [Feature Request discussion](https://github.com
 
 Repeating the README's feature-request guidance for emphasis:
 
-- Anything that modifies Immich or its files in any way.
+- Anything that modifies Immich or its files in any way, beyond the upload service's one `POST /assets`.
 - Anything that requires an Immich API key or other privileged access.
-- Uploading photos to Immich.
+- Code in `app/` or `@ipp/core` that accepts a file or writes to Immich. That belongs in `upload-app/`, and only there.
 - Persistent state, databases, or user accounts on the IPP side.
 - Client-side bundlers (Webpack / Rollup / Vite / Parcel) or frontend frameworks (React / Svelte / Vue / Solid). Client code is TypeScript compiled file-for-file by `tsc` to plain ES modules served directly - no bundling, no framework runtime, no plugin ecosystem.
 - Features that meaningfully expand the proxy's attack surface for a niche use case.

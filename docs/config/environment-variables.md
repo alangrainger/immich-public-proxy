@@ -49,3 +49,5 @@ The JSON config as an inline string. When set, no config file is read at all. Se
 [Inline via env var](/config/#inline-via-env-var) for an example.
 
 `APP_VERSION` and `NODE_ENV` are set by the Docker image and are not meant to be changed.
+
+The optional upload service has its own variables. See [Upload service](/config/upload-service#environment-variables).

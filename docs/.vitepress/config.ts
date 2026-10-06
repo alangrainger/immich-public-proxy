@@ -52,12 +52,14 @@ export default defineConfig({
           { text: 'Lightbox', link: '/config/lightbox' },
           { text: 'Metadata', link: '/config/metadata' },
           { text: 'Error responses', link: '/config/error-responses' },
+          { text: 'Upload service', link: '/config/upload-service' },
           { text: 'Renamed config keys', link: '/config/upgrading' }
         ]
       },
       {
         text: 'Guides',
         items: [
+          { text: 'Let visitors send photos back', link: '/visitor-uploads' },
           { text: 'Single domain with Immich', link: '/running-on-single-domain' },
           { text: 'Redirect root domain to a share', link: '/redirect-root-to-share' },
           { text: 'Securing Immich with mTLS', link: '/securing-immich-with-mtls' }

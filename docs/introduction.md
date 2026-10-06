@@ -47,7 +47,8 @@ with public access only to IPP. See [Securing Immich with mTLS](/securing-immich
 IPP holds to three rules, which also decide which feature requests are accepted:
 
 - **Read-only.** IPP never modifies Immich or its files, and it needs no API key or privileged access. Anything that
-  would require either will not be added.
+  would require either will not be added. The one exception, visitor uploads, is a separate container that you add
+  only if you want it (see [Visitor uploads](#visitor-uploads)).
 - **Stateless.** No database, no accounts, and no stored share keys. The key in a share URL is what grants access to
   that share, so anything that would require IPP to remember one is unlikely to be added.
 - **Small enough to audit.** Because IPP fronts a private photo library, the code stays small enough for someone
@@ -56,5 +57,17 @@ IPP holds to three rules, which also decide which feature requests are accepted:
 Feature requests are welcome in [GitHub Discussions](https://github.com/alangrainger/immich-public-proxy/discussions/categories/feature-requests),
 with the goal of keeping IPP as lean as possible. [CONTRIBUTING.md](https://github.com/alangrainger/immich-public-proxy/blob/main/CONTRIBUTING.md)
 lists what will not be accepted.
+
+## Visitor uploads
+
+Visitors to a share can send photos back to it, but only through a second container, `immich-public-proxy-upload`.
+The IPP container has no code that accepts a file or writes to Immich. If you do not run the upload service, no part
+of IPP can write to Immich.
+
+The upload service follows the same rules as IPP in every other way. It needs no API key and keeps no state. It
+uploads with the visitor's share key, so Immich itself checks the share's "Allow public user to upload" option on
+every file. It never shows anything from your library, and it streams each file to Immich without storing it.
+
+The setup is in [Let visitors send photos back](/visitor-uploads).
 
 Ready to set it up? Head to [Installation](/installation).

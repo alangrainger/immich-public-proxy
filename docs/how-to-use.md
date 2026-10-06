@@ -24,6 +24,8 @@ The settings on the shared link in Immich are respected:
   [`allowDownload`](/config/ipp-options#allowdownload) for how IPP's own download buttons interact with it.
 - **Show metadata.** When it is off, IPP hides the description, EXIF and location data regardless of its own
   [metadata settings](/config/metadata).
+- **Allow public user to upload.** When it is on and you run the optional upload service, the gallery shows an
+  **Add photos** button. See [Let visitors send photos back](/visitor-uploads).
 
 ## What visitors see
 
@@ -39,6 +41,8 @@ The settings on the shared link in Immich are respected:
 - Photos can be grouped under month or day headers with [`gallery.groupByDate`](/config/gallery#groupbydate).
 - An info sidebar in the lightbox shows whatever [metadata](/config/metadata) you have chosen to reveal. Nothing is
   revealed by default.
+- When the share accepts uploads, visitors can send their own photos and videos into it with the **Add photos**
+  button.
 
 Try it on the [live demo](https://demo.ipp.nz/s/demo-gallery).
 

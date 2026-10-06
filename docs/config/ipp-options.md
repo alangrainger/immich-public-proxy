@@ -110,6 +110,8 @@ The bulk-zip and per-asset buttons can be toggled independently once downloads a
 
 The public URL of the optional upload service (the `immich-public-proxy-upload` container), for example `https://upload.example.com`. When it is set, a share whose "Allow public user to upload" option is on in Immich shows an "Add photos" button in the gallery header. The button opens that share's page on the upload service. Leave it empty to show no button.
 
+The value is the same as the upload service's [`PUBLIC_BASE_URL`](/config/upload-service#public-base-url). To set up the service, see [Let visitors send photos back](/visitor-uploads).
+
 ## `allowSlugLinks`
 
 **Type:** `bool` · **Default:** `true`
