@@ -49,7 +49,7 @@ services:
       PUBLIC_BASE_URL: https://upload.example.com
       GALLERY_URL: https://photos.example.com
     healthcheck:
-      test: curl -s http://localhost:3000/healthcheck -o /dev/null || exit 1
+      test: curl -sf -m 4 http://localhost:3000/healthcheck -o /dev/null || exit 1
       start_period: 10s
       timeout: 5s
 ```

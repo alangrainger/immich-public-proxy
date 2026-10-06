@@ -72,9 +72,14 @@ export function getKeyTypeFromShare (shareType: string) {
 
 /**
  * Reachability ping for the `/share/healthcheck` route.
+ *
+ * Capped at 3 s so a slow Immich fails the healthcheck instead of hanging it.
+ * The compose healthcheck gives curl 4 s inside Docker's 5 s timeout; a check
+ * that overruns gets killed and leaves a zombie curl behind (GitHub #66).
  */
 export async function accessible () {
-  return !!(await request('/server/ping'))
+  // The catch covers a timeout during the body read, which request() does not
+  return !!(await request('/server/ping', { signal: AbortSignal.timeout(3000) }).catch(() => null))
 }
 
 // Minimum Immich server version IPP is compatible with
