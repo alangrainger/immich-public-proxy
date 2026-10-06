@@ -173,7 +173,7 @@ function addRow (file: File, type: string): UploadRow {
 
 type Attempt =
   | { outcome: 'sent', duplicate: boolean }
-  | { outcome: 'failed', message: string }
+  | { outcome: 'failed', message: string, retryable: boolean }
   | { outcome: 'retry', waitMs: number }
   | { outcome: 'cancelled' }
 
@@ -186,6 +186,17 @@ function failureMessage (xhr: XMLHttpRequest): string {
   if (xhr.status === 413) return 'Too large for this server'
   if (xhr.status === 404) return 'This share no longer accepts photos. Reload the page.'
   return 'Could not be sent'
+}
+
+/**
+ * A refused upload, with whether another try could succeed: the service or
+ * Immich is down, or a limit that lifts with time (the budget sends
+ * `Retry-After`). A refused file or a closed share fails the same way every
+ * time, so those rows get Dismiss rather than Retry.
+ */
+function failure (xhr: XMLHttpRequest): Attempt {
+  const retryable = xhr.status >= 500 || xhr.getResponseHeader('Retry-After') !== null
+  return { outcome: 'failed', message: failureMessage(xhr), retryable }
 }
 
 /** One request for one file. XHR rather than fetch, because only XHR reports upload progress. */
@@ -217,7 +228,7 @@ function attempt (row: UploadRow, attemptNumber: number): Promise<Attempt> {
         const seconds = Number(xhr.getResponseHeader('Retry-After'))
         resolve(Number.isFinite(seconds) && seconds > 0 ? { outcome: 'retry', waitMs: seconds * 1000 } : backoff)
       } else {
-        resolve({ outcome: 'failed', message: failureMessage(xhr) })
+        resolve(failure(xhr))
       }
     })
     // A refusal that closes the connection mid-body often arrives as a network error
@@ -250,7 +261,7 @@ async function sendFile (row: UploadRow) {
       return
     }
     if (result.outcome === 'failed') {
-      finish(row, 'error', result.message, true)
+      finish(row, 'error', result.message, result.retryable)
       return
     }
     if (attemptNumber >= ATTEMPTS || result.waitMs > MAX_RETRY_WAIT_MS) {
