@@ -13,7 +13,7 @@ RUN npm ci \
 
 FROM node:lts-alpine AS runner
 
-RUN apk --no-cache add curl \
+RUN apk --no-cache add curl tini \
     && mkdir /app && chown node:node /app
 
 USER node
@@ -26,4 +26,7 @@ ARG PACKAGE_VERSION
 ENV APP_VERSION=${PACKAGE_VERSION}
 ENV NODE_ENV=production
 
+# tini as PID 1 reaps orphaned healthcheck processes, which node does not (GitHub #66).
+# -s keeps reaping, without a warning, when PID 1 is already an init (compose `init: true`).
+ENTRYPOINT ["/sbin/tini", "-s", "--"]
 CMD ["node", "dist/index.js" ]

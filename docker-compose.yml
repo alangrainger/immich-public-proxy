@@ -9,6 +9,6 @@ services:
       PUBLIC_BASE_URL: https://your-proxy-url.com
       IMMICH_URL: http://your-internal-immich-server:2283
     healthcheck:
-      test: curl -s http://localhost:3000/share/healthcheck -o /dev/null || exit 1
+      test: curl -sf -m 4 http://localhost:3000/share/healthcheck -o /dev/null || exit 1
       start_period: 10s
       timeout: 5s
