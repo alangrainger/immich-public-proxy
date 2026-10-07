@@ -70,6 +70,11 @@ services:
     restart: always
     ports:
       - "3001:3000"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
     environment:
       IMMICH_URL: http://your-internal-immich-server:2283
       PUBLIC_BASE_URL: https://photos.example.com
@@ -81,6 +86,8 @@ services:
 
 - `IMMICH_URL` and `PUBLIC_BASE_URL` mean the same as on the IPP container, so you can copy the `environment` block
   across. `PUBLIC_BASE_URL` is IPP's public URL; it gives the upload page a back button to the gallery.
+- `read_only`, `cap_drop` and `security_opt` lock the container down. They are optional: the service writes
+  nothing to disk and needs no extra privileges, so it runs the same with or without them.
 
 The service has no setting for its own public URL. Your reverse proxy decides that in the next step.
 

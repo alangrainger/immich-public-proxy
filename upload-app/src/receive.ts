@@ -32,10 +32,10 @@ const BODY_MIN_BYTES_PER_INTERVAL = 8 * 1024 * BODY_IDLE_MS / 1000
 
 /**
  * Answer an upload the server will not take, in the shape the page reads.
- * `Connection: close` stops a body still in flight costing its full bandwidth.
+ * The connection closes after it (see `index.ts`), so a body still in flight
+ * stops costing its full bandwidth.
  */
 function refuse (res: Response, status: number, reason: string): void {
-  res.set('Connection', 'close')
   res.status(status).json({ error: reason })
 }
 
@@ -71,7 +71,6 @@ export function createUploadReceiver () {
     const key = req.params.key
     const permit = authoriseUpload(link, key, keyType, req.password)
     if (!permit) {
-      res.set('Connection', 'close')
       respondToInvalidRequest(res, 404, 'Share does not accept uploads')
       return
     }

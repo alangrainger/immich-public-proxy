@@ -35,17 +35,20 @@ RUN rm -rf node_modules \
 
 FROM node:lts-alpine AS runner
 
-RUN apk --no-cache add curl tini \
-    && mkdir /app && chown node:node /app
+RUN apk --no-cache add curl tini
 
 # At /app, as IPP, so a config.json mounts at the same path in both images
-USER node
 WORKDIR /app
-COPY --from=builder --chown=node:node /ipp/upload-app/package.json ./
-COPY --from=builder --chown=node:node /ipp/prod_modules ./node_modules
-COPY --from=builder --chown=node:node /ipp/upload-app/dist ./dist
-COPY --from=builder --chown=node:node /ipp/upload-app/public ./public
-COPY --from=builder --chown=node:node /ipp/upload-app/config.json ./
+COPY --from=builder --chown=root:root /ipp/upload-app/package.json ./
+COPY --from=builder --chown=root:root /ipp/prod_modules ./node_modules
+COPY --from=builder --chown=root:root /ipp/upload-app/dist ./dist
+COPY --from=builder --chown=root:root /ipp/upload-app/public ./public
+COPY --from=builder --chown=root:root /ipp/upload-app/config.json ./
+
+# The code is root-owned and the app runs as node, so a compromised process
+# cannot rewrite it; nothing writes to disk at runtime. The explicit --chown
+# is for buildah, which keeps the builder's owner on COPY --from.
+USER node
 
 ARG PACKAGE_VERSION
 ENV APP_VERSION=${PACKAGE_VERSION}

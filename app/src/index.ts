@@ -42,10 +42,11 @@ import { ASSET_VERSION } from './version'
 import { h } from 'preact'
 import { Home } from './view/home'
 
-// Read config.json (or the inline CONFIG env var). Must run before any code
-// that calls getConfigOption. The bundled config.json sits one level above
-// this file (src/ in dev, dist/ in the image), which is /app/config.json in
-// the image.
+/*
+  Must run before any code that calls getConfigOption. The bundled
+  config.json sits one level above this file (src/ in dev, dist/ in the
+  image), which is /app/config.json in the image.
+*/
 loadConfig({ defaultPath: resolve(__dirname, '../config.json') })
 
 const removedSwitches = removedMetadataSwitches()
@@ -57,8 +58,10 @@ if (removedSwitches.length) {
   process.exit(1)
 }
 
-// Route every invalid response, including core's, through IPP's handler file,
-// so an operator's mounted replacement applies everywhere.
+/*
+  Route every invalid response, including core's, through IPP's handler file,
+  so an operator's mounted replacement applies everywhere.
+*/
 setInvalidRequestHandler(ippInvalidRequestHandler)
 
 const app = express()
@@ -67,29 +70,30 @@ app.use(sessionMiddleware({ name: 'session' }))
 app.use(express.json())
 // For parsing the selective-download form POST (form-encoded body)
 app.use(express.urlencoded({ extended: false, limit: '1mb' }))
+
 /** Serve IPP's own `public` folder, then core's, at `path`. */
 function serveStatic (path: string, options: Parameters<typeof express.static>[1] = {}) {
   for (const dir of ['public', CORE_PUBLIC_DIR]) {
     app.use(path, express.static(dir, { ...options, setHeaders: addResponseHeaders }))
   }
 }
+
 // Cache-busted, immutable static assets under a per-release version segment.
 const inProduction = process.env.NODE_ENV === 'production'
 serveStatic('/share/static/' + ASSET_VERSION, { immutable: inProduction, maxAge: inProduction ? '365d' : 0 })
 serveStatic('/share/static')
 // The same assets on /, to allow for /robots.txt and /favicon.ico
 serveStatic('/')
-// Remove the X-Powered-By ExpressJS header
 app.disable('x-powered-by')
 
 /*
- * Shared route guards. Several routes need the same "resolve a share, reject
- * invalid / password-protected ones, optionally find the requested asset"
- * preamble. These return a discriminated result so each route keeps control of
- * its own response (e.g. the photo route redirects on password where the meta
- * and download routes return 401), while the validation order and the
- * `valid`/`link`/`passwordRequired` checks live in one place.
- */
+  Shared route guards. Several routes need the same "resolve a share, reject
+  invalid / password-protected ones, optionally find the requested asset"
+  preamble. These return a discriminated result so each route keeps control of
+  its own response (e.g. the photo route redirects on password where the meta
+  and download routes return 401), while the validation order and the
+  `valid`/`link`/`passwordRequired` checks live in one place.
+*/
 type ShareResolution =
   | { ok: true, link: SharedLink }
   | { ok: false, status: number, reason: string, passwordRequired?: boolean }
@@ -145,19 +149,18 @@ async function resolveSharedAsset (req: Request, keyType: KeyType, allowMotion =
 }
 
 /*
- * [ROUTE] Healthcheck
- * The path matches for /share/healthcheck, and also the legacy /healthcheck
- */
+  [ROUTE] Healthcheck, on /share/healthcheck and the legacy /healthcheck
+*/
 app.get(/^(|\/share)\/healthcheck$/, asyncHandler(healthcheck))
 
 /*
- * [ROUTE] The upload service's healthcheck path, when the service is assumed
- * to be at a path on this hostname. The gallery page probes it before showing
- * the "Add photos" button. With the upload service routed in front of IPP the
- * probe never gets here; without it, this answers "nothing here" as a 204
- * rather than a 404, so the probe is neither a console error in the browser
- * nor a hit on the 404 policy.
- */
+  [ROUTE] The upload service's healthcheck path, when the service is assumed
+  to be at a path on this hostname. The gallery page probes it before showing
+  the "Add photos" button. With the upload service routed in front of IPP the
+  probe never gets here; without it, this answers "nothing here" as a 204
+  rather than a 404, so the probe is neither a console error in the browser
+  nor a hit on the 404 policy.
+*/
 const uploadProbe = uploadHealthcheck()
 if (uploadProbe) {
   app.get(uploadProbe, (_req, res) => {
@@ -167,8 +170,8 @@ if (uploadProbe) {
 }
 
 /*
- * [ROUTE] This is the main URL that someone would visit if they are opening a shared link
- */
+  [ROUTE] The main URL a visitor opens from a shared link
+*/
 app.get('/:shareType(share|s)/:key/:mode(download)?', decodeCookie, asyncHandler(async (req, res) => {
   const keyType = getKeyTypeFromShare(req.params.shareType)
 
@@ -186,17 +189,16 @@ app.get('/:shareType(share|s)/:key/:mode(download)?', decodeCookie, asyncHandler
 }))
 
 /*
- * [ROUTE] Receive an unlock request from the password page
- * Stores a cookie with an encrypted payload which expires in 1 hour.
- */
+  [ROUTE] Password unlock from the password page
+*/
 app.post('/share/unlock', unlockHandler)
 
 /*
- * [ROUTE] Selective download - POST a list of asset IDs, get a zip of just those.
- * The list arrives as a single "assets" form field containing a JSON array.
- * Validates each ID against share.assets so the request can't pull anything
- * outside the share.
- */
+  [ROUTE] Selective download - POST a list of asset IDs, get a zip of just those.
+  The list arrives as a single "assets" form field containing a JSON array.
+  Validates each ID against share.assets so the request can't pull anything
+  outside the share.
+*/
 app.post('/:shareType(share|s)/:key/download', decodeCookie, asyncHandler(async (req, res) => {
   const keyType = getKeyTypeFromShare(req.params.shareType)
   let requestedIds: unknown
@@ -232,31 +234,26 @@ app.post('/:shareType(share|s)/:key/download', decodeCookie, asyncHandler(async 
 }))
 
 /*
- * [ROUTE] Catch accidental POST requests to share URLs (e.g. from browser history
- * state issues) and force a clean GET redirect.
- * See https://github.com/alangrainger/immich-public-proxy/pull/205
- */
+  [ROUTE] Catch accidental POST requests to share URLs (e.g. from browser history
+  state issues) and force a clean GET redirect.
+  See https://github.com/alangrainger/immich-public-proxy/pull/205
+*/
 app.post('/:shareType(share|s)/:key/:mode(download)?', (req, res) => {
   res.redirect(303, req.originalUrl)
 })
 
 /*
- * [ROUTE] This is the direct link to a photo or video asset
- */
+  [ROUTE] Direct link to a photo or video asset
+*/
 app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, asyncHandler(async (req, res) => {
-  // Add the headers configured in config.json (most likely `cache-control`)
   addResponseHeaders(res)
 
-  // Validate the size parameter
   if (req.params.size && !Object.values(ImageSize).includes(req.params.size as ImageSize)) {
     respondToInvalidRequest(res, 404, 'Invalid size parameter ' + req.path)
     return
   }
 
-  // Resolve the share + asset (this is a `/share/...` route, always key auth).
-  // The resolved asset gives assetBuffer access to originalMimeType and
-  // originalFileName (needed for Content-Disposition and for requiresOriginal
-  // to recognise videos/animated images and bypass the preview downgrade).
+  // Always key auth: this route has no slug form
   const resolved = await resolveSharedAsset(req, KeyType.key, req.params.type === 'video')
   if (!resolved.ok) {
     // Password-protected: redirect to the share page so the visitor gets the
@@ -283,14 +280,14 @@ app.get('/share/:type(photo|video)/:key/:id/:size?', decodeCookie, asyncHandler(
 }))
 
 /*
- * [ROUTE] On-demand per-asset metadata for lazy album items.
- *
- * Album shares enumerate their assets from the timeline API, which yields
- * grid-only data (no exif / filename / description). When such an item opens
- * in the lightbox, the client fetches its detail from here. The id is
- * validated against the share's asset set (defence in depth - Immich also
- * enforces this via the share key) before we fetch `GET /assets/:id`.
- */
+  [ROUTE] On-demand per-asset metadata for lazy album items.
+
+  Album shares enumerate their assets from the timeline API, which yields
+  grid-only data (no exif / filename / description). When such an item opens
+  in the lightbox, the client fetches its detail from here. The id is
+  validated against the share's asset set (defence in depth - Immich also
+  enforces this via the share key) before we fetch `GET /assets/:id`.
+*/
 app.get('/:shareType(share|s)/meta/:key/:id', decodeCookie, asyncHandler(async (req, res) => {
   addResponseHeaders(res)
 
@@ -312,14 +309,10 @@ app.get('/:shareType(share|s)/meta/:key/:id', decodeCookie, asyncHandler(async (
 }))
 
 /*
- * [ROUTE] Home page
- *
- * It was requested here to have *something* on the home page:
- * https://github.com/alangrainger/immich-public-proxy/discussions/19
- *
- * If you don't want to see this, set showHomePage as false in your config.json:
- * https://github.com/alangrainger/immich-public-proxy?tab=readme-ov-file#immich-public-proxy-options
- */
+  [ROUTE] Home page, so the root shows *something*, as requested in
+  https://github.com/alangrainger/immich-public-proxy/discussions/19.
+  Turned off by https://docs.ipp.nz/config/ipp-options#showhomepage
+*/
 if (getConfigOption('ipp.showHomePage', true)) {
   app.get(/^\/(|share)\/*$/, (_req, res) => {
     addResponseHeaders(res)
@@ -328,30 +321,26 @@ if (getConfigOption('ipp.showHomePage', true)) {
 }
 
 /*
- * Send a 404 for all other routes and methods. `all`, so a POST or DELETE to an
- * unknown path gets the same policy instead of Express's own HTML error page.
- */
+  [ROUTE] Send a 404 for all other routes and methods. `all`, so a POST or DELETE to an
+  unknown path gets the same policy instead of Express's own HTML error page.
+*/
 app.all('*', (req, res) => {
   respondToInvalidRequest(res, 404, 'Invalid route ' + req.path)
 })
 
-/*
- * Terminal error middleware: any throw/rejection inside a route (routed here
- * by asyncHandler) is logged and answered per the 404 privacy policy, instead
- * of escaping to process level.
- */
 app.use(errorHandler)
 
-// Send the correct process error code for any uncaught exceptions
-// so that Docker can gracefully restart the container
+// Exit non-zero on an uncaught exception, so Docker restarts the container
 process.on('uncaughtException', (err) => {
   console.error('There was an uncaught error', err)
   server.close()
   process.exit(1)
 })
-// Log-only: with asyncHandler routing request errors into errorHandler, a
-// stray rejection from a background task (the version check, etc.) is not
-// worth killing every in-flight request for.
+/*
+  Log only: with asyncHandler routing request errors into errorHandler, a
+  stray rejection from a background task (the version check, etc.) is not
+  worth killing every in-flight request for.
+*/
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason)
 })
@@ -361,12 +350,8 @@ process.on('SIGTERM', () => {
   process.exit(0)
 })
 
-// Start the ExpressJS server
 const port = Number(process.env.IPP_PORT) || 3000
 const server = app.listen(port, () => {
   console.log(dayjs().format() + ' Server started on port ' + port)
-  // Bail out early if the Immich server is older than IPP supports, rather
-  // than silently serving broken album shares. Unknown/unreachable is
-  // tolerated (logs a warning and continues) - see enforceMinimumImmichVersion.
   enforceMinimumImmichVersion().catch(e => console.error('Immich version check failed:', e))
 })
