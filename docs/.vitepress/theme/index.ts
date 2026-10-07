@@ -1,11 +1,48 @@
 import DefaultTheme from 'vitepress/theme'
+import { useData } from 'vitepress'
 import { h } from 'vue'
+import type { ThemeConfig } from '../config'
 import './custom.css'
 
 const DEMO_URL = 'https://demo.ipp.nz/s/demo-gallery'
+const REPO_URL = 'https://github.com/alangrainger/immich-public-proxy'
+// Material Design "star"
+const STAR_PATH = 'M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z'
+
+/** 1234 as "1.2k", under a thousand as is. */
+function formatStars (count: number): string {
+  return count >= 1000 ? (count / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(count)
+}
+
+/**
+ * The GitHub star count as a navbar pill, after the GitHub icon. The count
+ * comes from the build (`themeConfig.stars`, see config.ts); nothing is
+ * rendered when the build had none.
+ */
+const StarCount = {
+  setup () {
+    const { theme } = useData<ThemeConfig>()
+    return () => {
+      const stars = theme.value.stars
+      if (stars === undefined) return null
+      return h('a', {
+        class: 'ipp-stars',
+        href: REPO_URL,
+        target: '_blank',
+        rel: 'noreferrer',
+        title: 'Star on GitHub',
+        'aria-label': stars + ' GitHub stars'
+      }, [
+        h('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true' }, [h('path', { fill: 'currentColor', d: STAR_PATH })]),
+        formatStars(stars)
+      ])
+    }
+  }
+}
 
 /**
  * Extend the default theme to:
+ *   - show the GitHub star count in the navbar (`nav-bar-content-after`);
  *   - use the live-demo screenshot as the hero image (`home-hero-image`),
  *     absolutely centred within the hero image container so it lines up
  *     vertically with the hero text;
@@ -15,26 +52,7 @@ export default {
   extends: DefaultTheme,
   Layout () {
     return h(DefaultTheme.Layout, null, {
-      'home-hero-actions-after': () => h(
-        'div',
-        { style: 'display: flex; gap: 8px; margin-top: 24px; flex-wrap: wrap;' },
-        [
-          h('a', { href: 'https://github.com/alangrainger/immich-public-proxy', target: '_blank', rel: 'noreferrer' }, [
-            h('img', {
-              src: 'https://badgen.net/github/stars/alangrainger/immich-public-proxy?scale=1.1',
-              alt: 'GitHub stars',
-              style: 'vertical-align: middle;'
-            })
-          ]),
-          h('a', { href: 'https://hub.docker.com/r/alangrainger/immich-public-proxy', target: '_blank', rel: 'noreferrer' }, [
-            h('img', {
-              src: 'https://badgen.net/docker/pulls/alangrainger/immich-public-proxy?icon=docker&label=docker%20pulls&color=green&scale=1.1',
-              alt: 'Docker pulls',
-              style: 'vertical-align: middle;'
-            })
-          ])
-        ]
-      ),
+      'nav-bar-content-after': () => h(StarCount),
       'home-hero-image': () => h(
         'a',
         {

@@ -8,6 +8,9 @@ on:
     paths:
       - 'docs/**'
       - '.github/workflows/docs.yaml'
+  schedule:
+    # Weekly rebuild, so the navbar's star count stays current
+    - cron: '0 3 * * 1'
 
 permissions:
   contents: read
@@ -42,9 +45,12 @@ jobs:
         working-directory: docs
 
       # Dead internal links fail the build, which fails the workflow and leaves the live site untouched.
+      # The token lifts the GitHub API rate limit for the star-count fetch in .vitepress/config.ts.
       - name: Build site
         run: npm run build
         working-directory: docs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

@@ -1,3 +1,32 @@
+/* Star-count pill in the navbar, after the GitHub icon. Shown at every width:
+   below 1280px the default theme hides the GitHub icon in its "..." menu, so
+   the pill is the only visible link to the repo there. */
+.ipp-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 12px;
+  padding: 0 10px;
+  height: 28px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--vp-c-text-2);
+  transition: color 0.25s, border-color 0.25s;
+}
+
+.ipp-stars:hover {
+  color: var(--vp-c-text-1);
+  border-color: var(--vp-c-text-3);
+}
+
+.ipp-stars svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* Landing-page hero tweaks for the screenshot-as-hero-image.
    VitePress's default hero floats a square logo up-and-left; for a wide
    screenshot we want it centred and vertically aligned with the hero text. */

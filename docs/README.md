@@ -21,6 +21,10 @@ npm run dev      # live preview
 npm run build    # fails on dead internal links; run it before pushing
 ```
 
+The navbar's star count is fetched from the GitHub API when the site builds (`fetchStars` in `.vitepress/config.ts`)
+and rendered by the theme, so visitors' browsers never call GitHub. A local build with no network prints a warning
+and omits the pill; nothing is wrong. The deploy workflow also rebuilds weekly so the number stays current.
+
 The sidebar is hand-maintained in `.vitepress/config.ts`, so a new page is invisible until it is added there.
 Static files (images, favicon) live in `public/` and are referenced by absolute path, e.g. `/share-link.webp`.
 `public/CNAME` holds the custom domain; it is copied to the root of the build and must stay there.
