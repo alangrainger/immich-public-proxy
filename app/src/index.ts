@@ -36,7 +36,7 @@ import { downloadAssets } from './stream/download'
 import dayjs from 'dayjs'
 import { Request } from 'express-serve-static-core'
 import { ImageSize } from './types'
-import { canDownload, findMotionPhotoStill } from './share'
+import { canDownload, findMotionPhotoStill, uploadHealthcheck } from './share'
 import { respondToInvalidRequest as ippInvalidRequestHandler } from './invalidRequestHandler'
 import { ASSET_VERSION } from './version'
 import { h } from 'preact'
@@ -149,6 +149,22 @@ async function resolveSharedAsset (req: Request, keyType: KeyType, allowMotion =
  * The path matches for /share/healthcheck, and also the legacy /healthcheck
  */
 app.get(/^(|\/share)\/healthcheck$/, asyncHandler(healthcheck))
+
+/*
+ * [ROUTE] The upload service's healthcheck path, when the service is assumed
+ * to be at a path on this hostname. The gallery page probes it before showing
+ * the "Add photos" button. With the upload service routed in front of IPP the
+ * probe never gets here; without it, this answers "nothing here" as a 204
+ * rather than a 404, so the probe is neither a console error in the browser
+ * nor a hit on the 404 policy.
+ */
+const uploadProbe = uploadHealthcheck()
+if (uploadProbe) {
+  app.get(uploadProbe, (_req, res) => {
+    addNoStoreHeaders(res)
+    res.status(204).end()
+  })
+}
 
 /*
  * [ROUTE] This is the main URL that someone would visit if they are opening a shared link
