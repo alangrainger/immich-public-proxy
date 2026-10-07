@@ -45,6 +45,11 @@ services:
     restart: always
     ports:
       - "3000:3000"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
     environment:
       PUBLIC_BASE_URL: https://your-proxy-url.com
       IMMICH_URL: http://your-internal-immich-server:2283
@@ -59,6 +64,11 @@ services:
     restart: always
     ports:
       - "3001:3000"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
     environment:
       IMMICH_URL: http://your-internal-immich-server:2283
       PUBLIC_BASE_URL: https://your-proxy-url.com
@@ -67,6 +77,9 @@ services:
       start_period: 10s
       timeout: 5s
 ```
+
+The `read_only`, `cap_drop` and `security_opt` lines lock the containers down. They are optional: neither container
+writes to disk or needs extra privileges, so both run the same with or without them.
 
 See [Let visitors send photos back](/visitor-uploads) for the reverse proxy setup and the Immich share key.
 

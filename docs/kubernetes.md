@@ -40,11 +40,18 @@ server:
         main:
           image:
             repository: alangrainger/immich-public-proxy
-            tag: 3.3.0  # pin to the current release: https://github.com/alangrainger/immich-public-proxy/releases
+            tag: 4.0.0  # pin to the current release: https://github.com/alangrainger/immich-public-proxy/releases
             pullPolicy: IfNotPresent
           env:
             IMMICH_URL: http://immich-server-main:2283  # the in-cluster Immich service, not your public URL
             PUBLIC_BASE_URL: https://your-proxy-url.com
+          # Optional lockdown: IPP writes nothing to disk and needs no extra privileges
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
 
   service:
     immich-public-proxy:
