@@ -139,7 +139,7 @@ export function createUploadReceiver () {
       return
     }
 
-    log('Received upload ' + filename + ' for share ' + (link.slug || link.id) + ' (' + result.status + ')')
+    log('Received upload ' + filename + ' for share ' + (link.slug || link.id) + ' (Immich result: ' + result.status + ')')
     res.json({ status: result.status })
 
     // After the reply, so a slow webhook never holds up the visitor
