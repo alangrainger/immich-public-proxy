@@ -29,6 +29,47 @@ version. Breaking changes and renamed config keys land in major versions and are
 Visitor uploads are new in 4.0. An existing install is not affected until you add the upload service; see
 [Let visitors send photos back](/visitor-uploads).
 
+### Compose file
+
+No change is needed to your `docker-compose.yml`. The image name, ports, environment variables and mount paths
+(`/app/config.json`, `/app/dist/invalidRequestHandler.js`) are the same as in 3.x.
+
+If you want visitor uploads, add the second service. A complete 4.0 compose file looks like this:
+
+```yaml
+services:
+  immich-public-proxy:
+    image: alangrainger/immich-public-proxy:latest
+    container_name: immich-public-proxy
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      PUBLIC_BASE_URL: https://your-proxy-url.com
+      IMMICH_URL: http://your-internal-immich-server:2283
+    healthcheck:
+      test: curl -sf -m 4 http://localhost:3000/share/healthcheck -o /dev/null || exit 1
+      start_period: 10s
+      timeout: 5s
+
+  ipp-upload:
+    image: alangrainger/immich-public-proxy-upload:latest
+    container_name: ipp-upload
+    restart: always
+    ports:
+      - "3001:3000"
+    environment:
+      IMMICH_URL: http://your-internal-immich-server:2283
+      PUBLIC_BASE_URL: https://upload.example.com
+      GALLERY_URL: https://your-proxy-url.com
+    healthcheck:
+      test: curl -sf -m 4 http://localhost:3000/healthcheck -o /dev/null || exit 1
+      start_period: 10s
+      timeout: 5s
+```
+
+See [Let visitors send photos back](/visitor-uploads) for the reverse proxy setup and the Immich share key.
+
 ## Immich version
 
 IPP requires **Immich 3.0.0 or newer** and checks the server version at startup. Against an older Immich it logs a
