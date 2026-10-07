@@ -80,7 +80,7 @@ connection cannot hold the budget. The page retries a dropped upload.
 **Type:** `string` · **Default:** `"ipp_upload_"`
 
 Added to the start of every stored filename: `IMG_0042.jpg` is stored as `ipp_upload_IMG_0042.jpg`. The prefix is
-what an Immich workflow can match on; see [Tag uploaded photos](/visitor-uploads#tag-uploaded-photos). Set it to `""`
+what an Immich workflow can match on; see [Tag uploaded photos](/tag-and-review-uploads#tag-uploaded-photos). Set it to `""`
 to store the visitor's filename unchanged.
 
 ### `notifyUrl`

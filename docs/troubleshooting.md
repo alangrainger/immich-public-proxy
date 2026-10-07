@@ -18,6 +18,18 @@ short.
 IPP sends the zip with `Cache-Control: no-store`, which is enough on its own if your cache rule's Edge TTL is set to
 respect the origin. If the rule overrides the Edge TTL, Cloudflare ignores that header and you need the bypass rule.
 
+## Uploads fail with "Too large for this server"
+
+Something in front of the upload service refused the file before it arrived. The upload service's own limit gives a
+different message that names the size.
+
+- **Cloudflare** refuses requests over 100 MB on the Free and Pro plans, Cloudflare Tunnel included. Set
+  [`upload.maxFileSize`](/config/upload-service#maxfilesize) to `100` so the upload page turns away larger files
+  before sending them, with a message that says the limit.
+- **nginx** allows 1 MB by default. Set `client_max_body_size` to at least `upload.maxFileSize`.
+
+See [Request size limits](/visitor-uploads#request-size-limits).
+
 ## Link previews show `http://` or a private IP
 
 The gallery itself uses relative URLs, so it works behind any reverse proxy. The one place IPP needs a fully qualified

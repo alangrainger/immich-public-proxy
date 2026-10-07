@@ -2,9 +2,7 @@
 
 Visitors to a share can send their own photos and videos into it, for example guests adding their pictures to a
 wedding album. The photos go straight into the album in Immich and appear in the gallery for everyone, unless you
-choose to [review them first](#review-uploads-before-they-appear).
-
-This guide assumes IPP is already [installed](/installation) behind a reverse proxy.
+choose to [review them first](/tag-and-review-uploads#review-uploads-before-they-appear).
 
 ## Contents
 
@@ -12,13 +10,11 @@ This guide assumes IPP is already [installed](/installation) behind a reverse pr
 - [What you need](#what-you-need)
 - [Add the upload service](#add-the-upload-service)
 - [Route it through your reverse proxy](#route-it-through-your-reverse-proxy)
-- [Show the button in IPP](#show-the-button-in-ipp)
 - [Turn on uploads for a share](#turn-on-uploads-for-a-share)
 - [Set a storage quota](#set-a-storage-quota)
 - [Request size limits](#request-size-limits)
-- [Tag uploaded photos](#tag-uploaded-photos)
-- [Review uploads before they appear](#review-uploads-before-they-appear)
 - [Get a notification for each upload](#get-a-notification-for-each-upload)
+- [Turn uploads off](#turn-uploads-off)
 - [Questions](#questions)
 
 ## How it works
@@ -28,7 +24,7 @@ read-only.
 
 **No API key is required.**
 
-<img src="./public/visitor-uploads.svg" width="900" height="660" alt="How visitor uploads work: the browser reaches the reverse proxy, which sends gallery requests to the read-only immich-public-proxy container and /upload requests to the optional immich-public-proxy-upload container. Both talk to Immich with the visitor's share key. Immich refuses uploads unless the share allows them, stores the file and adds it to the album or link.">
+<img src="./public/visitor-uploads.svg" width="900" height="642" alt="How visitor uploads work: the browser reaches the reverse proxy, which sends gallery requests to the read-only immich-public-proxy container and /upload requests to the optional immich-public-proxy-upload container. Both talk to Immich with the visitor's share key. Immich refuses uploads unless the share allows them, stores the file and adds it to the album or link.">
 
 1. In Immich, the owner turns on **Allow public user to upload** for a shared link. The gallery for that share then
    shows an **Add photos** button.
@@ -44,18 +40,20 @@ What the owner sees in Immich:
 - In an album share, the files go into the album. In a share of selected photos, they go into the shared link, so
   they show in the same gallery.
 - Each file name starts with `ipp_upload_`, so visitor uploads are easy to find in search or to
-  [tag with a workflow](#tag-uploaded-photos).
+  [tag with a workflow](/tag-and-review-uploads#tag-uploaded-photos).
 - The owner removes unwanted files in Immich, like any other photo.
 
 Other visitors see the new photos in the gallery within a few minutes. See
-[When do uploads appear](#when-do-uploads-appear).
+[When do uploads appear](#when-do-uploads-appear). To approve photos before they appear, use a
+[review workflow](/tag-and-review-uploads#review-uploads-before-they-appear).
 
 ## What you need
 
 - IPP 4.0 or newer and Immich 3.0.0 or newer.
-- A public route to the upload service: a path on the IPP hostname, such as `photos.example.com/upload`, or its own
-  hostname, such as `upload.example.com`. If a tunnel points straight at IPP with no reverse proxy, add a second
-  hostname to the tunnel for the upload container.
+- A public route to the upload service, either:
+  - a path on the IPP hostname, such as `photos.example.com/upload`, or
+  - its own hostname, such as `upload.example.com`. Use this if a tunnel points straight at IPP with no reverse
+    proxy: add a second hostname to the tunnel for the upload container.
 
 ## Add the upload service
 
@@ -99,7 +97,9 @@ network with it. From the host, use the published port instead: `localhost:3001`
 One domain, no extra certificate. Forward `/upload/*` to the upload service with the path left in place, and
 everything else to IPP.
 
-Caddy (`handle` keeps the path; `handle_path` would strip it):
+#### Caddy
+
+Use `handle`, which keeps the path; `handle_path` would strip it.
 
 ```
 photos.example.com {
@@ -112,7 +112,7 @@ photos.example.com {
 }
 ```
 
-nginx:
+#### nginx
 
 ```nginx
 server {
@@ -133,9 +133,9 @@ server {
 
 ### Own hostname
 
-Send everything on the upload hostname to the upload service.
+Send everything on a separate upload hostname to the upload service.
 
-Caddy:
+#### Caddy
 
 ```
 upload.example.com {
@@ -143,7 +143,7 @@ upload.example.com {
 }
 ```
 
-nginx:
+#### nginx
 
 ```nginx
 server {
@@ -159,18 +159,9 @@ server {
 }
 ```
 
-Check the route by opening `/healthcheck` on the upload URL: `https://photos.example.com/upload/healthcheck` or
-`https://upload.example.com/healthcheck`. It answers `ok` when the upload service can reach Immich, and a 503 when
-it cannot.
+#### Tell IPP the upload URL
 
-## Show the button in IPP
-
-With the upload service on a path on the IPP hostname, there is nothing to set. IPP assumes the service is at
-`/upload` on its own hostname, and the gallery shows the button once the upload service answers `ok` at
-`/upload/healthcheck`.
-
-With a hostname of its own, set [`uploadUrl`](/config/ipp-options#uploadurl) in IPP's config to that URL and restart
-IPP:
+Set [`uploadUrl`](/config/ipp-options#uploadurl) in IPP's config to the upload hostname and restart IPP:
 
 ```json
 {
@@ -184,10 +175,17 @@ IPP reads its config from a `config.json` mounted at `/app/config.json`, or inli
 variable; see [Configuration](/config/). One `config.json` can serve both containers: IPP ignores the `ipp.upload.*`
 keys, and the upload service reads only those and [two shared options](/config/upload-service#shared-options).
 
+### Check the route
+
+Open `/healthcheck` on the upload URL: `https://photos.example.com/upload/healthcheck` or
+`https://upload.example.com/healthcheck`. It answers `ok` when the upload service can reach Immich, and a 503 when
+it cannot. With the upload service on a path on the IPP hostname, IPP shows the **Add photos** button only while
+this answers `ok`. With its own hostname, IPP shows the button whenever `uploadUrl` is set.
+
 ## Turn on uploads for a share
 
 In Immich, turn on **Allow public user to upload** for the shared link. The option is in the dialog that creates a
-link, and later under **Sharing**, **Shared links**, when you edit the link. The gallery for that share then shows an
+link, and later under **Sharing > Shared links**, when you edit the link. The gallery for that share then shows an
 **Add photos** button in its header. A share with the option off shows no button, and the upload service refuses it.
 
 A password-protected share asks for its password again on the upload page. The upload service keeps its own unlock,
@@ -198,7 +196,7 @@ separate from IPP's, and the password never passes between the two.
 > [`gallery.singleImage`](/config/gallery#singleimage) to `true` to show a gallery page instead, or give visitors the
 > upload page's own link: the share's path on the upload URL, such as `https://photos.example.com/upload/share/<key>`.
 
-## Set a storage quota
+## (Optional) Set a storage quota
 
 By default an Immich user has unlimited storage. Set a quota on the user who owns the shares that accept uploads, so
 visitors cannot fill the disk: in Immich go to **Administration**, **User Management**, edit the user and set
@@ -229,49 +227,19 @@ but anything in front of it can impose a lower limit. A file over that limit fai
 }
 ```
 
-## Tag uploaded photos
-
-Every uploaded file is stored with `ipp_upload_` at the start of its name
-([`upload.filenamePrefix`](/config/upload-service#filenameprefix)). An Immich workflow can match the prefix to tag
-uploads, or to copy them into a second album. In Immich, open **Workflows** and create a workflow with:
-
-1. Trigger: **Asset Upload**.
-2. Filter: **Filter by filename**, match type `startsWith`, pattern `ipp_upload_`.
-3. Action: **Add Tags** with a tag such as `Sent by visitors`, or **Add to Album(s)**.
-
-## Review uploads before they appear
-
-Immich has no approval queue for uploads through a shared link, but a workflow can move each upload into your
-**locked folder** the moment it arrives. IPP never shows a locked photo, so the upload leaves the gallery until you
-decide to keep it. This is the staging step: visitors upload, you approve, the gallery updates.
-
-The locked folder needs a PIN. Set one in your Immich account settings if you have not already. Then create a
-workflow as in [Tag uploaded photos](#tag-uploaded-photos), with these actions:
-
-1. Trigger: **Asset Upload**.
-2. Filter: **Filter by filename**, match type `startsWith`, pattern `ipp_upload_`.
-3. Action: **Move to locked folder**. Add a second action, **Add Tags**, if you want the approved uploads to stay
-   easy to find afterwards.
-
-To review, open the locked folder in Immich and enter your PIN. A photo's info panel lists the album it was sent
-to under **Appears in**, since it is still a member while locked. Move the photos you want to keep out of the locked
-folder: they return to the gallery on the next cache refresh. Delete the rest. Pair this with a
-[notification](#get-a-notification-for-each-upload) so you know when there is something to review; its message names
-the share, which is the only record of the destination for a share of individual photos, as those have no album.
-
-Two things to know:
-
-- The upload is pulled back, not held back. The workflow runs a few seconds after the file is stored, and IPP
-  caches a share's photo list for up to 2 minutes, so a visitor who has the gallery open can see the photo for a
-  short while. Anyone who copied the photo's address in that window can keep opening it until you delete it.
-- Keeping a photo relies on Immich leaving it in the album while it is locked, which it does for photos a workflow
-  moves. If a future Immich version removes it from the album instead, add the approved photos back to the album
-  by hand.
-
 ## Get a notification for each upload
 
 Set [`upload.notifyUrl`](/config/upload-service#notifyurl) to a URL that receives a JSON message for each stored
 file. Gotify needs nothing more; ntfy needs the template parameters shown on the reference page.
+
+To tag uploads or hold them back until you approve them, see [Tag and review visitor uploads](/tag-and-review-uploads).
+
+## Turn uploads off
+
+For one share, turn off **Allow public user to upload** in Immich. Immich refuses new uploads at once, and the button
+leaves the gallery on the same cache times as a new photo takes to appear (see
+[When do uploads appear](#when-do-uploads-appear)). For all shares, stop the upload container; with the default
+`uploadUrl` the button goes with it. To make sure, set [`uploadUrl`](/config/ipp-options#uploadurl) to `""`.
 
 ## Questions
 
@@ -291,11 +259,6 @@ So a new photo can take up to about 7 minutes to show for a visitor who already 
 
 Immich keeps the one copy and adds it to the share. The visitor's list shows the file as a duplicate.
 
-### Can I approve uploads before visitors see them
-
-Not in Immich itself, but a workflow that moves each upload to your locked folder gives you the same result. See
-[Review uploads before they appear](#review-uploads-before-they-appear).
-
 ### Can visitors see who uploaded what, or remove photos
 
 No. The upload page shows nothing from the share, only the visitor's own uploads in progress, and nothing can be
@@ -306,9 +269,3 @@ deleted or edited from it. The owner manages uploads in Immich.
 Behind a reverse proxy every visitor reaches the upload service from the proxy's address, so
 [`upload.rateLimit`](/config/upload-service#ratelimit) applies to all visitors of a share together. To limit each
 visitor separately, set a rate limit in your reverse proxy.
-
-### How do I turn uploads off
-
-For one share, turn off **Allow public user to upload** in Immich. Immich refuses new uploads at once, and the button
-leaves the gallery on the same cache times as a new photo takes to appear. For all shares, stop the upload container; with the
-default `uploadUrl` the button goes with it. To make sure, set [`uploadUrl`](/config/ipp-options#uploadurl) to `""`.

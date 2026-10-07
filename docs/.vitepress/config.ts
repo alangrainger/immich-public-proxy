@@ -60,6 +60,7 @@ export default defineConfig({
         text: 'Guides',
         items: [
           { text: 'Let visitors send photos back', link: '/visitor-uploads' },
+          { text: 'Tag and review visitor uploads', link: '/tag-and-review-uploads' },
           { text: 'Single domain with Immich', link: '/running-on-single-domain' },
           { text: 'Redirect root domain to a share', link: '/redirect-root-to-share' },
           { text: 'Securing Immich with mTLS', link: '/securing-immich-with-mtls' }
