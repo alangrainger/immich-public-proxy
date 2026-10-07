@@ -49,9 +49,9 @@ Other visitors see the new photos in the gallery within a few minutes. See
 ## What you need
 
 - IPP 4.0 or newer and Immich 3.0.0 or newer.
-- A public route to the upload service: its own hostname, such as `upload.example.com`, or a path on the IPP
-  hostname, such as `photos.example.com/upload`. If a tunnel points straight at IPP with no reverse proxy, add a
-  second hostname to the tunnel for the upload container.
+- A public route to the upload service: a path on the IPP hostname, such as `photos.example.com/upload`, or its own
+  hostname, such as `upload.example.com`. If a tunnel points straight at IPP with no reverse proxy, add a second
+  hostname to the tunnel for the upload container.
 
 ## Add the upload service
 
@@ -70,7 +70,6 @@ services:
       - "3001:3000"
     environment:
       IMMICH_URL: http://your-internal-immich-server:2283
-      PUBLIC_BASE_URL: https://upload.example.com
       GALLERY_URL: https://photos.example.com
     healthcheck:
       test: curl -sf -m 4 http://localhost:3000/healthcheck -o /dev/null || exit 1
@@ -79,50 +78,23 @@ services:
 ```
 
 - `IMMICH_URL` is the same local Immich address that IPP uses.
-- `PUBLIC_BASE_URL` is the public URL of the upload service. For a path on the IPP hostname, include the path:
-  `https://photos.example.com/upload`.
-- `GALLERY_URL` is the public URL of IPP. It gives the upload page a back button to the gallery.
+- `GALLERY_URL` is the public URL of IPP, the same value as IPP's `PUBLIC_BASE_URL`. It gives the upload page a back
+  button to the gallery.
+
+The service has no setting for its own public URL. Your reverse proxy decides that in the next step.
 
 Start it with `docker-compose up -d`. The full list of settings is on [Upload service](/config/upload-service).
 
 ## Route it through your reverse proxy
 
-Choose one of the two shapes. The examples reach the container as `ipp-upload:3000`, which works when the proxy
-shares a Docker network with it. From the host, use the published port instead: `localhost:3001` with the compose
-file above.
-
-### Own hostname
-
-Send everything on the upload hostname to the upload service.
-
-Caddy:
-
-```
-upload.example.com {
-    reverse_proxy ipp-upload:3000
-}
-```
-
-nginx:
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name upload.example.com;
-
-    client_max_body_size 500m;
-    proxy_request_buffering off;
-
-    location / {
-        proxy_pass http://ipp-upload:3000;
-    }
-}
-```
+The upload service serves its pages both under `/upload` and at the root, so it fits either of these shapes with no
+URL setting. The examples reach the container as `ipp-upload:3000`, which works when the proxy shares a Docker
+network with it. From the host, use the published port instead: `localhost:3001` with the compose file above.
 
 ### Path on the IPP hostname
 
-Set `PUBLIC_BASE_URL` to the URL with its path, for example `https://photos.example.com/upload`. Forward that path
-to the upload service with the path left in place, and everything else to IPP.
+One domain, no extra certificate. Forward `/upload/*` to the upload service with the path left in place, and
+everything else to IPP.
 
 Caddy (`handle` keeps the path; `handle_path` would strip it):
 
@@ -156,18 +128,46 @@ server {
 }
 ```
 
-Check the route by opening `/healthcheck` on the upload URL: `https://upload.example.com/healthcheck` or
-`https://photos.example.com/upload/healthcheck`. It answers `ok` when the upload service can reach Immich, and a 503 when
+### Own hostname
+
+Send everything on the upload hostname to the upload service.
+
+Caddy:
+
+```
+upload.example.com {
+    reverse_proxy ipp-upload:3000
+}
+```
+
+nginx:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name upload.example.com;
+
+    client_max_body_size 500m;
+    proxy_request_buffering off;
+
+    location / {
+        proxy_pass http://ipp-upload:3000;
+    }
+}
+```
+
+Check the route by opening `/healthcheck` on the upload URL: `https://photos.example.com/upload/healthcheck` or
+`https://upload.example.com/healthcheck`. It answers `ok` when the upload service can reach Immich, and a 503 when
 it cannot.
 
 ## Show the button in IPP
 
-Set [`uploadUrl`](/config/ipp-options#uploadurl) in IPP's config to the upload service's `PUBLIC_BASE_URL`:
+Set [`uploadUrl`](/config/ipp-options#uploadurl) in IPP's config to the public URL you routed in the previous step:
 
 ```json
 {
   "ipp": {
-    "uploadUrl": "https://upload.example.com"
+    "uploadUrl": "https://photos.example.com/upload"
   }
 }
 ```

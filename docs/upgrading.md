@@ -60,7 +60,6 @@ services:
       - "3001:3000"
     environment:
       IMMICH_URL: http://your-internal-immich-server:2283
-      PUBLIC_BASE_URL: https://upload.example.com
       GALLERY_URL: https://your-proxy-url.com
     healthcheck:
       test: curl -sf -m 4 http://localhost:3000/healthcheck -o /dev/null || exit 1

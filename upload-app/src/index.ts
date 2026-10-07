@@ -28,7 +28,7 @@ import {
   title,
   unlockHandler
 } from '@ipp/core'
-import { basePathFrom, galleryUrl, maxFileSize } from './config'
+import { galleryUrl, maxFileSize } from './config'
 import { uploadAllowed } from './gate'
 import { createUploadReceiver } from './receive'
 import { getShare } from './share'
@@ -40,7 +40,6 @@ import { UploadPage } from './view/upload'
 // the image.
 loadConfig({ defaultPath: resolve(__dirname, '../config.json') })
 
-const basePath = basePathFrom(process.env.PUBLIC_BASE_URL)
 const receiveUpload = createUploadReceiver()
 const inProduction = process.env.NODE_ENV === 'production'
 
@@ -62,7 +61,10 @@ router.use((_req, res, next) => {
   addNoStoreHeaders(res)
   next()
 })
-router.use(sessionMiddleware({ name: 'upload-session', path: basePath || '/' }))
+router.use(sessionMiddleware({ name: 'upload-session' }))
+
+// Before the share routes, which would otherwise read "healthcheck" as a key
+router.get(['/healthcheck', '/share/healthcheck'], asyncHandler(healthcheck))
 
 type ShareResolution =
   | { ok: true, link: SharedLink, keyType: KeyType }
@@ -87,7 +89,7 @@ router.get('/:shareType(share|s)/:key', decodeCookie, asyncHandler(async (req, r
   const resolved = await resolveShare(req)
   if (!resolved.ok && resolved.passwordRequired) {
     if (req.password) invalidPasswordResponse(req, res, key)
-    res.send(renderPage(h(Password, { shareKey: key, notifyInvalidPassword: !!req.password, basePath })))
+    res.send(renderPage(h(Password, { shareKey: key, notifyInvalidPassword: !!req.password, basePath: req.baseUrl })))
     return
   }
   if (!resolved.ok || !uploadAllowed(resolved.link, resolved.keyType)) {
@@ -97,11 +99,11 @@ router.get('/:shareType(share|s)/:key', decodeCookie, asyncHandler(async (req, r
   const gallery = galleryUrl()
   res.send(renderPage(h(UploadPage, {
     config: {
-      uploadUrl: `${basePath}/${req.params.shareType}/${encodeURIComponent(key)}/upload`,
+      uploadUrl: `${req.baseUrl}/${req.params.shareType}/${encodeURIComponent(key)}/upload`,
       maxFileSize: maxFileSize(),
       title: title(resolved.link)
     },
-    basePath,
+    basePath: req.baseUrl,
     galleryLink: gallery && `${gallery}/${req.params.shareType}/${encodeURIComponent(key)}`
   })))
 }))
@@ -124,9 +126,14 @@ router.post('/:shareType(share|s)/:key/upload', decodeCookie, asyncHandler(async
   await receiveUpload(req, res, resolved.link, resolved.keyType)
 }))
 
-router.get(['/healthcheck', '/share/healthcheck'], asyncHandler(healthcheck))
-
-app.use(basePath || '/', router)
+/*
+ * The same routes under `/upload` and at the root, so either reverse proxy
+ * shape works with no URL configuration: a hostname of its own forwards
+ * `/share/<key>`, a path on the IPP hostname forwards `/upload/share/<key>`.
+ * Handlers read the prefix they were reached by from `req.baseUrl`.
+ */
+app.use('/upload', router)
+app.use('/', router)
 
 /*
  * Everything else, including `/`, gets the 404 policy
@@ -154,7 +161,7 @@ process.on('SIGTERM', () => {
 
 const port = Number(process.env.IPP_PORT) || 3000
 const server = app.listen(port, () => {
-  console.log(dayjs().format() + ' Upload service started on port ' + port + (basePath ? ' under ' + basePath : ''))
+  console.log(dayjs().format() + ' Upload service started on port ' + port)
   enforceMinimumImmichVersion().catch(() => {})
 })
 // A large video on a phone uplink outlasts any whole-request limit; the body has an idle timeout instead

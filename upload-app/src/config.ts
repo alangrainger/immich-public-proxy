@@ -2,19 +2,6 @@ import { getConfigOption, getNumericConfigOption } from '@ipp/core'
 
 const MB = 1024 * 1024
 
-/**
- * Path the share routes are mounted under, from `PUBLIC_BASE_URL`: `''` for
- * an own-hostname deployment, `/upload` for `https://photos.example.com/upload`.
- */
-export function basePathFrom (publicBaseUrl: string | undefined): string {
-  if (!publicBaseUrl) return ''
-  try {
-    return new URL(publicBaseUrl).pathname.replace(/\/+$/, '')
-  } catch {
-    return ''
-  }
-}
-
 /** IPP's public URL from `GALLERY_URL`, without a trailing slash, or undefined when unset. */
 export function galleryUrl (): string | undefined {
   return (process.env.GALLERY_URL || '').replace(/\/+$/, '') || undefined
