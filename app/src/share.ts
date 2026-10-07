@@ -22,16 +22,47 @@ export function canDownload (share: SharedLink): boolean {
 
 let warnedInvalidDownloadPolicy = false
 
+/** Where the upload service lives when `ipp.uploadUrl` is not set: a path on IPP's own hostname */
+const DEFAULT_UPLOAD_URL = '/upload'
+
+/**
+ * The upload service's public base from `ipp.uploadUrl`, without a trailing
+ * slash: an absolute http(s) URL for a hostname of its own, or a path on
+ * IPP's hostname such as the default `/upload`. Undefined when the option is
+ * empty, so the button is off, or not one of those two forms.
+ */
+export function uploadBase (): string | undefined {
+  const configured = getConfigOption('ipp.uploadUrl', DEFAULT_UPLOAD_URL)
+  if (typeof configured !== 'string') return undefined
+  const base = configured.trim().replace(/\/+$/, '')
+  if (/^https?:\/\//i.test(base)) return base
+  // A path, but not a protocol-relative `//host`
+  if (/^\/[^/\\]/.test(base)) return base
+  return undefined
+}
+
+/**
+ * The upload service's healthcheck URL when it is assumed to be at a path on
+ * IPP's hostname, or undefined when the owner gave an absolute URL. The
+ * gallery shows the "Add photos" button only once this answers, so an Immich
+ * share with uploads allowed never shows a dead button on an install that has
+ * no upload container. An absolute URL is the owner's word and is trusted; a
+ * cross-origin check would need CORS headers anyway.
+ */
+export function uploadHealthcheck (): string | undefined {
+  const base = uploadBase()
+  return base && !/^https?:/i.test(base) ? base + '/healthcheck' : undefined
+}
+
 /**
  * The "Add photos" link to this share on the upload service, or undefined
- * when `ipp.uploadUrl` is unset or not an http(s) URL, or the owner has not
- * turned on "Allow public user to upload". A share opened by its slug links
- * by its slug, so the upload service resolves it the same way.
+ * when there is no usable `ipp.uploadUrl` (see `uploadBase`) or the owner has
+ * not turned on "Allow public user to upload". A share opened by its slug
+ * links by its slug, so the upload service resolves it the same way.
  */
 export function uploadLink (share: SharedLink): string | undefined {
-  const configured = getConfigOption('ipp.uploadUrl', '')
-  if (!share.allowUpload || typeof configured !== 'string' || !/^https?:\/\//i.test(configured.trim())) return undefined
-  const base = configured.trim().replace(/\/+$/, '')
+  const base = uploadBase()
+  if (!share.allowUpload || !base) return undefined
   return share.keyType === KeyType.slug && share.slug
     ? base + '/s/' + encodeURIComponent(share.slug)
     : base + '/share/' + encodeURIComponent(share.key)

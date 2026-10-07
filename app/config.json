@@ -9,7 +9,7 @@
     "motionPhotos": true,
     "downloadedFilename": 0,
     "allowDownload": 0,
-    "uploadUrl": "",
+    "uploadUrl": "/upload",
     "allowSlugLinks": true,
     "showHomePage": true,
     "showMetadata": {

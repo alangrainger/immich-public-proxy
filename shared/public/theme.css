@@ -122,6 +122,12 @@ html, body {
 }
 
 /* Round icon button in the header: an anchor or a button */
+/* Both set display explicitly, which would otherwise defeat the hidden attribute */
+#header[hidden],
+.header-action[hidden] {
+  display: none;
+}
+
 .header-action {
   flex: 0 0 auto;
   display: inline-flex;

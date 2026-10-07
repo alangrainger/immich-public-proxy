@@ -106,11 +106,13 @@ The bulk-zip and per-asset buttons can be toggled independently once downloads a
 
 ## `uploadUrl`
 
-**Type:** `string` · **Default:** `""`
+**Type:** `string` · **Default:** `"/upload"`
 
-The public URL of the optional upload service (the `immich-public-proxy-upload` container), for example `https://photos.example.com/upload`. When it is set, a share whose "Allow public user to upload" option is on in Immich shows an "Add photos" button in the gallery header. The button opens that share's page on the upload service. Leave it empty to show no button.
+Where the optional upload service (the `immich-public-proxy-upload` container) is served. A share whose "Allow public user to upload" option is on in Immich then shows an "Add photos" button in the gallery header, which opens that share's page on the upload service. To set up the service, see [Let visitors send photos back](/visitor-uploads).
 
-The value is wherever your reverse proxy serves the upload service, with the path if it has one. To set up the service, see [Let visitors send photos back](/visitor-uploads).
+- **A path**, such as the default `/upload`, means the service is on IPP's own hostname under that path. Before showing the button, the gallery page checks that something answers at `<path>/healthcheck`, so an install without the upload container never shows a dead button.
+- **An absolute URL**, such as `https://upload.example.com`, means the service has a hostname of its own. It is trusted without a check. The URL may include a path, such as `https://photos.example.com/upload`, which points at the same place as the default but without the check.
+- **An empty string** never shows the button.
 
 ## `allowSlugLinks`
 

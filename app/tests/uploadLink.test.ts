@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { KeyType, loadConfig, SharedLink } from '@ipp/core'
-import { uploadLink } from '../src/share'
+import { uploadHealthcheck, uploadLink } from '../src/share'
 
 function setConfig (config: unknown) {
   process.env.CONFIG = JSON.stringify(config)
@@ -23,8 +23,26 @@ describe('uploadLink', () => {
     loadConfig()
   })
 
-  it('is absent while ipp.uploadUrl is unset', () => {
+  it('assumes /upload on this hostname while ipp.uploadUrl is unset, and checks it is there', () => {
+    expect(uploadLink(share())).toBe('/upload/share/the-key')
+    expect(uploadHealthcheck()).toBe('/upload/healthcheck')
+  })
+
+  it('is absent when ipp.uploadUrl is empty', () => {
+    setConfig({ ipp: { uploadUrl: '' } })
     expect(uploadLink(share())).toBeUndefined()
+    expect(uploadHealthcheck()).toBeUndefined()
+  })
+
+  it('takes another path on this hostname, without a trailing slash', () => {
+    setConfig({ ipp: { uploadUrl: '/photos-in/' } })
+    expect(uploadLink(share())).toBe('/photos-in/share/the-key')
+    expect(uploadHealthcheck()).toBe('/photos-in/healthcheck')
+  })
+
+  it('trusts an absolute URL without a check', () => {
+    setConfig({ ipp: { uploadUrl: 'https://upload.example.com' } })
+    expect(uploadHealthcheck()).toBeUndefined()
   })
 
   it('links a key share by its key, without a doubled slash', () => {
@@ -43,8 +61,12 @@ describe('uploadLink', () => {
     expect(uploadLink(share({ allowUpload: undefined }))).toBeUndefined()
   })
 
-  it('ignores a value that is not an http(s) URL', () => {
+  it('ignores a value that is neither an http(s) URL nor a path', () => {
     setConfig({ ipp: { uploadUrl: 'javascript:alert(1)' } })
+    expect(uploadLink(share())).toBeUndefined()
+    setConfig({ ipp: { uploadUrl: '//evil.example.com' } })
+    expect(uploadLink(share())).toBeUndefined()
+    setConfig({ ipp: { uploadUrl: '/' } })
     expect(uploadLink(share())).toBeUndefined()
     setConfig({ ipp: { uploadUrl: 42 } })
     expect(uploadLink(share())).toBeUndefined()

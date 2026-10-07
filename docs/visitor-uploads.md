@@ -162,18 +162,23 @@ it cannot.
 
 ## Show the button in IPP
 
-Set [`uploadUrl`](/config/ipp-options#uploadurl) in IPP's config to the public URL you routed in the previous step:
+With the upload service on a path on the IPP hostname, there is nothing to set. IPP assumes the service is at
+`/upload` on its own hostname, and the gallery shows the button once `/upload/healthcheck` answers.
+
+With a hostname of its own, set [`uploadUrl`](/config/ipp-options#uploadurl) in IPP's config to that URL and restart
+IPP:
 
 ```json
 {
   "ipp": {
-    "uploadUrl": "https://photos.example.com/upload"
+    "uploadUrl": "https://upload.example.com"
   }
 }
 ```
 
-Restart IPP. One `config.json` can serve both containers: IPP ignores the `ipp.upload.*` keys, and the upload service
-reads only those and [two shared options](/config/upload-service#shared-options).
+IPP reads its config from a `config.json` mounted at `/app/config.json`, or inline from the `CONFIG` environment
+variable; see [Configuration](/config/). One `config.json` can serve both containers: IPP ignores the `ipp.upload.*`
+keys, and the upload service reads only those and [two shared options](/config/upload-service#shared-options).
 
 ## Turn on uploads for a share
 
@@ -187,7 +192,7 @@ separate from IPP's, and the password never passes between the two.
 > [!NOTE]
 > A share with one photo opens as the image file itself, so there is no header and no button. Set
 > [`gallery.singleImage`](/config/gallery#singleimage) to `true` to show a gallery page instead, or give visitors the
-> upload page's own link: the share's path on the upload URL, such as `https://upload.example.com/share/<key>`.
+> upload page's own link: the share's path on the upload URL, such as `https://photos.example.com/upload/share/<key>`.
 
 ## Set a storage quota
 
@@ -267,5 +272,5 @@ visitor separately, set a rate limit in your reverse proxy.
 ### How do I turn uploads off
 
 For one share, turn off **Allow public user to upload** in Immich. Immich refuses new uploads at once, and the button
-leaves the gallery on the same cache times as a new photo takes to appear. For all shares, remove `uploadUrl` from
-IPP's config and stop the upload container.
+leaves the gallery on the same cache times as a new photo takes to appear. For all shares, stop the upload container; with the
+default `uploadUrl` the button goes with it. To make sure, set [`uploadUrl`](/config/ipp-options#uploadurl) to `""`.
