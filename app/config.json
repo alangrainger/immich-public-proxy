@@ -35,7 +35,8 @@
         "city": false,
         "state": false,
         "country": false,
-        "gps": false
+        "gps": false,
+        "webLink": true
       }
     },
     "customInvalidResponse": false,
@@ -56,7 +57,8 @@
       "showArrows": true,
       "showDownload": true,
       "mobileArrows": false,
-      "autoPlayVideos": false
+      "autoPlayVideos": false,
+      "options": {}
     }
   }
 }

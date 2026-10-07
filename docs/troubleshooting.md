@@ -85,10 +85,11 @@ If IPP can't connect to Immich even though the container clearly can, you'll see
 
 ```
 Unable to reach Immich on http://immich_server:2283
-From the server IPP is running on, see if you can curl to http://immich_server:2283/api/server/ping and receive a JSON result.
+From the container IPP is running in, run this and check you receive a JSON result: node -e "fetch('http://immich_server:2283/api/server/ping').then(r => r.text()).then(console.log).catch(console.error)"
+Avoid testing with curl - curl uses its own DNS resolver and can succeed even when the resolver Node/IPP uses (musl getaddrinfo) fails.
 ```
 
-yet running that same `curl` from a shell inside the container succeeds:
+yet `curl` from a shell inside the container succeeds:
 
 ```
 /app $ curl http://immich_server:2283/api/server/ping
@@ -99,7 +100,8 @@ This happens with both Docker Compose service names (like `immich_server`) and h
 (for example an AdGuard Home or dnsmasq CNAME rewrite). The cause is the DNS lookup, not IPP: Node asks for the IPv4
 and IPv6 addresses at once, and if your resolver answers the IPv6 query with `NXDOMAIN` instead of an empty `NOERROR`,
 the Alpine base image fails the whole lookup even though the IPv4 address is fine. `curl` tolerates this, which is why
-it works from a shell. The underlying error is `getaddrinfo ENOTFOUND`.
+it works from a shell and why the log suggests the `node -e` command instead: it uses the same resolver as IPP, so it
+fails the same way. The underlying error is `getaddrinfo ENOTFOUND`.
 
 The reliable fix is to disable IPv6 for the container, so only the IPv4 lookup happens. Add the `sysctls` block to
 your service in `docker-compose.yml`:

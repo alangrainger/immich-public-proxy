@@ -55,7 +55,7 @@ Highest quality the lightbox loads when you zoom in past fit-to-screen.
 
 `"original"` is not an option here, because an original can be a RAW or DNG file the browser cannot display.
 
-This setting is independent of [`allowDownload`](#allowdownload): the download buttons can be off while zoom is on. The full-resolution image is only available when the share's own "Allow downloads" toggle in Immich is on, and the photo is a JPEG, PNG or WebP. For other formats, or shares with downloads off in Immich, the lightbox stays on the preview. To get full-resolution zoom without showing download buttons, leave downloads on in Immich and set [`allowDownload`](#allowdownload) to `0`.
+This setting is independent of [`allowDownload`](#allowdownload): the download buttons can be off while zoom is on. The full-resolution image is only available when the share's own "Allow downloads" toggle in Immich is on; with it off, the lightbox stays on the preview. For a JPEG, PNG or WebP the zoom loads the original file. For other formats (RAW, HEIF, ...) it loads Immich's converted full-size image, which exists only if full-size previews are enabled in Immich's image settings; otherwise Immich serves the preview. To get full-resolution zoom without showing download buttons, leave downloads on in Immich and set [`allowDownload`](#allowdownload) to `0`.
 
 ## `motionPhotos`
 

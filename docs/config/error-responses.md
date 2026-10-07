@@ -4,7 +4,7 @@ To avoid giving information away about your server, IPP responds with a limited 
 
 | Code | Reason                                                                                          |
 |------|-------------------------------------------------------------------------------------------------|
-| 503  | Healthcheck failed: Immich is not accessible. Only on the `/healthcheck` route.                 |
+| 503  | Healthcheck failed: Immich is not accessible. Only on `/share/healthcheck` (and the older `/healthcheck`). |
 | 401  | Invalid password provided for a password-protected share link.                                  |
 | 204  | No upload service at `/upload/healthcheck`. The gallery checks this path before showing the "Add photos" button; see [`uploadUrl`](/config/ipp-options#uploadurl). |
 | 404  | All other invalid requests, e.g. album doesn't exist, share link is expired, non-existing file. |
@@ -24,7 +24,7 @@ If you want to send a custom 404 page, you would do that with either of the belo
 
 ## Custom function
 
-You can also write your own function. Take a copy of `app/dist/invalidRequestHandler.js` from the image of the IPP
+You can also write your own function. Take a copy of `/app/dist/invalidRequestHandler.js` from the image of the IPP
 version you run, edit it, and mount it back into the container at the same path. A copy from an earlier major
 version can fail to load.
 

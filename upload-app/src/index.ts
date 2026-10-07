@@ -75,9 +75,12 @@ function bodyDeadline (ms: number): RequestHandler {
 
 /*
   [ROUTE] Healthcheck, reachable at the root whatever the mount prefix, so one
-  compose healthcheck fits both routing shapes
+  compose healthcheck fits both routing shapes.
 */
-app.get(['/healthcheck', '/share/healthcheck'], asyncHandler(healthcheck))
+app.get(['/healthcheck', '/share/healthcheck'], (_req, res, next) => {
+  addNoStoreHeaders(res)
+  next()
+}, asyncHandler(healthcheck))
 
 const router = Router()
 

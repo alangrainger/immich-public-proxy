@@ -31,7 +31,7 @@ Request flow for a typical share URL like `https://proxy.example.com/share/<key>
 The repo is an npm workspace with three packages: `shared/` is `@ipp/core`, the read-side code both apps share; `app/` is IPP itself; and `upload-app/` is the optional upload service, the only code that writes to Immich. Run `npm install` at the root; there is one lockfile.
 
 ```
-.github/workflows/        CI: builds and pushes Docker image on v* tags
+.github/workflows/        ci.yaml builds and pushes both Docker images on v* tags; docs.yaml deploys the docs site
 package.json              Workspace root: scripts that delegate to the workspaces; no dependencies
 package-lock.json         The one lockfile for every workspace
 .eslintrc                 Lint config for every workspace
@@ -168,7 +168,7 @@ Beyond unit tests, exercise the gallery end-to-end against a real Immich instanc
 
 ## Conventions for adding code
 
-**Configuration.** New options go in `app/config.json` under the appropriate `ipp.*` namespace, read via `getConfigOption`, and documented on the page for their group under `docs/config/` (see `docs/README.md` for the conventions). Prefer a group toggle plus per-field overrides over a single flat boolean when several related toggles cluster, following the `ipp.showMetadata` pattern. Existing keys keep working; if you rename one, add a backward-compat shim with a startup deprecation warning, as was done for the v2.0 gallery key rename.
+**Configuration.** New options go in `app/config.json` under the appropriate `ipp.*` namespace, read via `getConfigOption`, and documented on the page for their group under `docs/config/` (see `docs/README.md` for the conventions). Prefer a group toggle plus per-field overrides over a single flat boolean when several related toggles cluster, following the `ipp.showMetadata` pattern. Rename a key only in a major version: the old name simply stops being read (no compatibility shim), and the rename gets a row in Renamed config keys (`docs/config/upgrading.md`) plus a line in that release's upgrade notes.
 
 **Privacy of responses.** Always return 404 for invalid or upstream-failed requests. Use `respondToInvalidRequest` from `@ipp/core` rather than crafting ad-hoc error responses; it calls IPP's `invalidRequestHandler`, which index.ts registers at startup. Do not surface Immich status codes or error bodies to the client.
 
@@ -232,7 +232,7 @@ If you are an AI coding agent working on this repo, the rules above apply to you
 
 - **Read this whole file before suggesting or making changes.** The read-only, lean, stateless constraints are project-defining and must not be relaxed for convenience.
 - **Do not suggest features from the "will not be accepted" list**, even if they are technically interesting. Push back on requests that would violate the constraints, and explain why.
-- **Do not add backwards-compatibility shims** unless a config key is being renamed or a public behavior is changing. Dead-code shims rot.
+- **Do not add backwards-compatibility shims.** Config keys are renamed only in a major version and the old name stops being read; document the rename instead. Dead-code shims rot.
 - **Do not add caches, memoization, queues, or background jobs** without first estimating the real cost of not having them. The existing share-metadata cache in `immich.ts` is for freshness coalescing, not optimisation; mirror that bar.
 - **Do not add error handling for cases that cannot happen.** Trust internal invariants. Validate only at the boundary (incoming request, Immich response).
 - **Default to writing no comments.** Add a comment only when the *why* is non-obvious: a security-relevant invariant, a workaround for a specific upstream bug, or behavior that would surprise a careful reader. Do not narrate the *what*.

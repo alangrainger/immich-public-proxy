@@ -72,7 +72,7 @@ Language for the [`showExpiryDate`](#showexpirydate) date when the format uses n
 Group the gallery's thumbnails by date, with a header above each group.
 
 - `false` - no grouping (default).
-- `"month"` - month headers like "December 2024".
+- `"month"` - month headers like "December 2024". `true` means the same.
 - `"day"` - day headers like "Wed, 25 Dec 2024" (matching Immich's own timeline format).
 
 Grouping uses the date each photo was taken, as in Immich's own timeline. Groups follow the album's sort order in Immich, and newest first for shares without one. Photos with no date go under an "Undated" header at the end.
