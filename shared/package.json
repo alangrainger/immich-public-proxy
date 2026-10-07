@@ -1,6 +1,6 @@
 {
   "name": "@ipp/core",
-  "version": "4.0.0-alpha.1",
+  "version": "4.0.0-alpha.2",
   "private": true,
   "description": "Read-side code shared by Immich Public Proxy and its upload service.",
   "license": "AGPL-3.0",
