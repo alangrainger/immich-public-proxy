@@ -7,7 +7,7 @@ export interface UploadPageProps {
   config: UploadPageConfig
   /** Path prefix the app is mounted under, without a trailing slash. Empty at the root. */
   basePath: string
-  /** This share's gallery on IPP, when `GALLERY_URL` is set. */
+  /** This share's gallery on IPP, when `PUBLIC_BASE_URL` is set. */
   galleryLink?: string
 }
 

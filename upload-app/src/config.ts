@@ -2,9 +2,13 @@ import { getConfigOption, getNumericConfigOption } from '@ipp/core'
 
 const MB = 1024 * 1024
 
-/** IPP's public URL from `GALLERY_URL`, without a trailing slash, or undefined when unset. */
+/**
+ * IPP's public URL from `PUBLIC_BASE_URL`, without a trailing slash, or
+ * undefined when unset. The same name and value as on the IPP container, so
+ * the two environment blocks in a compose file match.
+ */
 export function galleryUrl (): string | undefined {
-  return (process.env.GALLERY_URL || '').replace(/\/+$/, '') || undefined
+  return (process.env.PUBLIC_BASE_URL || '').replace(/\/+$/, '') || undefined
 }
 
 /** Largest single file accepted, in bytes, from `ipp.upload.maxFileSize` (MB). */

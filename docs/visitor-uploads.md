@@ -70,16 +70,15 @@ services:
       - "3001:3000"
     environment:
       IMMICH_URL: http://your-internal-immich-server:2283
-      GALLERY_URL: https://photos.example.com
+      PUBLIC_BASE_URL: https://photos.example.com
     healthcheck:
       test: curl -sf -m 4 http://localhost:3000/healthcheck -o /dev/null || exit 1
       start_period: 10s
       timeout: 5s
 ```
 
-- `IMMICH_URL` is the same local Immich address that IPP uses.
-- `GALLERY_URL` is the public URL of IPP, the same value as IPP's `PUBLIC_BASE_URL`. It gives the upload page a back
-  button to the gallery.
+- `IMMICH_URL` and `PUBLIC_BASE_URL` mean the same as on the IPP container, so you can copy the `environment` block
+  across. `PUBLIC_BASE_URL` is IPP's public URL; it gives the upload page a back button to the gallery.
 
 The service has no setting for its own public URL. Your reverse proxy decides that in the next step.
 

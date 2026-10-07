@@ -25,15 +25,16 @@ Accept files up to 2 GB, and send a notification to a Gotify server for each sto
 
 ## Environment variables
 
-`IMMICH_URL`, `IPP_PORT`, `IPP_CONFIG` and `CONFIG` mean the same as for IPP; see
-[Environment variables](/config/environment-variables). `IMMICH_URL` is required. The service has one more:
+`IMMICH_URL`, `PUBLIC_BASE_URL`, `IPP_PORT`, `IPP_CONFIG` and `CONFIG` mean the same as for IPP; see
+[Environment variables](/config/environment-variables). `IMMICH_URL` is required, and the `environment` block from the
+IPP container can be copied across as is.
 
-### `GALLERY_URL`
+### `PUBLIC_BASE_URL`
 
 **Optional**
 
-The public URL of IPP, for example `https://photos.example.com`. When set, the upload page has a back button to the
-share's gallery.
+The public URL of IPP, for example `https://photos.example.com`, the same value as on the IPP container. When set,
+the upload page has a back button to the share's gallery.
 
 The service has no setting for its own public URL. It serves its pages both under `/upload` and at the root, so the
 reverse proxy decides where it lives: a path on the IPP hostname (`photos.example.com/upload`) or a hostname of its
