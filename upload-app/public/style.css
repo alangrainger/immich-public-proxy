@@ -6,11 +6,17 @@
   DragAndDropUploadOverlay (immich-app/immich web/src, 2026-10).
 */
 
+/* One centred column on wide screens; the header follows so it lines up with the content */
+#header,
+#upload-main {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
 #upload-main {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  max-width: 720px;
   padding: 12px var(--gutter) 48px;
 }
 
