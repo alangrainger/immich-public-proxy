@@ -12,10 +12,10 @@
 <a href="https://demo.ipp.nz/s/demo-gallery"><img alt="Open demo gallery" src="https://badgen.net/static/↗🖼️/live%20demo/green?scale=1.1"></a>
 </p>
 
-Share your Immich photos and albums in a safe way without exposing your Immich instance to the public.
+Share your Immich photos and albums in a safe way without exposing your Immich instance to the public. This does not need
+an API key, or any privileged access to Immich.
 
-👉 See a [Live demo gallery](https://demo.ipp.nz/s/demo-gallery)
-serving straight out of my own Immich instance.
+👉 See a [Live demo gallery](https://demo.ipp.nz/s/demo-gallery) serving straight out of my own Immich instance.
 
 Setup takes less than a minute, and you never need to touch it again as all of your sharing stays managed within Immich.
 
