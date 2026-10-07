@@ -3,14 +3,11 @@
 Visitors to a share can send their own photos and videos into it, for example guests adding their pictures to a
 wedding album. The photos go straight into the album in Immich and appear in the gallery for everyone.
 
-Uploads are handled by a second, optional container, `immich-public-proxy-upload`. The IPP container stays
-read-only: its only part in this is an **Add photos** button that links to the upload service. Immich decides which
-shares accept uploads, through the "Allow public user to upload" option on each shared link.
-
 This guide assumes IPP is already [installed](/installation) behind a reverse proxy.
 
 ## Contents
 
+- [How it works](#how-it-works)
 - [What you need](#what-you-need)
 - [Add the upload service](#add-the-upload-service)
 - [Route it through your reverse proxy](#route-it-through-your-reverse-proxy)
@@ -21,6 +18,33 @@ This guide assumes IPP is already [installed](/installation) behind a reverse pr
 - [Tag uploaded photos](#tag-uploaded-photos)
 - [Get a notification for each upload](#get-a-notification-for-each-upload)
 - [Questions](#questions)
+
+## How it works
+
+Uploads are handled by a second, optional container, `immich-public-proxy-upload`. The IPP container stays
+read-only. 
+
+**No API key is required.**
+
+1. In Immich, the owner turns on **Allow public user to upload** for a shared link. The gallery for that share then
+   shows an **Add photos** button.
+2. A visitor clicks the button. It opens the upload page for the same share on the upload service's separate container.
+3. The upload container streams the file straight to Immich with the share's own key. It stores nothing and holds no API key.
+5. Immich checks that the share still allows uploads, stores the file as if the share owner had uploaded it, and adds
+   it to the share.
+
+What the owner sees in Immich:
+
+- The files appear at once in the owner's timeline, at the date each photo was taken, as with any upload. They
+  belong to the owner and count against the owner's storage.
+- In an album share, the files go into the album. In a share of selected photos, they go into the shared link, so
+  they show in the same gallery.
+- Each file name starts with `ipp_upload_`, so visitor uploads are easy to find in search or to
+  [tag with a workflow](#tag-uploaded-photos).
+- The owner removes unwanted files in Immich, like any other photo.
+
+Other visitors see the new photos in the gallery within a few minutes. See
+[When do uploads appear](#when-do-uploads-appear).
 
 ## What you need
 
@@ -156,14 +180,6 @@ reads only those and [two shared options](/config/upload-service#shared-options)
 In Immich, turn on **Allow public user to upload** for the shared link. The option is in the dialog that creates a
 link, and later under **Sharing**, **Shared links**, when you edit the link. The gallery for that share then shows an
 **Add photos** button in its header. A share with the option off shows no button, and the upload service refuses it.
-
-Where uploads go:
-
-- An album share: into the album.
-- A share of selected photos: into the shared link itself, so they show in the same gallery.
-
-Uploaded files belong to the Immich user who owns the share and count against that user's storage. The owner sees
-them in Immich at once and can remove them there.
 
 A password-protected share asks for its password again on the upload page. The upload service keeps its own unlock,
 separate from IPP's, and the password never passes between the two.
