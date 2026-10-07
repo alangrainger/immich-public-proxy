@@ -1,8 +1,8 @@
 # Renamed config keys
 
-IPP 4.0 no longer reads the old config keys below. Earlier versions mapped them to their current names at startup; 4.0
-ignores them, and the option falls back to its default. Check your `config.json` for each key in the left column and
-move its value to the right column. For how to update IPP itself, see [Upgrading](/upgrading).
+IPP 4.0 no longer reads the old config keys below, so an option set under an old name falls back to its default.
+Check your `config.json` for each key in the left column and move its value to the right column. For how to update
+IPP itself, see [Upgrading](/upgrading).
 
 ## Gallery keys
 
@@ -40,7 +40,6 @@ ignored, so the description is hidden in both places until you change it.
 gate, and each one defaults to `false`.
 
 > [!WARNING]
-> IPP will not start while either `enabled` key is in your config. A config from IPP 2.3 can have `"enabled": false`
-> together with per-field flags set to `true`. Earlier versions kept those fields hidden, but 4.0 shows every field
-> whose flag is `true`, GPS coordinates included. Remove the `enabled` key, and set to `true` only the fields you
-> want visitors to see.
+> IPP will not start while either `enabled` key is in your config. Remove the key, then check every per-field flag:
+> 4.0 shows every field set to `true`, GPS coordinates included, even where `enabled` used to be `false`. Set to
+> `true` only the fields you want visitors to see.

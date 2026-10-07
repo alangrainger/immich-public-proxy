@@ -7,9 +7,7 @@ to open a specific share, rather than showing the default IPP landing page. For 
 photos.yourdomain.net  →  your photo album
 ```
 
-IPP deliberately doesn't do this itself - storing a share path would mean storing a key,
-which goes against the design goal of being stateless and knowing nothing about your
-Immich instance. Instead, handle it at the reverse proxy level.
+IPP has no setting for this, because it would mean storing a share key. Do it in your reverse proxy instead.
 
 ## Examples
 

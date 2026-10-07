@@ -17,7 +17,7 @@ Connection settings (the Immich URL, public URL, port and config file location) 
 ## How to provide a config override
 
 > [!NOTE]
-> You only need to include the keys you're changing. Anything you omit keeps its default, and the defaults are always the most privacy-respecting option. In particular the metadata groups are per-field opt-in: nothing is exposed until you set its flag to `true`, including fields IPP adds in future versions.
+> You only need to include the keys you're changing. Anything you omit keeps its default, and the defaults are always the most private option. Nothing in the [metadata](/config/metadata) groups is shown until you set its flag to `true`.
 
 There are two ways to supply custom config. If both are present, `CONFIG` wins and the file is not read.
 

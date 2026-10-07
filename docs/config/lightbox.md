@@ -32,7 +32,7 @@ Show a download button in the lightbox toolbar. Only takes effect when downloads
 
 **Type:** `bool` · **Default:** `false`
 
-Show prev/next arrows on mobile (under 640px viewport). Off by default since swipe is the natural mobile navigation.
+Show prev/next arrows on mobile (screens under 640px wide). Off by default, as visitors swipe instead.
 
 ## `autoPlayVideos`
 

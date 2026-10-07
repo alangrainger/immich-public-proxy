@@ -19,8 +19,8 @@ When the proxy receives a request, it will come as a link like this:
 https://your-proxy-url.com/share/ffSw63qnIYMtpmg0RNvOui0Dpio7BbxsObjvH8YZaobIjIAzl5n7zTX5d6EDHdOYEvo
 ```
 
-The part after `/share/` is Immich's shared link public ID (called the `key` [in the docs](https://api.immich.app/endpoints/shared-links/getMySharedLink)).
-For shared links given a custom URL in Immich, the link uses that slug instead, e.g. `https://your-proxy-url.com/s/my-album`.
+The part after `/share/` is the shared link's key in Immich. A shared link with a custom URL in Immich uses that
+instead, e.g. `https://your-proxy-url.com/s/my-album`.
 
 **Immich Public Proxy** takes that key and makes an API call to your Immich instance over your local network, to ask
 what photos or videos are shared in that share URL.

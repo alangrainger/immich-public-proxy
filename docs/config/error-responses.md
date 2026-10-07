@@ -6,7 +6,7 @@ To avoid giving information away about your server, IPP responds with a limited 
 |------|-------------------------------------------------------------------------------------------------|
 | 503  | Healthcheck failed: Immich is not accessible. Only on the `/healthcheck` route.                 |
 | 401  | Invalid password provided for a password-protected share link.                                  |
-| 204  | Nothing is routed to the upload service's healthcheck path, `/upload/healthcheck` by default. The gallery probes it before showing the "Add photos" button; see [`uploadUrl`](/config/ipp-options#uploadurl). |
+| 204  | No upload service at `/upload/healthcheck`. The gallery checks this path before showing the "Add photos" button; see [`uploadUrl`](/config/ipp-options#uploadurl). |
 | 404  | All other invalid requests, e.g. album doesn't exist, share link is expired, non-existing file. |
 
 Instead of sending the 404 code, you can customise that response by [changing the configuration option](/config/ipp-options#custominvalidresponse) for `customInvalidResponse`.
@@ -24,10 +24,9 @@ If you want to send a custom 404 page, you would do that with either of the belo
 
 ## Custom function
 
-If you want to go even further, you can write your own custom function. Do this by taking a copy of the `app/dist/invalidRequestHandler.js` file,
-then mounting it back as a Docker volume into the correct location for the container to use.
-
-Take the copy from the image of the IPP major version you run. A copy from an earlier major version can fail to load.
+You can also write your own function. Take a copy of `app/dist/invalidRequestHandler.js` from the image of the IPP
+version you run, edit it, and mount it back into the container at the same path. A copy from an earlier major
+version can fail to load.
 
 ## Customising the response using your Reverse Proxy
 

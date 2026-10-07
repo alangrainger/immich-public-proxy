@@ -36,11 +36,11 @@ Show the description in the sidebar only (not as a lightbox caption), expose cam
 | `exif`        | `object` | Camera / file EXIF group. Per-field opt-in flags, all default `false`. See [EXIF group](#exif-group). |
 | `location`    | `object` | Location group (city / state / country / GPS). Per-field opt-in flags, all default `false`. See [Location group](#location-group). |
 
-Every per-field flag defaults to `false`. A field is sent to the client only when its flag is explicitly `true`. There is no master switch - this is deliberate, so that fields IPP adds in future releases don't auto-expose without your action.
+Every field defaults to `false` and is sent to visitors only when its flag is `true`. There is no master switch, so a field IPP adds in a future release stays hidden until you turn it on.
 
-The share owner's **"Show metadata"** toggle in Immich takes precedence over everything here: when it's off, IPP suppresses all description / EXIF / location output and hides the info sidebar (and its toolbar toggle) entirely, regardless of these settings.
+The share's **"Show metadata"** toggle in Immich overrides everything here. When it is off, IPP hides the description, EXIF and location data and the info sidebar, whatever these settings say.
 
-The info sidebar (and its toolbar toggle button) only appear when there is at least one section the operator has opted into - i.e. `description.sidebar` is true, or `exif` / `location` has at least one displayable field set to `true`. Dependent flags such as `exif.timeZone` do not activate the sidebar on their own. With all three groups off, the sidebar UI is suppressed.
+The info sidebar and its toolbar button only appear when at least one field is turned on: `description.sidebar`, or any displayable `exif` or `location` field. `exif.timeZone` on its own does not count, as it only changes how the date is shown.
 
 ## Description
 
@@ -82,4 +82,4 @@ Under `ipp.showMetadata.location`. Every flag defaults to `false`, except `webLi
 | `state`   | `bool` | Show state / region.                                                                                                                                                                                                                |
 | `country` | `bool` | Show country.                                                                                                                                                                                                                        |
 | `gps`     | `bool` | Show GPS coordinates.                                                                                                                                                                                                                |
-| `webLink` | `bool` | Show an "Open in OpenStreetMap" link below the coordinates. The link is rendered with `rel="noreferrer"` so the share URL is not leaked to the map provider when a viewer clicks it. Has no effect unless `gps` is also true. Default `true`. |
+| `webLink` | `bool` | Show an "Open in OpenStreetMap" link below the coordinates. The link does not pass the share URL on to the map provider. Has no effect unless `gps` is also `true`. Default `true`. |

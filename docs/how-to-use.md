@@ -34,8 +34,7 @@ The settings on the shared link in Immich are respected:
   opens a gallery page by default ([`gallery.singleVideo`](/config/gallery#singlevideo)).
 - Everything else opens as a gallery styled to match Immich, in light or dark mode following the visitor's system
   preference, with a lightbox for viewing each photo or video.
-- Very large shares stay smooth: the gallery is virtualised, so the browser only keeps the tiles near the viewport in
-  the page.
+- Very large shares stay smooth, however many photos they contain.
 - When downloads are allowed, visitors can download a single item, select several to download together as a zip, or
   download the whole share.
 - Photos can be grouped under month or day headers with [`gallery.groupByDate`](/config/gallery#groupbydate).
