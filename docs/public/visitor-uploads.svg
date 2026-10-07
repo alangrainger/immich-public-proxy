@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 660" width="900" height="660" role="img" aria-label="How visitor uploads work: the browser reaches the reverse proxy, which sends gallery requests to the read-only immich-public-proxy container and /upload requests to the optional immich-public-proxy-upload container. Both talk to Immich with the visitor's share key. Immich refuses uploads unless the share allows them, stores the file and adds it to the album or link.">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#5b6070"/>
+    </marker>
+    <marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4250af"/>
+    </marker>
+  </defs>
+
+  <!-- card -->
+  <rect x="0.5" y="0.5" width="899" height="659" rx="14" fill="#f7f8fc" stroke="#d9dce8"/>
+
+  <g font-family="ui-sans-serif, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#2b2f3a">
+
+    <!-- Browser -->
+    <rect x="360" y="28" width="180" height="40" rx="20" fill="#ffffff" stroke="#9aa0b4"/>
+    <text x="450" y="53" text-anchor="middle" font-size="14" font-weight="600">Visitor's browser</text>
+
+    <!-- Browser to proxy -->
+    <path d="M 420 68 L 420 90 L 250 90 L 250 128" fill="none" stroke="#5b6070" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <path d="M 480 68 L 480 90 L 650 90 L 650 128" fill="none" stroke="#4250af" stroke-width="1.5" marker-end="url(#arrow-accent)"/>
+    <text x="238" y="112" text-anchor="end" fill="#5b6070" font-size="12">gallery, thumbnails, video</text>
+    <text x="662" y="105" fill="#4250af" font-size="12">/upload/… upload page, healthcheck,</text>
+    <text x="662" y="121" fill="#4250af" font-size="12">one POST per file</text>
+
+    <!-- Reverse proxy -->
+    <rect x="60" y="130" width="780" height="54" rx="8" fill="#ffffff" stroke="#9aa0b4"/>
+    <text x="450" y="152" text-anchor="middle" font-size="14" font-weight="600">Your reverse proxy</text>
+    <text x="250" y="173" text-anchor="middle" fill="#5b6070" font-size="12">everything else</text>
+    <text x="650" y="173" text-anchor="middle" fill="#4250af" font-size="12">/upload/*  (or its own hostname)</text>
+
+    <!-- Proxy to containers -->
+    <line x1="250" y1="184" x2="250" y2="218" stroke="#5b6070" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <line x1="650" y1="184" x2="650" y2="218" stroke="#4250af" stroke-width="1.5" marker-end="url(#arrow-accent)"/>
+
+    <!-- IPP container -->
+    <rect x="80" y="220" width="340" height="176" rx="10" fill="#ffffff" stroke="#9aa0b4"/>
+    <text x="100" y="246" font-size="15" font-weight="700" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">immich-public-proxy</text>
+    <text x="100" y="266" fill="#5b6070" font-size="12">read-only, unchanged</text>
+    <text x="100" y="298">Renders the gallery as today.</text>
+    <text x="100" y="320">Shows an <tspan font-weight="600">Add photos</tspan> button when the share</text>
+    <text x="100" y="338">allows uploads in Immich and the upload</text>
+    <text x="100" y="356">service answers at <tspan font-family="ui-monospace, Menlo, Consolas, monospace" font-size="12">/upload/healthcheck</tspan>.</text>
+    <text x="100" y="382" fill="#5b6070" font-size="12">Never accepts a file. Never writes to Immich.</text>
+
+    <!-- Upload container -->
+    <rect x="480" y="220" width="340" height="176" rx="10" fill="#ffffff" stroke="#4250af" stroke-width="1.5"/>
+    <text x="500" y="246" font-size="15" font-weight="700" fill="#4250af" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">immich-public-proxy-upload</text>
+    <text x="500" y="266" fill="#5b6070" font-size="12">optional second container</text>
+    <text x="500" y="298">Serves the upload page for the share.</text>
+    <text x="500" y="320">Checks the share, rate and size limits,</text>
+    <text x="500" y="338">filename and type, then streams each file</text>
+    <text x="500" y="356">straight to Immich.</text>
+    <text x="500" y="382" fill="#5b6070" font-size="12">Stores nothing. Never serves gallery content.</text>
+
+    <!-- Add photos link between containers -->
+    <line x1="420" y1="320" x2="478" y2="320" stroke="#4250af" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow-accent)"/>
+    <text x="450" y="312" text-anchor="middle" fill="#4250af" font-size="11">link</text>
+
+    <!-- Containers to Immich -->
+    <line x1="250" y1="396" x2="250" y2="488" stroke="#5b6070" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <text x="262" y="422" fill="#5b6070" font-size="12" font-weight="600">share key, read</text>
+    <text x="262" y="441" fill="#5b6070" font-size="12" font-family="ui-monospace, Menlo, Consolas, monospace">GET /shared-links/me</text>
+    <text x="262" y="458" fill="#5b6070" font-size="12" font-family="ui-monospace, Menlo, Consolas, monospace">GET /timeline, /assets</text>
+
+    <line x1="650" y1="396" x2="650" y2="488" stroke="#4250af" stroke-width="1.5" marker-end="url(#arrow-accent)"/>
+    <text x="662" y="422" fill="#4250af" font-size="12" font-weight="600">share key, write</text>
+    <text x="662" y="441" fill="#4250af" font-size="12" font-family="ui-monospace, Menlo, Consolas, monospace">GET  /shared-links/me</text>
+    <text x="662" y="458" fill="#4250af" font-size="12" font-family="ui-monospace, Menlo, Consolas, monospace">POST /assets</text>
+
+    <!-- Immich -->
+    <rect x="60" y="490" width="780" height="104" rx="10" fill="#ffffff" stroke="#9aa0b4"/>
+    <text x="90" y="518" font-size="15" font-weight="700">Immich</text>
+    <text x="90" y="544">Refuses an upload unless <tspan font-weight="600">Allow public user to upload</tspan> is on for the share.</text>
+    <text x="90" y="562">Stores the file as the owner's and adds it to the album or shared link.</text>
+    <text x="90" y="580">Makes the thumbnail. IPP shows the photo on its next cache refresh.</text>
+
+    <!-- Footer -->
+    <text x="450" y="632" text-anchor="middle" fill="#5b6070" font-size="12">Neither container holds an Immich API key, a database or a volume. Both use the visitor's own share key.</text>
+  </g>
+</svg>

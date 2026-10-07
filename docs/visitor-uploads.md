@@ -22,9 +22,11 @@ This guide assumes IPP is already [installed](/installation) behind a reverse pr
 ## How it works
 
 Uploads are handled by a second, optional container, `immich-public-proxy-upload`. The IPP container stays
-read-only. 
+read-only.
 
 **No API key is required.**
+
+<img src="/visitor-uploads.svg" width="900" height="660" alt="How visitor uploads work: the browser reaches the reverse proxy, which sends gallery requests to the read-only immich-public-proxy container and /upload requests to the optional immich-public-proxy-upload container. Both talk to Immich with the visitor's share key. Immich refuses uploads unless the share allows them, stores the file and adds it to the album or link.">
 
 1. In Immich, the owner turns on **Allow public user to upload** for a shared link. The gallery for that share then
    shows an **Add photos** button.
