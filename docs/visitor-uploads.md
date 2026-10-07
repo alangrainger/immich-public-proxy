@@ -4,6 +4,11 @@ Visitors to a share can send their own photos and videos into it, for example gu
 wedding album. The photos go straight into the album in Immich and appear in the gallery for everyone, unless you
 choose to [review them first](/tag-and-review-uploads#review-uploads-before-they-appear).
 
+> [!IMPORTANT]
+> No Immich API key is needed: each file is sent with the share's own key, so Immich itself decides whether that share accepts uploads.
+> 
+> Visitors have no access to Immich; the upload service streams each file through and stores nothing.
+
 ## Contents
 
 - [How it works](#how-it-works)
