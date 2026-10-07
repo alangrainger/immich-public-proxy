@@ -28,7 +28,7 @@ what photos or videos are shared in that share URL.
 If it is a valid share URL, the proxy fetches just those assets via local API and returns them to the visitor as an
 individual image or gallery.
 
-If the shared link has expired or any of the assets have been put in the Immich trash, it will not return those.
+If the shared link has expired, or any of the assets have been put in the Immich trash or the locked folder, it will not return those.
 
 All incoming data is validated and sanitised, and anything unexpected is simply dropped with a 404.
 

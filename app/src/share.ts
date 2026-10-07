@@ -1,4 +1,4 @@
-import { Asset, getConfigOption, KeyType, log, SharedLink, TtlLruCache } from '@ipp/core'
+import { Asset, AssetVisibility, getConfigOption, KeyType, log, SharedLink, TtlLruCache } from '@ipp/core'
 import { DownloadAll } from './types'
 import dayjs from 'dayjs'
 
@@ -72,14 +72,17 @@ export function uploadLink (share: SharedLink): string | undefined {
 const warnedUnprocessed = new TtlLruCache<true>({ ttlMs: 24 * 60 * 60_000, max: 1000 })
 
 /**
- * Narrow a share's assets to what IPP can render: not trashed, and finished
- * processing in Immich. `thumbhash` is the readiness signal: Immich's
- * thumbnail job writes the files and only then sets it, so until it appears
- * every image URL IPP hands out would 404.
+ * Narrow a share's assets to what IPP can render: not trashed, not in the
+ * owner's locked folder, and finished processing in Immich. Immich's share
+ * listing does not filter on visibility, so a locked asset has to go here.
+ * `thumbhash` is the readiness signal: Immich's thumbnail job writes the
+ * files and only then sets it, so until it appears every image URL IPP hands
+ * out would 404.
  */
 export function servableAssets (assets: Asset[]): Asset[] {
   return assets.filter(asset => {
     if (asset.isTrashed) return false
+    if (asset.visibility === AssetVisibility.locked) return false
     if (asset.thumbhash) return true
     if (!warnedUnprocessed.get(asset.id)) {
       warnedUnprocessed.set(asset.id, true)

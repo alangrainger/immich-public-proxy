@@ -3,6 +3,16 @@ export enum AssetType {
   video = 'VIDEO'
 }
 
+/** Immich's asset visibility states, as the API serialises them. */
+export enum AssetVisibility {
+  timeline = 'timeline',
+  archive = 'archive',
+  /** The video half of a motion photo, never shown on its own */
+  hidden = 'hidden',
+  /** The owner's PIN-protected locked folder */
+  locked = 'locked'
+}
+
 export enum KeyType {
   key = 'key',
   slug = 'slug'
@@ -49,6 +59,7 @@ export interface Asset {
   localDateTime?: string;
   type: AssetType;
   isTrashed: boolean;
+  visibility?: AssetVisibility;
   exifInfo?: ExifInfo;
   width?: number;
   height?: number;

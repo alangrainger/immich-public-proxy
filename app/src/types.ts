@@ -1,5 +1,5 @@
 import { Request } from 'express-serve-static-core'
-import { KeyType } from '@ipp/core'
+import { AssetVisibility, KeyType } from '@ipp/core'
 
 /**
  * One entry of `GET /timeline/buckets` - a time bucket (month) and its count.
@@ -27,6 +27,7 @@ export interface TimelineBucketAssets {
   localOffsetHours: number[];
   // Motion photo (Live Photo) clip id; null for ordinary assets.
   livePhotoVideoId: (string | null)[];
+  visibility: AssetVisibility[];
 }
 
 export enum ImageSize {

@@ -4,11 +4,7 @@ import type { Server } from 'http'
 import type { AddressInfo } from 'net'
 import { sessionMiddleware, unlockHandler } from '../src/session'
 
-/*
-  The unlock body is visitor input. Only a share-shaped key with a string
-  password is stored; anything else is dropped before it reaches the cookie,
-  so a stray object can never become `req.password` or a session key.
-*/
+// The unlock body is visitor input: only a share-shaped key and a string password may reach the cookie
 
 describe('unlockHandler', () => {
   let server: Server

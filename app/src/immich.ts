@@ -204,7 +204,7 @@ async function fetchShareByKey (key: string, password?: string, keyType: KeyType
     log('Shared link ' + key + ' returned no assets array (type ' + link.type + ')')
     link.assets = []
   }
-  // Drop trashed assets, and any Immich hasn't finished processing
+  // Drop trashed and locked assets, and any Immich hasn't finished processing
   link.assets = servableAssets(link.assets)
   // Populate the shared assets with the public key/password
   link.assets.forEach(asset => {
@@ -284,6 +284,7 @@ function timelineBucketToAssets (bucket: TimelineBucketAssets): Asset[] {
       localDateTime: localDateTimeFromOffset(fileCreatedAt, bucket.localOffsetHours?.[i]),
       thumbhash: bucket.thumbhash?.[i] || undefined,
       livePhotoVideoId: bucket.livePhotoVideoId?.[i] || undefined,
+      visibility: bucket.visibility?.[i],
       width,
       height,
       needsDetail: true
