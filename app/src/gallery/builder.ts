@@ -1,4 +1,4 @@
-import { Asset, AssetType, getConfigOption, getNumericConfigOption, renderPage, SharedLink, title, toString } from '@ipp/core'
+import { AssetType, getConfigOption, getNumericConfigOption, renderPage, SharedLink, title, toString } from '@ipp/core'
 import {
   getVideoContentType,
   photoUrl,
@@ -9,8 +9,8 @@ import { ImageSize } from '../types'
 import { canDownload, expiryDate, uploadHealthcheck, uploadLink } from '../share'
 import { h } from 'preact'
 import { Gallery, GalleryItem, GalleryProps } from '../view/gallery'
-import type { GroupByDateMode } from '../shared/types'
-import { downloadFilename } from './filename'
+import { downloadFilename, positionInShare } from './filename'
+import { groupByDateMode } from './order'
 import { requiresOriginal } from './sizing'
 import { displayDimensions, metadataGroupActive, pickExif } from './exif'
 
@@ -26,14 +26,9 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
   // You can specify this in your docker-compose file via the PUBLIC_BASE_URL env var.
   const publicBaseUrl = process.env.PUBLIC_BASE_URL || (res.req.protocol + '://' + res.req.headers.host)
 
-  // Date grouping needs chronological order; follow the album's own sort
-  // direction, defaulting to newest-first when it has none (individual shares).
-  // Sort by the same local timestamp the grouping buckets on, so buckets stay
-  // contiguous / ordered.
+  // `share.assets` is already in display order, date grouping included
+  // (see gallery/order.ts), so no sort happens here.
   const groupByDate = groupByDateMode()
-  if (groupByDate) {
-    share.assets.sort(dateSortComparator(share.album?.order))
-  }
 
   // Metadata display flags. Read once here and forwarded to the client via
   // `metadataConfig` in the init JSON.
@@ -51,7 +46,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
   const descriptionInSidebar = shareMetadataAllowed && !!getConfigOption('ipp.showMetadata.description.sidebar', false)
   const sidebarHasContent = shareMetadataAllowed && (descriptionInSidebar || metadataGroupActive('exif') || metadataGroupActive('location'))
 
-  const items: GalleryItem[] = await Promise.all(share.assets.map(async (asset): Promise<GalleryItem> => {
+  const items: GalleryItem[] = await Promise.all(share.assets.map(async (asset, index): Promise<GalleryItem> => {
     let videoData: string | undefined
     if (asset.type === AssetType.video) {
       const source: { src: string, type?: string } = { src: videoUrl(share.key, asset.id) }
@@ -100,7 +95,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       videoData,
       motionUrl,
       description: itemDescription || undefined,
-      downloadFilename: downloadFilename(asset),
+      downloadFilename: downloadFilename(asset, positionInShare(share, index)),
       width,
       height,
       thumbhash: asset.thumbhash,
@@ -174,33 +169,4 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
  */
 function description (share: SharedLink) {
   return share?.album?.description || ''
-}
-
-/**
- * Comparator for the date-grouping sort: ascending when the album's order is
- * `'asc'`, otherwise newest-first (individual shares and orderless albums).
- * Undated assets always sort last regardless of direction, so the client's
- * "Undated" group renders at the bottom.
- */
-export function dateSortComparator (order?: string): (a: Asset, b: Asset) => number {
-  const ascending = order === 'asc'
-  const sortKey = (a: Asset) => a.localDateTime || a.fileCreatedAt || ''
-  return (a, b) => {
-    const ka = sortKey(a)
-    const kb = sortKey(b)
-    if (!ka || !kb) return ka ? -1 : kb ? 1 : 0 // undated always last
-    return ascending ? ka.localeCompare(kb) : kb.localeCompare(ka)
-  }
-}
-
-/**
- * Normalise the operator's `ipp.gallery.groupByDate` config into a grouping
- * mode. Accepts `false` (off), `true` / `'month'` (legacy = month buckets) or
- * `'day'` (day buckets); anything else is treated as off.
- */
-function groupByDateMode (): GroupByDateMode | false {
-  const v = getConfigOption('ipp.gallery.groupByDate', false)
-  if (v === 'day') return 'day'
-  if (v === true || v === 'month') return 'month'
-  return false
 }

@@ -25,6 +25,8 @@ version. Breaking changes and renamed config keys land in major versions and are
   [`allowDownload`](/config/ipp-options#allowdownload).
 - **A custom `invalidRequestHandler.js` must be copied again from the 4.0 image.** A copy taken from 3.x fails to
   load. See [Custom function](/config/error-responses#custom-function).
+- **Downloads are named by share and position by default, not by the original filename.** Set
+  [`downloadedFilename`](/config/ipp-options#downloadedfilename) to `0` to keep the original filenames.
 
 Visitor uploads are new in 4.0. An existing install is not affected until you add the upload service: IPP looks for
 it at `/upload` on its own hostname and shows the "Add photos" button only when the upload service answers there. See

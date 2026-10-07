@@ -112,7 +112,7 @@ describe('buildAssetMetadata', () => {
   })
 
   it('always returns a download filename', () => {
-    setConfig({})
+    setConfig({ ipp: { downloadedFilename: 0 } })
     const meta = buildAssetMetadata(asset(), share())
     // HEIC original served as preview JPEG when downloadOriginalPhoto defaults on
     expect(meta.downloadFilename).toMatch(/IMG_1234/)

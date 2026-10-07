@@ -75,13 +75,33 @@ Clips are only fetched while the toggle is on, so leaving this on costs no extra
 
 ## `downloadedFilename`
 
-**Type:** `int` · **Default:** `0`
+**Type:** `int` · **Default:** `2`
 
-The filename of the downloaded image.
+How downloaded files are named, both in the zip and for a single download. The extension always matches the bytes
+served, so a preview download of a HEIC photo is `.jpg`.
 
 - `0` - the original filename if available, falling back to the Immich asset ID.
-- `1` - the Immich asset ID number.
-- `2` - a shortened version of the asset ID: `img_` plus the first 8 characters of the asset ID.
+- `1` - the Immich asset ID.
+- `2` - an anonymous name made from the share and the item's position in it: the first 8 characters of a hash of
+  the share key, then the 1-based position in the order the gallery shows, zero-padded to at least three digits.
+
+```
+a3f9c2e1_001.jpg
+a3f9c2e1_002.jpg
+a3f9c2e1_003.mp4
+```
+
+With `2`, the same share always gives the same names, and a few selected items keep their positions in the whole
+share. Unzipping a second download over the first replaces it. If the share's content or order changes, positions
+shift, so a re-download then replaces files with different photos.
+
+```json
+{
+  "ipp": {
+    "downloadedFilename": 0
+  }
+}
+```
 
 ## `allowDownload`
 

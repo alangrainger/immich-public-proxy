@@ -31,6 +31,10 @@ The `lightGallery` section from IPP 1.x became `ipp.lightbox`.
 | `ipp.allowDownloadAll`      | `ipp.allowDownload`, same `0` / `1` / `2` values                |
 | `ipp.downloadOriginalPhoto` | `ipp.maxDownloadQuality`: `true` is `"original"`, `false` is `"preview"` |
 
+[`ipp.downloadedFilename`](/config/ipp-options#downloadedfilename) keeps its name, but its default is now `2`
+(share hash plus position) and `2` no longer means `img_` plus part of the asset ID. Set `0` to keep original
+filenames.
+
 ## Metadata
 
 `ipp.showMetadata.description` is an object, `{ "caption": <bool>, "sidebar": <bool> }`. A plain `true` or `false` is

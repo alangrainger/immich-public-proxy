@@ -224,6 +224,7 @@ describe('assetBuffer streaming', () => {
     }
 
     it('sends an attachment named from Immich\'s header, with nosniff', async () => {
+      setConfig({ ipp: { downloadedFilename: 0 } })
       vi.stubGlobal('fetch', svgFetch({ 'content-disposition': 'attachment; filename="drawing.svg"' }))
       const res = new FakeRes()
       await assetBuffer(makeRequest(), asResponse(res), albumAsset, ImageSize.original)

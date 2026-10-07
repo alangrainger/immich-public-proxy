@@ -24,6 +24,7 @@ import {
 } from '@ipp/core'
 import { ImageSize, IncomingShareRequest, TimelineBucket, TimelineBucketAssets } from './types'
 import { canDownload, servableAssets } from './share'
+import { displayOrder } from './gallery/order'
 import { assetBuffer } from './stream/asset'
 import { downloadAll } from './stream/download'
 import { gallery } from './gallery/builder'
@@ -43,9 +44,8 @@ import { h } from 'preact'
   CAUTION: a cache hit returns the SAME SharedLinkResult reference across
   requests. Callers MUST treat the result (and its `link.assets`) as
   read-only. In-place mutation persists for the cache lifetime and leaks
-  across concurrent requests. Current callers (notably the in-place
-  `share.assets.sort(...)` in render.ts) happen to be idempotent so this is
-  safe today, but new callers should clone before mutating.
+  across concurrent requests. The assets are sorted into display order here,
+  before caching, so no caller needs to sort them; clone before mutating.
 */
 const shareCache = new TtlLruCache<Promise<SharedLinkResult>>({ ttlMs: 120_000, max: 100 })
 
@@ -212,13 +212,8 @@ async function fetchShareByKey (key: string, password?: string, keyType: KeyType
     asset.keyType = keyType
     asset.password = password
   })
-  // Sort album if there is a sort order specified
-  const sortOrder = link.album?.order
-  if (sortOrder === 'asc') {
-    link.assets.sort((a, b) => a?.fileCreatedAt?.localeCompare(b.fileCreatedAt || '') || 0)
-  } else if (sortOrder === 'desc') {
-    link.assets.sort((a, b) => b?.fileCreatedAt?.localeCompare(a.fileCreatedAt || '') || 0)
-  }
+  // The order the gallery shows, which download filenames also number by
+  displayOrder(link.assets, link.album?.order)
   return result
 }
 

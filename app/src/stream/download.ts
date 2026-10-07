@@ -3,7 +3,7 @@ import { assetFetchUrl, authHeadersForAsset } from '../immich'
 import { Response } from 'express-serve-static-core'
 import archiver, { Archiver } from 'archiver'
 import { resolveDownloadEndpoint, ImageEndpoint } from '../gallery/sizing'
-import { attachmentDisposition, enrichFromHeaders, getFilename, servedMimeFrom } from '../gallery/filename'
+import { AssetPosition, attachmentDisposition, enrichFromHeaders, findPositionInShare, getFilename, servedMimeFrom } from '../gallery/filename'
 
 /** Attempts to get response headers from Immich for one asset before giving up. */
 const MAX_ATTEMPTS = 3
@@ -17,7 +17,7 @@ export async function downloadAll (res: Response, share: SharedLink) {
   await downloadAssets(res, share, share.assets)
 }
 
-type FetchedAsset = { response: globalThis.Response, asset: Asset, endpoint: ImageEndpoint, servedMime?: string, url: string }
+type FetchedAsset = { response: globalThis.Response, asset: Asset, endpoint: ImageEndpoint, servedMime?: string, url: string, position?: AssetPosition }
 type Failure = { asset: Asset, url: string, status?: number, error?: unknown }
 type FetchOutcome = FetchedAsset | { failure: Failure } | null
 
@@ -161,7 +161,7 @@ function appendEntry (archive: Archiver, fetched: FetchedAsset): Promise<'done' 
     archive.once('entry', onEntry)
     archive.once('error', onError)
     body.once('error', onError)
-    archive.append(body, { name: getFilename(fetched.asset, fetched.endpoint.servedSize, fetched.servedMime) })
+    archive.append(body, { name: getFilename(fetched.asset, fetched.endpoint.servedSize, fetched.servedMime, fetched.position) })
   })
 }
 
@@ -213,7 +213,9 @@ async function fetchOne (share: SharedLink, asset: Asset, signal: AbortSignal): 
   // so recover them from the headers we already fetched - no extra calls.
   const namedAsset = asset.originalFileName ? asset : enrichFromHeaders(asset, fetched.response)
 
-  return { response: fetched.response, asset: namedAsset, endpoint, servedMime: servedMimeFrom(endpoint.subpath, fetched.response), url }
+  // A multi-select download keeps each asset's position in the whole share
+  const position = findPositionInShare(share, asset.id)
+  return { response: fetched.response, asset: namedAsset, endpoint, servedMime: servedMimeFrom(endpoint.subpath, fetched.response), url, position }
 }
 
 type HeaderFetchOutcome =

@@ -7,7 +7,7 @@ import {
 } from '../immich'
 import { Response } from 'express-serve-static-core'
 import { ImageSize, IncomingShareRequest } from '../types'
-import { attachmentDisposition, enrichFromHeaders, getFilename, servedMimeFrom } from '../gallery/filename'
+import { attachmentDisposition, enrichFromHeaders, findPositionInShare, getFilename, servedMimeFrom } from '../gallery/filename'
 import { isVideoAsset, resolveDownloadEndpoint, resolveImageEndpoint } from '../gallery/sizing'
 import { pipeline } from 'stream/promises'
 
@@ -95,7 +95,8 @@ export async function assetBuffer (req: IncomingShareRequest, res: Response, ass
     // Always an attachment, so an SVG can't render inline. Album assets have
     // no originalFileName; Immich's own Content-Disposition carries it.
     const named = asset.originalFileName ? asset : enrichFromHeaders(asset, data)
-    res.setHeader('Content-Disposition', attachmentDisposition(getFilename(named, servedSize, servedMimeFrom(subpath, data))))
+    const position = share && findPositionInShare(share, asset.id)
+    res.setHeader('Content-Disposition', attachmentDisposition(getFilename(named, servedSize, servedMimeFrom(subpath, data), position)))
   }
   headerList.forEach(header => {
     const value = data.headers.get(header)
