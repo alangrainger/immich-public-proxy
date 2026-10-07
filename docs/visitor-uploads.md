@@ -26,13 +26,13 @@ read-only.
 
 **No API key is required.**
 
-<img src="/visitor-uploads.svg" width="900" height="660" alt="How visitor uploads work: the browser reaches the reverse proxy, which sends gallery requests to the read-only immich-public-proxy container and /upload requests to the optional immich-public-proxy-upload container. Both talk to Immich with the visitor's share key. Immich refuses uploads unless the share allows them, stores the file and adds it to the album or link.">
+<img src="./public/visitor-uploads.svg" width="900" height="660" alt="How visitor uploads work: the browser reaches the reverse proxy, which sends gallery requests to the read-only immich-public-proxy container and /upload requests to the optional immich-public-proxy-upload container. Both talk to Immich with the visitor's share key. Immich refuses uploads unless the share allows them, stores the file and adds it to the album or link.">
 
 1. In Immich, the owner turns on **Allow public user to upload** for a shared link. The gallery for that share then
    shows an **Add photos** button.
 2. A visitor clicks the button. It opens the upload page for the same share on the upload service's separate container.
 3. The upload container streams the file straight to Immich with the share's own key. It stores nothing and holds no API key.
-5. Immich checks that the share still allows uploads, stores the file as if the share owner had uploaded it, and adds
+4. Immich checks that the share still allows uploads, stores the file as if the share owner had uploaded it, and adds
    it to the share.
 
 What the owner sees in Immich:
@@ -164,7 +164,8 @@ it cannot.
 ## Show the button in IPP
 
 With the upload service on a path on the IPP hostname, there is nothing to set. IPP assumes the service is at
-`/upload` on its own hostname, and the gallery shows the button once `/upload/healthcheck` answers.
+`/upload` on its own hostname, and the gallery shows the button once the upload service answers `ok` at
+`/upload/healthcheck`.
 
 With a hostname of its own, set [`uploadUrl`](/config/ipp-options#uploadurl) in IPP's config to that URL and restart
 IPP:

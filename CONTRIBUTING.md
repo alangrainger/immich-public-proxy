@@ -62,7 +62,7 @@ app/
     index.ts              Express setup and routes
     immich.ts             Share lookup with album enumeration and cache, asset detail, IPP URLs
     invalidRequestHandler.ts  IPP's 404 handler; operators may replace the compiled file by a mount
-    share.ts              Share-level policy (canDownload, expiry date, motion photos)
+    share.ts              Share-level policy (canDownload, expiry date, motion photos, upload link and probe)
     types.ts              Gallery-only server types
     version.ts            Release version and the static-asset cache-busting segment
     gallery/
@@ -83,8 +83,8 @@ app/
 upload-app/               immich-public-proxy-upload - one page per share; streams visitor files to Immich's POST /assets
   config.json             Default ipp.upload.* options; no responseHeaders
   src/
-    index.ts              Express setup and routes, mounted under PUBLIC_BASE_URL's path
-    config.ts             Env and ipp.upload.* readers, base path
+    index.ts              Express setup and routes, served both under /upload and at the root
+    config.ts             Env and ipp.upload.* readers
     share.ts              Share lookup through core, cached 60 s
     gate.ts               The upload permit: the share's Immich toggle and the slug-link gate
     receive.ts            Validates one upload request: rate limit, length, filename, type, byte budget
@@ -162,7 +162,7 @@ npm run test:watch      # vitest in watch mode
 npm run test:container  # build a podman image and run it locally
 ```
 
-`npm test` runs the pure-function unit tests in `shared/tests/` and `app/tests/`. IPP's tests import `@ipp/core` from its source, so they need no build. Today the suite covers `escapeHtml` only; the other shipped pure-function areas (filename derivation, layout math, EXIF whitelisting) deserve coverage too. Add tests as you touch those areas, and for any new pure logic you introduce. Skip HTTP plumbing.
+`npm test` runs the pure-function unit tests in `shared/tests/`, `app/tests/` and `upload-app/tests/`. The apps' tests import `@ipp/core` from its source, so they need no build. Add tests as you touch a pure-function area, and for any new pure logic you introduce. Skip HTTP plumbing.
 
 Beyond unit tests, exercise the gallery end-to-end against a real Immich instance: happy path plus failure paths (expired share, trashed asset, password protection, very large albums, video range requests).
 

@@ -1,7 +1,7 @@
 # Configuration
 
 > [!TIP]
-> You can see all of the configurable options by [looking at the default config.json](https://github.com/alangrainger/immich-public-proxy/blob/main/app/config.json). A description of each option is on the pages in this section.
+> You can see all of the configurable options by [looking at the default config.json](https://github.com/alangrainger/immich-public-proxy/blob/main/app/config.json), and the upload service's in [its own config.json](https://github.com/alangrainger/immich-public-proxy/blob/main/upload-app/config.json). A description of each option is on the pages in this section.
 
 Connection settings (the Immich URL, public URL, port and config file location) are
 [environment variables](/config/environment-variables). Everything else is JSON config under `ipp.*`, grouped into:

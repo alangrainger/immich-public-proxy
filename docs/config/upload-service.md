@@ -57,7 +57,8 @@ A reverse proxy or CDN in front of the service can have a lower limit of its own
 **Type:** `int` · **Default:** `60`
 
 Files accepted per minute from one visitor address to one share. Over the limit, the service answers with the time to
-wait, and the page sends the file again after it. `0` turns the limit off.
+wait, and the page sends the file again after it, up to three tries. A wait of more than a minute is shown as a
+failure with a retry button instead. `0` turns the limit off.
 
 The address is the one that connects to the service. Behind a reverse proxy every visitor has the proxy's address, so
 the limit covers each share as a whole.
@@ -146,7 +147,8 @@ The service also reads two IPP options, with the same meaning:
 - [`customInvalidResponse`](/config/ipp-options#custominvalidresponse). The status code, redirect, `null` and `false`
   forms all apply. There is no `invalidRequestHandler.js` to replace in the upload image.
 
-`responseHeaders` is not read. Every response from the service carries `Cache-Control: no-store` and no CORS header.
+`responseHeaders` is not read. Every response from the service other than its static assets carries
+`Cache-Control: no-store`, and none carries a CORS header.
 
 ## Refused uploads
 
@@ -159,7 +161,7 @@ one of these codes and a short reason, which the page shows to the visitor:
 | 400  | The filename has no extension, or Immich refused the file, for example because the owner's storage quota is full. |
 | 403  | The share no longer accepts uploads.                                                                             |
 | 411  | The request has no `Content-Length` header.                                                                      |
-| 413  | The file is larger than `maxFileSize`, or the share has used its `byteBudget` for the hour.                      |
+| 413  | The file is larger than `maxFileSize`, sent more bytes than its `Content-Length` declared, or the share has used its `byteBudget` for the hour. |
 | 415  | The file is not a photo or a video. SVG files are refused.                                                       |
 | 429  | The visitor is over `rateLimit`. `Retry-After` gives the wait in seconds.                                        |
 | 502  | Immich could not be reached, or failed.                                                                          |

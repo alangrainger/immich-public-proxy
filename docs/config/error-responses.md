@@ -6,6 +6,7 @@ To avoid giving information away about your server, IPP responds with a limited 
 |------|-------------------------------------------------------------------------------------------------|
 | 503  | Healthcheck failed: Immich is not accessible. Only on the `/healthcheck` route.                 |
 | 401  | Invalid password provided for a password-protected share link.                                  |
+| 204  | Nothing is routed to the upload service's healthcheck path, `/upload/healthcheck` by default. The gallery probes it before showing the "Add photos" button; see [`uploadUrl`](/config/ipp-options#uploadurl). |
 | 404  | All other invalid requests, e.g. album doesn't exist, share link is expired, non-existing file. |
 
 Instead of sending the 404 code, you can customise that response by [changing the configuration option](/config/ipp-options#custominvalidresponse) for `customInvalidResponse`.
