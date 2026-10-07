@@ -1,6 +1,6 @@
 {
   "name": "immich-public-proxy-upload",
-  "version": "3.4.1",
+  "version": "4.0.0-alpha.1",
   "private": true,
   "scripts": {
     "predev": "tsc -b ../shared",
