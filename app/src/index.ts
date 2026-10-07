@@ -328,9 +328,10 @@ if (getConfigOption('ipp.showHomePage', true)) {
 }
 
 /*
- * Send a 404 for all other routes
+ * Send a 404 for all other routes and methods. `all`, so a POST or DELETE to an
+ * unknown path gets the same policy instead of Express's own HTML error page.
  */
-app.get('*', (req, res) => {
+app.all('*', (req, res) => {
   respondToInvalidRequest(res, 404, 'Invalid route ' + req.path)
 })
 

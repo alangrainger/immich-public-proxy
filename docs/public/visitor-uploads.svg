@@ -27,7 +27,7 @@
     <!-- Reverse proxy -->
     <rect x="60" y="130" width="780" height="54" rx="8" fill="#ffffff" stroke="#9aa0b4"/>
     <text x="450" y="152" text-anchor="middle" font-size="14" font-weight="600">Your reverse proxy</text>
-    <text x="250" y="173" text-anchor="middle" fill="#5b6070" font-size="12">everything else</text>
+    <text x="250" y="173" text-anchor="middle" fill="#5b6070" font-size="12">normal IPP requests</text>
     <text x="650" y="173" text-anchor="middle" fill="#4250af" font-size="12">/upload/*  (or its own hostname)</text>
 
     <!-- Proxy to containers -->

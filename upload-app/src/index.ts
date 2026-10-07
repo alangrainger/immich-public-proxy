@@ -56,9 +56,11 @@ for (const dir of ['public', CORE_PUBLIC_DIR]) {
   router.use('/share/static', express.static(dir))
 }
 
-// Everything past the static assets is never cached
+// Everything past the static assets is never cached, and no page may be framed
 router.use((_req, res, next) => {
   addNoStoreHeaders(res)
+  res.set('X-Frame-Options', 'DENY')
+  res.set('Content-Security-Policy', "frame-ancestors 'none'")
   next()
 })
 router.use(sessionMiddleware({ name: 'upload-session' }))

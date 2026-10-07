@@ -2,6 +2,13 @@ import { sanitize } from '@ipp/core'
 
 const MAX_FILENAME_LENGTH = 254
 
+/*
+  Zero-width and bidirectional format characters: invisible in Immich and in a
+  notification, or able to make `holiday\u202Egpj.mp4` read as `holiday4pm.jpg`.
+  `sanitize` strips C0/C1 controls only.
+*/
+const formatCharsRe = /[\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g
+
 /**
  * Turn the visitor-supplied filename into the name Immich will store, with
  * `prefix` applied once. Returns undefined when nothing usable is left, or
@@ -10,7 +17,7 @@ const MAX_FILENAME_LENGTH = 254
  */
 export function uploadFilename (raw: unknown, prefix: string): string | undefined {
   if (typeof raw !== 'string') return undefined
-  const base = raw.split(/[\\/]/).pop() || ''
+  const base = (raw.normalize('NFC').replace(formatCharsRe, '').split(/[\\/]/).pop() || '')
   // Split the extension off first: `sanitize` truncates at 254 characters,
   // which on a very long name would cut the extension away.
   const parts = base.match(/^(.*)(\.[A-Za-z0-9]{1,16})$/)

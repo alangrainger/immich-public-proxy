@@ -15,6 +15,17 @@ describe('uploadFilename', () => {
     expect(uploadFilename('we"rd:na*me.jpg', '')).toBe('werdname.jpg')
   })
 
+  it('removes zero-width and direction-changing characters', () => {
+    expect(uploadFilename('holiday\u202Egpj.mp4', '')).toBe('holidaygpj.mp4')
+    expect(uploadFilename('IMG\u200B_0042\uFEFF.jpg', '')).toBe('IMG_0042.jpg')
+    // Only format characters go: a bidi override cannot hide a dotfile
+    expect(uploadFilename('\u202E.htaccess', '')).toBeUndefined()
+  })
+
+  it('normalises to NFC so one name has one spelling', () => {
+    expect(uploadFilename('Cafe\u0301.jpg', '')).toBe('Caf\u00E9.jpg')
+  })
+
   it('rejects a name with no extension', () => {
     expect(uploadFilename('photo', '')).toBeUndefined()
   })

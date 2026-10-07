@@ -3,6 +3,7 @@ import cookieSession from 'cookie-session'
 import dayjs from 'dayjs'
 import { NextFunction, Request, Response } from 'express-serve-static-core'
 import { decrypt, encrypt } from './encrypt'
+import { isKey } from './immich/client'
 import { log } from './utils/log'
 import { toString } from './utils/text'
 
@@ -78,9 +79,12 @@ export function storeUnlock (req: Request, key: string, password: string) {
 
 /**
  * Receive an unlock request from the password page (`POST <basePath>/share/unlock`).
+ * Only a share-shaped key and a string password are stored; anything else is
+ * ignored, so a stray object never reaches the cookie or the Immich login.
  */
 export function unlockHandler (req: Request, res: Response) {
-  if (req.body.key) storeUnlock(req, req.body.key, req.body.password)
+  const { key, password } = req.body ?? {}
+  if (typeof key === 'string' && isKey(key) && typeof password === 'string') storeUnlock(req, key, password)
   res.send()
 }
 

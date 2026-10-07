@@ -7,7 +7,7 @@
 // to the request body.
 
 import { createLimiter } from '../shared/limiter.js'
-import { fileType, formatSize, isUploadableType } from '../shared/upload.js'
+import { fileType, formatSize, isUploadableName, isUploadableType } from '../shared/upload.js'
 import type { UploadErrorResponse, UploadPageConfig, UploadResponse } from '../shared/upload.js'
 import {
   ICON_ALERT_CIRCLE,
@@ -305,7 +305,7 @@ function queueFiles (files: File[]) {
     const type = fileType(file.name, file.type)
     const row = addRow(file, type)
     stats.total++
-    if (!isUploadableType(type)) {
+    if (!isUploadableType(type) || !isUploadableName(file.name)) {
       finish(row, 'error', 'Only photos and videos can be sent')
     } else if (file.size > config.maxFileSize) {
       finish(row, 'error', 'Larger than the ' + formatSize(config.maxFileSize) + ' limit')

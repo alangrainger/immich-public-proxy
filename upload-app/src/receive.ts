@@ -9,7 +9,7 @@ import { authoriseUpload } from './gate'
 import { createIdleTimeoutStream, IdleTimeoutError } from './idleTimeoutStream'
 import { createWindowBudget } from './limits'
 import { buildNotification, sendNotification } from './notify'
-import { formatSize, isUploadableType } from './shared/upload'
+import { formatSize, isUploadableName, isUploadableType } from './shared/upload'
 
 /*
   The visitor-facing half of the upload path: validate one request, then
@@ -21,8 +21,14 @@ import { formatSize, isUploadableType } from './shared/upload'
   written to disk.
 */
 
-// A body that sends nothing for this long is dropped
+/*
+  A body that delivers less than this in any one-minute interval is dropped.
+  The floor is far below any phone uplink (8 KB/s is 64 kbit/s), yet it means
+  a connection that trickles bytes to keep its byte-budget reservation alive
+  has to keep spending real bandwidth to do so.
+*/
 const BODY_IDLE_MS = 60_000
+const BODY_MIN_BYTES_PER_INTERVAL = 8 * 1024 * BODY_IDLE_MS / 1000
 
 /**
  * Answer an upload the server will not take, in the shape the page reads.
@@ -71,16 +77,13 @@ export function createUploadReceiver () {
     }
     const shareId = link.id || key
 
-    const rated = rate(req.ip + ':' + shareId)
-    if (!rated.ok) {
-      res.set('Retry-After', String(rated.retryAfterSeconds))
-      refuse(res, 429, 'Too many uploads. Wait a moment and try again.')
-      return
-    }
-
     const length = declaredLength(req.headers['content-length'])
     if (length === undefined) {
       refuse(res, 411, 'The upload has no Content-Length')
+      return
+    }
+    if (length === 0) {
+      refuse(res, 400, 'The file is empty')
       return
     }
     if (length > maxBytes) {
@@ -95,8 +98,17 @@ export function createUploadReceiver () {
     }
 
     const mimeType = (req.headers['content-type'] || '').split(';')[0].trim().toLowerCase()
-    if (!isUploadableType(mimeType)) {
+    if (!isUploadableType(mimeType) || !isUploadableName(filename)) {
       refuse(res, 415, 'Only photos and videos can be sent')
+      return
+    }
+
+    // Charged only once the request is one the service would take, so a
+    // stream of malformed requests cannot use up everyone's allowance
+    const rated = rate(req.ip + ':' + shareId)
+    if (!rated.ok) {
+      res.set('Retry-After', String(rated.retryAfterSeconds))
+      refuse(res, 429, 'Too many uploads. Wait a moment and try again.')
       return
     }
 
@@ -108,8 +120,8 @@ export function createUploadReceiver () {
       return
     }
 
-    const body = pipeline(req, createIdleTimeoutStream(BODY_IDLE_MS), err => {
-      if (err instanceof IdleTimeoutError) log('Dropped upload ' + filename + ': nothing received for ' + BODY_IDLE_MS / 1000 + ' s')
+    const body = pipeline(req, createIdleTimeoutStream(BODY_IDLE_MS, BODY_MIN_BYTES_PER_INTERVAL), err => {
+      if (err instanceof IdleTimeoutError) log('Dropped upload ' + filename + ': too little received in ' + BODY_IDLE_MS / 1000 + ' s')
     })
     const result = await forwardUpload(permit, {
       filename,

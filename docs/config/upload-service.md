@@ -58,7 +58,8 @@ A reverse proxy or CDN in front of the service can have a lower limit of its own
 
 Files accepted per minute from one visitor address to one share. Over the limit, the service answers with the time to
 wait, and the page sends the file again after it, up to three tries. A wait of more than a minute is shown as a
-failure with a retry button instead. `0` turns the limit off.
+failure with a retry button instead. `0` turns the limit off. A request the service refuses, for example for its
+size or type, does not count.
 
 The address is the one that connects to the service. Behind a reverse proxy every visitor has the proxy's address, so
 the limit covers each share as a whole.
@@ -70,6 +71,9 @@ the limit covers each share as a whole.
 MB accepted per share per hour, from all visitors together. Each file's declared size is reserved when its upload
 starts and released if the upload fails. A file that would exceed the budget is refused until the hour ends. `0`
 turns the budget off.
+
+An upload that delivers less than 8 KB/s over a minute is dropped and its reservation released, so a stalled
+connection cannot hold the budget. The page retries a dropped upload.
 
 ### `filenamePrefix`
 
@@ -158,10 +162,10 @@ one of these codes and a short reason, which the page shows to the visitor:
 
 | Code | Reason                                                                                                           |
 |------|------------------------------------------------------------------------------------------------------------------|
-| 400  | The filename has no extension, or Immich refused the file, for example because the owner's storage quota is full. |
+| 400  | The file is empty, the filename has no extension, or Immich refused the file, for example because the owner's storage quota is full. |
 | 403  | The share no longer accepts uploads.                                                                             |
 | 411  | The request has no `Content-Length` header.                                                                      |
 | 413  | The file is larger than `maxFileSize`, sent more bytes than its `Content-Length` declared, or the share has used its `byteBudget` for the hour. |
-| 415  | The file is not a photo or a video. SVG files are refused.                                                       |
+| 415  | The file is not a photo or a video. SVG files are refused, by media type and by extension.                       |
 | 429  | The visitor is over `rateLimit`. `Retry-After` gives the wait in seconds.                                        |
 | 502  | Immich could not be reached, or failed.                                                                          |

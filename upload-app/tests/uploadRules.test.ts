@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fileType, formatSize, isUploadableType } from '../src/shared/upload'
+import { fileType, formatSize, isUploadableName, isUploadableType } from '../src/shared/upload'
 import { declaredLength, uploadTimestamp } from '../src/receive'
 
 describe('isUploadableType', () => {
@@ -19,6 +19,20 @@ describe('isUploadableType', () => {
     expect(isUploadableType('application/octet-stream')).toBe(false)
     expect(isUploadableType('text/html')).toBe(false)
     expect(isUploadableType('')).toBe(false)
+  })
+})
+
+describe('isUploadableName', () => {
+  it('refuses an SVG extension whatever type the request declares', () => {
+    expect(isUploadableName('evil.svg')).toBe(false)
+    expect(isUploadableName('ipp_upload_evil.SVG')).toBe(false)
+    expect(isUploadableName('evil.svgz')).toBe(false)
+  })
+
+  it('accepts photo and video extensions, and leaves the finer check to Immich', () => {
+    expect(isUploadableName('IMG_0042.jpg')).toBe(true)
+    expect(isUploadableName('clip.mp4')).toBe(true)
+    expect(isUploadableName('my.svg.jpg')).toBe(true)
   })
 })
 

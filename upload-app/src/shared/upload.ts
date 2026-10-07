@@ -18,6 +18,19 @@ export function isUploadableType (mimeType: string): boolean {
   return type.startsWith('image/') || type.startsWith('video/')
 }
 
+// Extensions Immich stores as SVG, whatever media type the request declares
+const REFUSED_EXTENSIONS = new Set(['svg', 'svgz'])
+
+/**
+ * Whether a file with this name may be sent. The media type is the sender's
+ * claim and Immich types the stored asset by its extension, so the SVG rule
+ * has to hold on the name as well or `evil.svg` sent as `image/jpeg` gets in.
+ */
+export function isUploadableName (filename: string): boolean {
+  const extension = filename.split('.').pop()?.toLowerCase() || ''
+  return !REFUSED_EXTENSIONS.has(extension)
+}
+
 /*
   Types for files a desktop browser reports with an empty or generic `File.type`: HEIC,
   HEIF, camera RAW and some video containers. Immich types the asset by its

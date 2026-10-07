@@ -1,29 +1,40 @@
 import { Transform } from 'stream'
 
-/** The error an idle stream is destroyed with. */
+/** The error a stalled stream is destroyed with. */
 export class IdleTimeoutError extends Error {}
 
 /**
- * A pass-through Transform that destroys itself if no data flows through for
- * `idleMs`. The timer is set when the transform is created and reset on every
- * chunk, so a slow-but-steady download (large video over a slow link) keeps
- * going, while a genuinely stalled connection still fails fast.
+ * A pass-through Transform that destroys itself when fewer than `minBytes`
+ * flow through it in any `idleMs` interval. The check is armed when the
+ * transform is created, so a body that never starts also times out.
+ *
+ * With `minBytes` left at 1 this is a plain idle timeout: a slow-but-steady
+ * stream keeps going, a stalled one fails. A higher `minBytes` is a floor on
+ * throughput, which stops a trickle of one byte a minute holding the
+ * resources an upload reserved for as long as the sender likes.
  */
-export function createIdleTimeoutStream (idleMs: number): Transform {
-  let timer: NodeJS.Timeout | undefined
+export function createIdleTimeoutStream (idleMs: number, minBytes = 1): Transform {
+  let received = 0
+  const check = () => {
+    if (received < minBytes) {
+      transform.destroy(new IdleTimeoutError(`Fewer than ${minBytes} bytes received in ${idleMs}ms`))
+    }
+    received = 0
+  }
+  const timer = setInterval(check, idleMs)
   const transform: Transform = new Transform({
     transform (chunk, _, cb) {
-      if (timer) clearTimeout(timer)
-      timer = setTimeout(() => transform.destroy(new IdleTimeoutError(`No data received for ${idleMs}ms`)), idleMs)
+      received += chunk.length
       cb(null, chunk)
     },
     flush (cb) {
-      if (timer) clearTimeout(timer)
+      clearInterval(timer)
       cb()
+    },
+    destroy (err, cb) {
+      clearInterval(timer)
+      cb(err)
     }
   })
-  // Arm the timer immediately so a response that returns headers but never
-  // sends a body also times out.
-  timer = setTimeout(() => transform.destroy(new IdleTimeoutError(`No data received for ${idleMs}ms`)), idleMs)
   return transform
 }
