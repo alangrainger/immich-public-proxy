@@ -1,4 +1,8 @@
-FROM node:lts-alpine AS builder
+# The builder runs on the build host's own architecture whatever the target.
+# Every production dependency is pure JavaScript and the native tooling
+# (esbuild, rolldown, lightningcss) is dev-only, so the install and compile
+# never need emulation; only the small runner stage below is built per target.
+FROM --platform=$BUILDPLATFORM node:lts-alpine AS builder
 
 # /ipp must be node-owned for npm ci; WORKDIR leaves it root-owned on some builders
 RUN mkdir /ipp && chown node:node /ipp
