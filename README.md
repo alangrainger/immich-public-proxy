@@ -74,3 +74,9 @@ however my goal with this project is to keep it as lean as possible.
 IPP has **read-only** access to Immich and stores nothing: anything that needs an API key, modifies Immich, or would
 require storing a share key won't be considered. Visitor uploads are the one write path, and they live in their own
 optional container. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full list.
+
+## Thanks
+
+The gallery lightbox, with its zoom, swipe and keyboard navigation, is **[PhotoSwipe](https://photoswipe.com/)** by
+[Dmytro Semenov](https://github.com/dimsemenov). It is a superb piece of work, MIT licensed, and IPP would be a much
+poorer viewer without it. If you find it useful, consider [sponsoring the project](https://github.com/sponsors/dimsemenov).
