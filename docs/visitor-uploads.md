@@ -104,8 +104,9 @@ Start it with `docker-compose up -d`. The full list of settings is on [Upload se
 ## Route it through your reverse proxy
 
 The upload service serves its pages both under `/upload` and at the root, so it fits either of these shapes with no
-URL setting. The examples reach the container as `ipp-upload:3000`, which works when the proxy shares a Docker
-network with it. From the host, use the published port instead: `localhost:3001` with the compose file above.
+URL setting. In the examples, `ipp-address:port` is whatever address your reverse proxy already uses to reach IPP,
+and `ipp-upload-address:port` is the same for the upload service: the same host, on the port you published for it,
+`3001` with the compose file above.
 
 ### Path on the IPP hostname
 
@@ -119,17 +120,17 @@ Use `handle`, which keeps the path; `handle_path` would strip it.
 ```
 photos.example.com {
     handle /upload/* {
-        reverse_proxy ipp-upload:3000
+        reverse_proxy ipp-upload-address:port
     }
     handle {
-        reverse_proxy immich-public-proxy:3000
+        reverse_proxy ipp-address:port
     }
 }
 ```
 
 #### nginx
 
-No trailing slash on the upload `proxy_pass`. With `proxy_pass http://ipp-upload:3000/;`, nginx replaces the
+No trailing slash on the upload `proxy_pass`. With `proxy_pass http://ipp-upload-address:port/;`, nginx replaces the
 `/upload/` prefix with that `/` and the service receives `/share/<key>` instead of `/upload/share/<key>`. It then
 writes every link on its pages without `/upload`, so the browser sends them to IPP instead: the page's script is a
 404 and the password form posts to the wrong service, which asks for the password again.
@@ -142,11 +143,11 @@ server {
     location /upload/ {
         client_max_body_size 500m;
         proxy_request_buffering off;
-        proxy_pass http://ipp-upload:3000;
+        proxy_pass http://ipp-upload-address:port;
     }
 
     location / {
-        proxy_pass http://immich-public-proxy:3000;
+        proxy_pass http://ipp-address:port;
     }
 }
 ```
@@ -159,7 +160,7 @@ Send everything on a separate upload hostname to the upload service.
 
 ```
 upload.example.com {
-    reverse_proxy ipp-upload:3000
+    reverse_proxy ipp-upload-address:port
 }
 ```
 
@@ -174,7 +175,7 @@ server {
     proxy_request_buffering off;
 
     location / {
-        proxy_pass http://ipp-upload:3000;
+        proxy_pass http://ipp-upload-address:port;
     }
 }
 ```

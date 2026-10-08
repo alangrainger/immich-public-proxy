@@ -62,12 +62,12 @@ its links without that prefix, so the page's script and its password form go to 
 service. The password is accepted by IPP, which the gallery had already unlocked, and the upload service never
 sees it.
 
-In nginx the cause is a trailing slash on the upload `proxy_pass`: `proxy_pass http://ipp-upload:3000/;` replaces
+In nginx the cause is a trailing slash on the upload `proxy_pass`: `proxy_pass http://ipp-upload-address:port/;` replaces
 the matched `/upload/` with that `/`. Remove the slash so the path is passed as is:
 
 ```nginx
 location /upload/ {
-    proxy_pass http://ipp-upload:3000;
+    proxy_pass http://ipp-upload-address:port;
 }
 ```
 

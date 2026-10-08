@@ -19,7 +19,7 @@ photos.yourdomain.net {
 	redir / /s/example-share 302
 	# Alternatively you could rewrite, so the gallery appears at the root:
 	#rewrite / /s/example-share
-	reverse_proxy immich-public-proxy:3000
+	reverse_proxy ipp-address:port
 }
 ```
 

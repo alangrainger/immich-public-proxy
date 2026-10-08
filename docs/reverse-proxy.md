@@ -17,14 +17,14 @@ whichever you use.
 - **Allow large uploads** only if you run the [upload service](/visitor-uploads). IPP itself needs no request size
   settings. See [Request size limits](/visitor-uploads#request-size-limits).
 
-The examples reach the container as `immich-public-proxy:3000`, which works when the proxy shares a Docker network
-with it. From the host, use the published port instead: `localhost:3000` with the default compose file.
+In the examples, `ipp-address:port` is the address your reverse proxy reaches the IPP container on: the server's IP
+or hostname and the published port, `3000` with the default compose file.
 
 ## Caddy
 
 ```
 photos.example.com {
-    reverse_proxy immich-public-proxy:3000
+    reverse_proxy ipp-address:port
 }
 ```
 
@@ -38,7 +38,7 @@ server {
     server_name photos.example.com;
 
     location / {
-        proxy_pass http://immich-public-proxy:3000;
+        proxy_pass http://ipp-address:port;
         proxy_set_header Host $host;
     }
 }
@@ -56,7 +56,7 @@ http:
     ipp:
       loadBalancer:
         servers:
-          - url: "http://immich-public-proxy:3000"
+          - url: "http://ipp-address:port"
 
   routers:
     ipp:
