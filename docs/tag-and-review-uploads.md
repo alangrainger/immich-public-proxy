@@ -7,9 +7,10 @@ This guide assumes visitor uploads are already [set up](/visitor-uploads).
 
 ## Tag uploaded photos
 
-Every uploaded file is stored with `ipp_upload_` at the start of its name
-([`upload.filenamePrefix`](/config/upload-service#filenameprefix)). An Immich workflow can match the prefix to tag
-uploads, or to copy them into a second album. In Immich, open **Workflows** and create a workflow with:
+Every uploaded file is stored with `ipp_upload_` at the start of its name. An Immich workflow can match the prefix
+to tag uploads, or to copy them into a second album. The prefix is set by
+[`upload.filenamePrefix`](/config/upload-service#filenameprefix); set it to `""` if you would rather keep the
+visitor's filename unchanged. In Immich, open **Workflows** and create a workflow with:
 
 1. Trigger: **Asset Upload**.
 2. Filter: **Filter by filename**, match type `startsWith`, pattern `ipp_upload_`.

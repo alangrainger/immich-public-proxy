@@ -45,7 +45,8 @@ What the owner sees in Immich:
 - In an album share, the files go into the album. In a share of selected photos, they go into the shared link, so
   they show in the same gallery.
 - Each file name starts with `ipp_upload_`, so visitor uploads are easy to find in search or to
-  [tag with a workflow](/tag-and-review-uploads#tag-uploaded-photos).
+  [tag with a workflow](/tag-and-review-uploads#tag-uploaded-photos). The prefix can be changed or
+  [turned off](/config/upload-service#filenameprefix).
 - The owner removes unwanted files in Immich, like any other photo.
 
 Other visitors see the new photos in the gallery within a few minutes. See
