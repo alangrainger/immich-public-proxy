@@ -46,7 +46,7 @@ The bulk-zip and per-asset buttons can be toggled independently once downloads a
 
 Highest quality served for a download (the download button and "download all" zip).
 
-- `"original"` - the full-resolution original file
+- `"original"` - the original file (could be RAW, etc)
 - `"fullsize"` - full resolution, always browser-displayable
 - `"preview"` - the ~1440px preview only
 
