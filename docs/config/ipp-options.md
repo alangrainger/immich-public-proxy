@@ -47,8 +47,11 @@ The bulk-zip and per-asset buttons can be toggled independently once downloads a
 Highest quality served for a download (the download button and "download all" zip).
 
 - `"original"` - the full-resolution original file
-- `"fullsize"` - full resolution but always browser-displayable: the original for JPEG/PNG/WebP, Immich's converted full-size image for RAW/HEIF, in JPEG or WebP per the server's image settings
-- `"preview"` - only the ~1440px preview, in JPEG or WebP per the server's image settings
+- `"fullsize"` - full resolution, always browser-displayable
+- `"preview"` - the ~1440px preview only
+
+`"fullsize"` serves a JPEG, PNG or WebP original as it is, and Immich's converted full-size image for RAW and HEIF.
+That converted image and the preview are JPEG or WebP, per the server's image settings.
 
 ## `downloadedFilename`
 
@@ -57,9 +60,9 @@ Highest quality served for a download (the download button and "download all" zi
 How downloaded files are named, both in the zip and for a single download. The extension always matches the bytes
 served, so a preview download of a HEIC photo is `.jpg`.
 
-- `0` - the original filename if available, falling back to the Immich asset ID
+- `0` - the original filename, or the asset ID if there is none
 - `1` - the Immich asset ID
-- `2` - an anonymous name made from the share and the item's position in it
+- `2` - an anonymous name from the share and the item's position
 
 ```
 a3f9c2e1_001.jpg
@@ -85,9 +88,10 @@ shift, so a re-download then replaces files with different photos.
 
 Highest quality the lightbox loads when you zoom in past fit-to-screen.
 
-- `"preview"` - keep the preview; zoom is capped to the preview's real pixels
-- `"fullsize"` - load the full-resolution browser-displayable image on zoom, like the Immich web viewer
+- `"preview"` - keep the preview; zoom stops at its real pixels
+- `"fullsize"` - load the full-resolution image on zoom, as Immich does
 
+`"fullsize"` is the browser-displayable full-size image, as for [`maxDownloadQuality`](#maxdownloadquality).
 `"original"` is not an option here, because an original can be a RAW or DNG file the browser cannot display.
 
 This setting is independent of [`allowDownload`](#allowdownload): the download buttons can be off while zoom is on. The full-resolution image is only available when the share's own "Allow downloads" toggle in Immich is on; with it off, the lightbox stays on the preview. For a JPEG, PNG or WebP the zoom loads the original file. For other formats (RAW, HEIF, ...) it loads Immich's converted full-size image, which exists only if full-size previews are enabled in Immich's image settings; otherwise Immich serves the preview. To get full-resolution zoom without showing download buttons, leave downloads on in Immich and set [`allowDownload`](#allowdownload) to `0`.
