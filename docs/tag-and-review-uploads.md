@@ -30,6 +30,9 @@ The filename prefix loses nothing. The file is stored byte for byte as it was se
 embedded keywords intact. The workflow above then turns the prefix into a real tag inside Immich, with your own
 permissions rather than the visitor's.
 
+Ways to tell uploads apart by visitor are under discussion in
+[GitHub discussion #302](https://github.com/alangrainger/immich-public-proxy/discussions/302). Feedback is welcome.
+
 ## Review uploads before they appear
 
 Immich has no approval queue for uploads through a shared link, but a workflow can move each upload into your
