@@ -16,6 +16,20 @@ visitor's filename unchanged. In Immich, open **Workflows** and create a workflo
 2. Filter: **Filter by filename**, match type `startsWith`, pattern `ipp_upload_`.
 3. Action: **Add Tags** with a tag such as `Sent by visitors`, or **Add to Album(s)**.
 
+### Why IPP marks the filename instead of tagging
+
+IPP talks to Immich with the visitor's share key and nothing else. Immich lets a share key do exactly one write:
+store a file into the share. Every tag endpoint needs an API key with tag permissions. The upload service holds no
+API key, and giving one to a service that faces the public would let that service change your library.
+
+Immich can also read tags from an XMP sidecar sent along with a file, and that needs no key. IPP does not use it,
+because Immich takes an asset's tags from one source only: a sidecar's tag list replaces any keywords already in the
+file. A photo exported from Lightroom or digiKam with its own keywords would lose them.
+
+The filename prefix loses nothing. The file is stored byte for byte as it was sent, with its metadata and any
+embedded keywords intact. The workflow above then turns the prefix into a real tag inside Immich, with your own
+permissions rather than the visitor's.
+
 ## Review uploads before they appear
 
 Immich has no approval queue for uploads through a shared link, but a workflow can move each upload into your
