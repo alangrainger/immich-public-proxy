@@ -112,7 +112,9 @@ Clips are only fetched while the toggle is on, so leaving this on costs no extra
 
 **Type:** `bool` · **Default:** `true`
 
-Set to `false` to remove the IPP shield page at `/` and at `/share`.
+Show the IPP shield page at `/` and at `/share`.
+
+With it off, those paths get the same [error response](/config/error-responses) as any other invalid request.
 
 ```json
 {
@@ -126,7 +128,9 @@ Set to `false` to remove the IPP shield page at `/` and at `/share`.
 
 **Type:** `bool` · **Default:** `true`
 
-Serve shared links that have a custom URL in Immich at `/s/<slug>` as well as `/share/<key>`. Set to `false` to return a 404 for slug links, so that only the key form works.
+Serve shared links that have a custom URL in Immich at `/s/<slug>` as well as `/share/<key>`.
+
+With it off, a slug link gets a 404 and only the key form works.
 
 ## `uploadUrl`
 

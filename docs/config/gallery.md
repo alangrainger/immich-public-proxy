@@ -55,7 +55,9 @@ Language for the [`showExpiryDate`](#showexpirydate) date when the format uses n
 
 **Type:** `bool` · **Default:** `true`
 
-Show the "download all" button in the header and the multi-select download toolbar. Only takes effect when downloads are allowed by [`allowDownload`](/config/ipp-options#allowdownload). Set to `false` to hide zip downloads while still offering single downloads in the lightbox ([`lightbox.showDownload`](/config/lightbox#showdownload)).
+Show the "download all" button in the header and the multi-select download toolbar. Only takes effect when downloads are allowed by [`allowDownload`](/config/ipp-options#allowdownload).
+
+With it off, zip downloads are hidden while single downloads in the lightbox stay available ([`lightbox.showDownload`](/config/lightbox#showdownload)).
 
 ## `groupByDate`
 
@@ -74,13 +76,13 @@ Grouping uses the date each photo was taken, as in Immich's own timeline. Groups
 
 **Type:** `bool` · **Default:** `false`
 
-By default a link to a single image will directly open the image file. Set to `true` if you want to show a gallery page instead for a single item.
+Show a gallery page for a share that contains a single image, instead of opening the image file directly.
 
 ## `singleVideo`
 
 **Type:** `bool` · **Default:** `true`
 
-When a share contains a single video, show a gallery page. Set to `false` to link directly to the video file instead.
+Show a gallery page for a share that contains a single video, instead of linking to the video file directly.
 
 ## `singleItemAutoOpen`
 
