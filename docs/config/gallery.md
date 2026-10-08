@@ -65,10 +65,10 @@ With it off, zip downloads are hidden while single downloads in the lightbox sta
 
 Group the gallery's thumbnails by date, with a header above each group.
 
-- `false` - no grouping.
-- `"month"` - month headers like "December 2024".
-- `"day"` - day headers like "Wed, 25 Dec 2024" (matching Immich's own timeline format).
-- `true` - the same as `"month"`.
+- `false` - no grouping
+- `"month"` - month headers like "December 2024"
+- `"day"` - day headers like "Wed, 25 Dec 2024" (matching Immich's own timeline format)
+- `true` - the same as `"month"`
 
 Grouping uses the date each photo was taken, as in Immich's own timeline. Groups follow the album's sort order in Immich, and newest first for shares without one. Photos with no date go under an "Undated" header at the end.
 

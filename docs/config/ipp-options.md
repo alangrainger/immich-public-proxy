@@ -25,9 +25,9 @@ Serve full-resolution images both when zooming in the lightbox and when download
 
 Show the download buttons: the "download all" zip, the multi-select download, and the download button in the lightbox. This only shows or hides the buttons; image quality is set by [`maxDownloadQuality`](#maxdownloadquality) and [`maxZoomQuality`](#maxzoomquality).
 
-- `0` - downloads off.
-- `1` - follow the Immich share's own download setting.
-- `2` - always on.
+- `0` - downloads off
+- `1` - follow the Immich share's own download setting
+- `2` - always on
 
 The bulk-zip and per-asset buttons can be toggled independently once downloads are allowed - see [`gallery.showDownloadZip`](/config/gallery#showdownloadzip) and [`lightbox.showDownload`](/config/lightbox#showdownload).
 
@@ -46,9 +46,9 @@ The bulk-zip and per-asset buttons can be toggled independently once downloads a
 
 Highest quality served for a download (the download button and "download all" zip).
 
-- `"original"` - the full-resolution original file.
-- `"fullsize"` - full resolution but always browser-displayable: the original for JPEG/PNG/WebP, Immich's converted full-size image for RAW/HEIF, in JPEG or WebP per the server's image settings.
-- `"preview"` - only the ~1440px preview, in JPEG or WebP per the server's image settings.
+- `"original"` - the full-resolution original file
+- `"fullsize"` - full resolution but always browser-displayable: the original for JPEG/PNG/WebP, Immich's converted full-size image for RAW/HEIF, in JPEG or WebP per the server's image settings
+- `"preview"` - only the ~1440px preview, in JPEG or WebP per the server's image settings
 
 ## `downloadedFilename`
 
@@ -57,9 +57,9 @@ Highest quality served for a download (the download button and "download all" zi
 How downloaded files are named, both in the zip and for a single download. The extension always matches the bytes
 served, so a preview download of a HEIC photo is `.jpg`.
 
-- `0` - the original filename if available, falling back to the Immich asset ID.
-- `1` - the Immich asset ID.
-- `2` - an anonymous name made from the share and the item's position in it.
+- `0` - the original filename if available, falling back to the Immich asset ID
+- `1` - the Immich asset ID
+- `2` - an anonymous name made from the share and the item's position in it
 
 ```
 a3f9c2e1_001.jpg
@@ -85,8 +85,8 @@ shift, so a re-download then replaces files with different photos.
 
 Highest quality the lightbox loads when you zoom in past fit-to-screen.
 
-- `"preview"` - keep the preview; zoom is capped to the preview's real pixels.
-- `"fullsize"` - load the full-resolution browser-displayable image on zoom, like the Immich web viewer.
+- `"preview"` - keep the preview; zoom is capped to the preview's real pixels
+- `"fullsize"` - load the full-resolution browser-displayable image on zoom, like the Immich web viewer
 
 `"original"` is not an option here, because an original can be a RAW or DNG file the browser cannot display.
 
