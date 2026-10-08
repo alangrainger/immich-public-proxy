@@ -290,6 +290,12 @@ So a new photo can take up to about 7 minutes to show for a visitor who already 
 
 Immich keeps the one copy and adds it to the share. The visitor's list shows the file as a duplicate.
 
+### What if a visitor sends a malicious file
+
+The upload container never opens the file. It only accepts image and video types, and streams the bytes to Immich.
+Immich also rejects anything outside its own list, then processes it like any other upload. To check uploads before
+they reach the gallery, use a [review workflow](/tag-and-review-uploads#review-uploads-before-they-appear).
+
 ### Can visitors see who uploaded what, or remove photos
 
 No. The upload page shows nothing from the share, only the visitor's own uploads in progress, and nothing can be
