@@ -68,6 +68,7 @@ The upload service follows the same rules as IPP in every other way. It needs no
 uploads with the visitor's share key, so Immich itself checks the share's "Allow public user to upload" option on
 every file. It never shows anything from your library, and it streams each file to Immich without storing it.
 
-The setup is in [Let visitors send photos back](/visitor-uploads).
+The setup is in [Let visitors send photos back](/visitor-uploads), which also explains
+[why uploading is a separate container](/visitor-uploads#why-is-uploading-a-separate-container).
 
 Ready to set it up? Head to [Installation](/installation).

@@ -277,6 +277,18 @@ Immich keeps the one copy and adds it to the share. The visitor's list shows the
 No. The upload page shows nothing from the share, only the visitor's own uploads in progress, and nothing can be
 deleted or edited from it. The owner manages uploads in Immich.
 
+### Why is uploading a separate container
+
+Three reasons, in order of importance:
+
+- **IPP stays read-only.** The gallery container has no code that accepts a file or writes to Immich. If you do not
+  run the upload service, nothing in IPP can write to your library, and that holds no matter what a visitor sends.
+- **A problem with uploads cannot take down the gallery.** A visitor who floods the upload service with files or
+  connections can exhaust that container, and the gallery keeps serving from its own.
+- **You can treat the two differently.** Viewing and uploading can run on separate domains or separate servers,
+  with different rate limits, geoblocks or access rules in your reverse proxy. A single container would still let
+  you split by path, but not to the same degree.
+
 ### Why does the rate limit count all visitors together
 
 Behind a reverse proxy every visitor reaches the upload service from the proxy's address, so
