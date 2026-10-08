@@ -15,14 +15,17 @@
    slash (example `https://your-proxy-url.com`). If you remove this value, it will dynamically generate it based on
    the request hostname. This can be useful if you are [serving from multiple domains](/running-on-single-domain).
 
-4. Start the docker container. You can test that it is working by visiting
-   `https://your-proxy-url.com/share/healthcheck`. Check the container console output for any error messages.
+4. Start the docker container. Check the container console output for any error messages.
 
 ```bash
 docker-compose up -d
 ```
 
-5. Set the "External domain" in your Immich **Server Settings** to be whatever domain you use to publicly serve
+5. Point your reverse proxy at the container on port 3000, so IPP is served over HTTPS at your `PUBLIC_BASE_URL`.
+   See [Put IPP behind a reverse proxy](/reverse-proxy) for Caddy, nginx and Traefik examples. You can test that it
+   is working by visiting `https://your-proxy-url.com/share/healthcheck`.
+
+6. Set the "External domain" in your Immich **Server Settings** to be whatever domain you use to publicly serve
    Immich Public Proxy:
 
 <img src="/server-settings.png" width="400" height="182" alt="Immich server settings - external domain">

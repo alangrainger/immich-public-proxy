@@ -90,6 +90,7 @@ export default async () => defineConfigWithTheme<ThemeConfig>({
       {
         text: 'Guides',
         items: [
+          { text: 'Put IPP behind a reverse proxy', link: '/reverse-proxy' },
           { text: 'Let visitors send photos back', link: '/visitor-uploads' },
           { text: 'Tag and review visitor uploads', link: '/tag-and-review-uploads' },
           { text: 'Single domain with Immich', link: '/running-on-single-domain' },
