@@ -1,3 +1,7 @@
+---
+prefix: ipp.lightbox
+---
+
 # Lightbox
 
 The gallery's lightbox is powered by [PhotoSwipe](https://photoswipe.com/). Configured under `ipp.lightbox`.

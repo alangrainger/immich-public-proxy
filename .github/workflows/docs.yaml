@@ -8,6 +8,9 @@ on:
     paths:
       - 'docs/**'
       - '.github/workflows/docs.yaml'
+      # The build checks the config reference pages against these, so a changed default fails here
+      - 'app/config.json'
+      - 'upload-app/config.json'
   schedule:
     # Weekly rebuild, so the navbar's star count stays current
     - cron: '0 3 * * 1'

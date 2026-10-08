@@ -1,4 +1,5 @@
 import { defineConfigWithTheme, type DefaultTheme } from 'vitepress'
+import { configSchemaPlugin } from './configSchema'
 
 const REPO_URL = 'https://github.com/alangrainger/immich-public-proxy'
 
@@ -43,6 +44,10 @@ export default async () => defineConfigWithTheme<ThemeConfig>({
   head: [
     ['link', { rel: 'icon', href: '/ipp.svg' }]
   ],
+  vite: {
+    // Fails the build when the config reference pages and the default config files disagree
+    plugins: [configSchemaPlugin()]
+  },
   themeConfig: {
     logo: '/ipp.svg',
     stars: await fetchStars(),

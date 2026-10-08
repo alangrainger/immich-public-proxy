@@ -148,7 +148,7 @@ At the repo root:
 
 ```bash
 npm run build           # core, then IPP's server and client; output to dist/ and app/public/js/
-npm test                # vitest run in every workspace (unit tests on pure functions)
+npm test                # vitest run in every workspace, then the docs config check
 npm run lint            # ESLint over every workspace
 npm run bump -- 4.0.1   # set the version in every workspace manifest and the lockfile
 ```
@@ -162,13 +162,13 @@ npm run test:watch      # vitest in watch mode
 npm run test:container  # build a podman image and run it locally
 ```
 
-`npm test` runs the pure-function unit tests in `shared/tests/`, `app/tests/` and `upload-app/tests/`. The apps' tests import `@ipp/core` from its source, so they need no build. Add tests as you touch a pure-function area, and for any new pure logic you introduce. Skip HTTP plumbing.
+`npm test` runs the pure-function unit tests in `shared/tests/`, `app/tests/` and `upload-app/tests/`, then `docs/tests/`, which checks the config reference pages against both `config.json` files. The apps' tests import `@ipp/core` from its source, so they need no build. Add tests as you touch a pure-function area, and for any new pure logic you introduce. Skip HTTP plumbing.
 
 Beyond unit tests, exercise the gallery end-to-end against a real Immich instance: happy path plus failure paths (expired share, trashed asset, password protection, very large albums, video range requests).
 
 ## Conventions for adding code
 
-**Configuration.** New options go in `app/config.json` under the appropriate `ipp.*` namespace, read via `getConfigOption`, and documented on the page for their group under `docs/config/` (see `docs/README.md` for the conventions). Prefer a group toggle plus per-field overrides over a single flat boolean when several related toggles cluster, following the `ipp.showMetadata` pattern. Rename a key only in a major version: the old name simply stops being read (no compatibility shim), and the rename gets a row in Renamed config keys (`docs/config/upgrading.md`) plus a line in that release's upgrade notes.
+**Configuration.** New options go in `app/config.json` under the appropriate `ipp.*` namespace, read via `getConfigOption`, and documented on the page for their group under `docs/config/` (see `docs/README.md` for the conventions). `npm test` and the docs build fail until the page matches. Prefer a group toggle plus per-field overrides over a single flat boolean when several related toggles cluster, following the `ipp.showMetadata` pattern. Rename a key only in a major version: the old name simply stops being read (no compatibility shim), and the rename gets a row in Renamed config keys (`docs/config/upgrading.md`) plus a line in that release's upgrade notes.
 
 **Privacy of responses.** Always return 404 for invalid or upstream-failed requests. Use `respondToInvalidRequest` from `@ipp/core` rather than crafting ad-hoc error responses; it calls IPP's `invalidRequestHandler`, which index.ts registers at startup. Do not surface Immich status codes or error bodies to the client.
 
@@ -190,7 +190,7 @@ Where to put a new function: ask what category of thing it is, not where it gets
 
 ## Documentation
 
-User-facing documentation is the VitePress site in `docs/`, published at https://docs.ipp.nz. Read `docs/README.md` before adding or moving a page: it sets out the four sidebar groups (Getting started, Configuration, Guides, Troubleshooting - one per kind of content in the Diátaxis sense), where each kind of new material belongs, and the page conventions. Run `npm run build` inside `docs/` before pushing; the build fails on dead internal links.
+User-facing documentation is the VitePress site in `docs/`, published at https://docs.ipp.nz. Read `docs/README.md` before adding or moving a page: it sets out the four sidebar groups (Getting started, Configuration, Guides, Troubleshooting - one per kind of content in the Diátaxis sense), where each kind of new material belongs, and the page conventions. Run `npm run build` inside `docs/` before pushing; the build fails on dead internal links and on a config reference page that disagrees with `config.json`.
 
 The root `README.md` is a front door only: pitch, demo, quick start and links. New content goes on the site.
 

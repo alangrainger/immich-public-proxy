@@ -1,3 +1,7 @@
+---
+prefix: ipp
+---
+
 # General options
 
 Top-level options under `ipp.*` that don't belong to the [Gallery](/config/gallery), [Lightbox](/config/lightbox) or [Metadata](/config/metadata) groups.
@@ -174,6 +178,6 @@ Description / EXIF / location reveal controls. See [Metadata](/config/metadata).
 
 ## `customInvalidResponse`
 
-**Type:** various
+**Type:** `various` · **Default:** `false`
 
 Send a custom response instead of the default 404. See [Error responses](/config/error-responses).

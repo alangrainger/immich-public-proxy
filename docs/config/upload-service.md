@@ -1,3 +1,7 @@
+---
+prefix: ipp.upload
+---
+
 # Upload service
 
 Settings for the optional upload service, the `immich-public-proxy-upload` container, which lets visitors send photos

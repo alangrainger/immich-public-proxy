@@ -1,3 +1,7 @@
+---
+prefix: ipp.showMetadata
+---
+
 # Metadata
 
 Configured under `ipp.showMetadata`. The lightbox includes a slide-in info sidebar (toggle with the **i** key or the info button in the toolbar) that surfaces whatever metadata you opt into here.
@@ -46,10 +50,10 @@ The info sidebar and its toolbar button only appear when at least one field is t
 
 Under `ipp.showMetadata.description`.
 
-| Option    | Type   | Description                                                 |
-|-----------|--------|-------------------------------------------------------------|
-| `caption` | `bool` | Show the description below the photo as a lightbox caption. |
-| `sidebar` | `bool` | Show the description at the top of the info sidebar.        |
+| Option    | Type   | Default | Description                                                 |
+|-----------|--------|---------|-------------------------------------------------------------|
+| `caption` | `bool` | `false` | Show the description below the photo as a lightbox caption. |
+| `sidebar` | `bool` | `false` | Show the description at the top of the info sidebar.        |
 
 Set both to show in both places; set neither and the description is not included at all.
 
@@ -57,29 +61,29 @@ Set both to show in both places; set neither and the description is not included
 
 Under `ipp.showMetadata.exif`. Every flag defaults to `false`.
 
-| Option             | Type   | Description                                                                                                      |
-|--------------------|--------|------------------------------------------------------------------------------------------------------------------|
-| `dateTimeOriginal` | `bool` | Show the date the photo was taken (per EXIF), in the photographer's local time - matching Immich's own sidebar. |
-| `timeZone`         | `bool` | Show and use the photo's timezone when formatting the date. Only applies when `dateTimeOriginal` is also enabled. |
-| `fileName`         | `bool` | Show the original filename.                                                                                      |
-| `dimensions`       | `bool` | Show width x height and megapixel count.                                                                         |
-| `fileSize`         | `bool` | Show the file size.                                                                                              |
-| `make`             | `bool` | Camera manufacturer (e.g. "Canon").                                                                              |
-| `model`            | `bool` | Camera model (e.g. "EOS R5").                                                                                    |
-| `lensModel`        | `bool` | Lens model.                                                                                                      |
-| `exposureTime`     | `bool` | Shutter speed (e.g. "1/200").                                                                                    |
-| `iso`              | `bool` | ISO sensitivity.                                                                                                 |
-| `fNumber`          | `bool` | Aperture f-number.                                                                                               |
-| `focalLength`      | `bool` | Focal length in millimetres.                                                                                     |
+| Option             | Type   | Default | Description                                                                                                       |
+|--------------------|--------|---------|-------------------------------------------------------------------------------------------------------------------|
+| `dateTimeOriginal` | `bool` | `false` | Show the date the photo was taken (per EXIF), in the photographer's local time - matching Immich's own sidebar.   |
+| `timeZone`         | `bool` | `false` | Show and use the photo's timezone when formatting the date. Only applies when `dateTimeOriginal` is also enabled. |
+| `fileName`         | `bool` | `false` | Show the original filename.                                                                                       |
+| `dimensions`       | `bool` | `false` | Show width x height and megapixel count.                                                                          |
+| `fileSize`         | `bool` | `false` | Show the file size.                                                                                               |
+| `make`             | `bool` | `false` | Camera manufacturer (e.g. "Canon").                                                                               |
+| `model`            | `bool` | `false` | Camera model (e.g. "EOS R5").                                                                                     |
+| `lensModel`        | `bool` | `false` | Lens model.                                                                                                       |
+| `exposureTime`     | `bool` | `false` | Shutter speed (e.g. "1/200").                                                                                     |
+| `iso`              | `bool` | `false` | ISO sensitivity.                                                                                                  |
+| `fNumber`          | `bool` | `false` | Aperture f-number.                                                                                                |
+| `focalLength`      | `bool` | `false` | Focal length in millimetres.                                                                                      |
 
 ## Location group
 
 Under `ipp.showMetadata.location`. Every flag defaults to `false`, except `webLink` which defaults to `true`.
 
-| Option    | Type   | Description                                                                                                                                                                                                                          |
-|-----------|--------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `city`    | `bool` | Show city.                                                                                                                                                                                                                          |
-| `state`   | `bool` | Show state / region.                                                                                                                                                                                                                |
-| `country` | `bool` | Show country.                                                                                                                                                                                                                        |
-| `gps`     | `bool` | Show GPS coordinates.                                                                                                                                                                                                                |
-| `webLink` | `bool` | Show an "Open in OpenStreetMap" link below the coordinates. The link does not pass the share URL on to the map provider. Has no effect unless `gps` is also `true`. Default `true`. |
+| Option    | Type   | Default | Description                                                                                                                                                         |
+|-----------|--------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `city`    | `bool` | `false` | Show city.                                                                                                                                                          |
+| `state`   | `bool` | `false` | Show state / region.                                                                                                                                                |
+| `country` | `bool` | `false` | Show country.                                                                                                                                                       |
+| `gps`     | `bool` | `false` | Show GPS coordinates.                                                                                                                                               |
+| `webLink` | `bool` | `true`  | Show an "Open in OpenStreetMap" link below the coordinates. The link does not pass the share URL on to the map provider. Has no effect unless `gps` is also `true`. |

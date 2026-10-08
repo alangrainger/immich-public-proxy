@@ -10,6 +10,7 @@ Read it before adding or moving a page.
 - [Structure](#structure)
 - [Where new content goes](#where-new-content-goes)
 - [Page conventions](#page-conventions)
+- [Config reference pages](#config-reference-pages)
 - [The README](#the-readme)
 
 ## Working on the site
@@ -18,7 +19,7 @@ Read it before adding or moving a page.
 cd docs
 npm install
 npm run dev      # live preview
-npm run build    # fails on dead internal links; run it before pushing
+npm run build    # fails on dead links and config pages that disagree with config.json; run it before pushing
 ```
 
 The navbar's star count is fetched from the GitHub API when the site builds (`fetchStars` in `.vitepress/config.ts`)
@@ -30,8 +31,9 @@ Static files (images, favicon) live in `public/` and are referenced by absolute 
 `public/CNAME` holds the custom domain; it is copied to the root of the build and must stay there.
 
 Publishing is automatic. Any push to `main` that touches `docs/` runs the `docs.yaml` workflow, which builds the
-site and deploys it to GitHub Pages at [docs.ipp.nz](https://docs.ipp.nz). A dead link fails the build, so the
-workflow fails and the live site stays on the previous version. Run `npm run build` yourself before pushing rather
+site and deploys it to GitHub Pages at [docs.ipp.nz](https://docs.ipp.nz). A dead link, or a config page that
+disagrees with `config.json` ([Config reference pages](#config-reference-pages)), fails the build, so the workflow
+fails and the live site stays on the previous version. Run `npm run build` yourself before pushing rather
 than finding out from a red tick.
 
 ## Structure
@@ -77,8 +79,41 @@ started because it is what people read first, not because it is a tutorial. If e
 - Code fences are tagged `yaml`, `json` or `bash`. Caddyfiles use a plain fence; there is no highlighter for them.
 - Images are `<img src="/name.webp" width="…" height="…" alt="…">` with real dimensions so the page does not shift
   while loading.
-- Types and defaults come from `app/config.json` and the code. Check, don't guess.
+- Types and defaults come from `app/config.json` and `upload-app/config.json`. The build checks them; see
+  [Config reference pages](#config-reference-pages).
 - British English, hyphens rather than dashes, and "IPP" after the first "Immich Public Proxy" on a page.
+
+## Config reference pages
+
+The pages in `config/` are the only description of the config keys, so the build checks them against
+`app/config.json` and `upload-app/config.json`, both ways (`.vitepress/configSchema.ts`). A disagreement fails
+`npm run build`, and `npm run dev` prints it as a warning. `npm test` at the repo root runs the same check without
+building the site (`tests/configSchema.test.ts`). The check fails when:
+
+- a key in either file is not documented, or is documented twice;
+- a documented key is in neither file;
+- a documented type or default differs from the file, or the allowed values leave out the default;
+- a key in both files has a different default in each.
+
+For the same reason the docs workflow also runs on a change to either `config.json`: a key or default changed on
+`main` redeploys the site, and the deploy fails if the page was not updated in the same push.
+
+The check reads only this format:
+
+- **Prefix.** A reference page names its dotted prefix in frontmatter: `prefix: ipp.gallery`. Pages without one are
+  not read, so a key documented on such a page counts as undocumented.
+- **Key section.** A `##` or `###` heading that is one inline-code key, such as `` ## `showTitle` ``, whose first
+  paragraph is the Type line. The key's path is the prefix plus the heading. A heading followed by anything else is
+  prose: `## Example` and the upload page's `` ### `PUBLIC_BASE_URL` `` are skipped.
+- **Type line.** `` **Type:** `bool` · **Default:** `false` ``, on its own. The type is `bool`, `int`, `string`,
+  `object`, `` `bool` or `string` ``, or `various` (any JSON value), and the default is JSON. Leave the default out
+  only on an object key: a group whose keys are documented on their own page (`gallery` on General options), or a
+  free-form object such as `responseHeaders`, whose default is taken from `config.json`.
+- **Description.** The paragraph after the Type line. It is the key's summary, so it should make sense on its own.
+- **Allowed values.** A bullet list directly after the description whose every item starts with an inline-code JSON
+  value: `` - `"original"` - the full-resolution original file ``. Any other list is prose.
+- **Flag tables.** A section whose first paragraph starts ``Under `ipp.showMetadata.exif`.`` and that has a table
+  with `Option`, `Type`, `Default` and `Description` columns documents one key per row, as on the Metadata page.
 
 ## The README
 

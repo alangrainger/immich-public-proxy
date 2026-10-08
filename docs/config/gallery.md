@@ -1,3 +1,7 @@
+---
+prefix: ipp.gallery
+---
+
 # Gallery
 
 Options that control how the gallery page is rendered. Configured under `ipp.gallery`.
