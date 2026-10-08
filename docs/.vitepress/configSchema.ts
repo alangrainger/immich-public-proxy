@@ -1,19 +1,25 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { basename, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { isDeepStrictEqual } from 'node:util'
-import type { Plugin } from 'vite'
-
 /*
-  Reads the config reference pages (docs/config/*.md) into a schema and checks
-  them against the default config files, both ways. The page format this
-  parser accepts is the contract in docs/README.md, "Config reference pages";
-  change the two together.
+  Parses the config reference pages (docs/config/*.md) into a schema and
+  checks it against the default config files, both ways. The page format
+  this parser accepts is the contract in docs/README.md, "Config reference
+  pages"; change the two together.
+
+  No Node APIs here: the config generator runs these checks in the browser
+  too. Reading the files from disk is in configCheck.ts.
 */
 
-/** Whether a config.json value is a plain JSON object (not an array or null). */
-function isObject (value: unknown): value is Record<string, unknown> {
+/** Whether a config value is a plain JSON object (not an array or null). */
+export function isObject (value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** Deep equality of two JSON values; the order of object keys doesn't matter. */
+export function sameValue (a: unknown, b: unknown): boolean {
+  if (a === b) return true
+  if (Array.isArray(a) && Array.isArray(b)) return a.length === b.length && a.every((item, i) => sameValue(item, b[i]))
+  if (!isObject(a) || !isObject(b)) return false
+  const keys = Object.keys(a)
+  return keys.length === Object.keys(b).length && keys.every(key => Object.hasOwn(b, key) && sameValue(a[key], b[key]))
 }
 
 /** The types a `**Type:**` line can name, each with the check its default must pass. */
@@ -27,6 +33,47 @@ const TYPE_CHECKS = {
 }
 
 export type ConfigType = keyof typeof TYPE_CHECKS
+
+/** Whether a value is of a documented type, e.g. `matchesType('int', 2)`. */
+export function matchesType (type: ConfigType, value: unknown): boolean {
+  return TYPE_CHECKS[type](value)
+}
+
+/** Words a label writes in capitals. Add an acronym here when a new key name contains one. */
+const ACRONYMS = new Set(['exif', 'gps', 'iso', 'url'])
+
+/**
+ * Labels for the keys whose name, split into words, doesn't read well or
+ * leaves out a unit. The check fails on a path that no page documents, so a
+ * renamed key can't leave its label behind.
+ */
+export const LABELS: Record<string, string> = {
+  'ipp.gallery.singleImage': 'Gallery page for a single image',
+  'ipp.gallery.singleVideo': 'Gallery page for a single video',
+  'ipp.gallery.singleItemAutoOpen': 'Open single items in the lightbox',
+  'ipp.gallery.cacheTime': 'Cache time (seconds)',
+  'ipp.lightbox.autoPlayVideos': 'Autoplay videos',
+  'ipp.showMetadata.exif.dateTimeOriginal': 'Date taken',
+  'ipp.showMetadata.exif.fNumber': 'Aperture',
+  'ipp.showMetadata.location.webLink': 'Map link',
+  'ipp.upload.maxFileSize': 'Max file size (MB)',
+  'ipp.upload.rateLimit': 'Rate limit (files per minute)',
+  'ipp.upload.byteBudget': 'Byte budget (MB per hour)',
+  'ipp.upload.notifyTimeout': 'Notify timeout (ms)'
+}
+
+/**
+ * A key's label for the config generator: its entry in `LABELS`, or else the
+ * last part of its path as words, so `showArrows` is "Show arrows" and
+ * `notifyUrl` is "Notify URL".
+ */
+export function keyLabel (path: string): string {
+  if (Object.hasOwn(LABELS, path)) return LABELS[path]
+  const name = path.slice(path.lastIndexOf('.') + 1)
+  const words = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase().split(' ')
+  const text = words.map(word => ACRONYMS.has(word) ? word.toUpperCase() : word).join(' ')
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
 
 /** One allowed value of a key, from its enum list. */
 export interface ConfigValue {
@@ -50,6 +97,8 @@ export interface ConfigKey {
   page: string
   /** The anchor of the key's section on that page. */
   anchor: string
+  /** For a row of a flag table, the heading of the table's section. */
+  group?: string
 }
 
 /** A default config file, named by its repo path for messages. */
@@ -208,7 +257,7 @@ export function parsePage (markdown: string, page: string): { keys: ConfigKey[],
         const parsed = parseLiteral(row[columns.default].replace(/`/g, ''))
         if (!isConfigType(type)) problems.push(`${where}: \`${path}\` has an unknown type: ${row[columns.type]}`)
         else if (!parsed.ok) problems.push(`${where}: the default of \`${path}\` is not JSON: ${row[columns.default]}`)
-        else keys.push({ path, type, default: parsed.value, description: row[columns.description], page, anchor })
+        else keys.push({ path, type, default: parsed.value, description: row[columns.description], page, anchor, group: heading.text })
       }
     }
   }
@@ -231,9 +280,10 @@ function flatten (config: Record<string, unknown>, prefix = ''): Map<string, unk
 
 /**
  * Compare the documented keys with the default config files, both ways.
- * Returns the keys a config can set (group keys dropped, and a free-form
- * object without a default on its page given the one from its file) and one
- * line per problem; no problems means the pages and files agree.
+ * Returns the keys a config can set, in config.json order (group keys
+ * dropped, and a free-form object without a default on its page given the one
+ * from its file), and one line per problem; no problems means the pages and
+ * files agree.
  */
 export function checkKeys (keys: ConfigKey[], files: DefaultsFile[]): { keys: ConfigKey[], problems: string[] } {
   const problems: string[] = []
@@ -246,7 +296,7 @@ export function checkKeys (keys: ConfigKey[], files: DefaultsFile[]): { keys: Co
     for (const [path, value] of flatten(file.config)) {
       const seen = nodes.get(path)
       if (!seen) nodes.set(path, { value, file: file.name })
-      else if (!isObject(seen.value) && !isDeepStrictEqual(seen.value, value)) {
+      else if (!isObject(seen.value) && !sameValue(seen.value, value)) {
         problems.push(`\`${path}\` is ${json(seen.value)} in ${seen.file} but ${json(value)} in ${file.name}`)
       }
     }
@@ -269,21 +319,21 @@ export function checkKeys (keys: ConfigKey[], files: DefaultsFile[]): { keys: Co
       problems.push(`\`${key.path}\` is documented in ${where(key)} but is in neither ${files.map(file => file.name).join(' nor ')}`)
       continue
     }
-    if (!TYPE_CHECKS[key.type](node.value)) {
+    if (!matchesType(key.type, node.value)) {
       problems.push(`\`${key.path}\` is documented as \`${key.type}\` in ${where(key)} but is ${json(node.value)} in ${node.file}`)
       continue
     }
     if (isGroup(key)) continue
     if (key.default === undefined) {
       if (!isFreeForm(key)) problems.push(`\`${key.path}\` has no default in ${where(key)}`)
-    } else if (!isDeepStrictEqual(key.default, node.value)) {
+    } else if (!sameValue(key.default, node.value)) {
       problems.push(`\`${key.path}\` defaults to ${json(key.default)} in ${where(key)} but to ${json(node.value)} in ${node.file}`)
     }
-    if (key.values && !key.values.some(allowed => isDeepStrictEqual(allowed.value, node.value))) {
+    if (key.values && !key.values.some(allowed => sameValue(allowed.value, node.value))) {
       problems.push(`the allowed values of \`${key.path}\` in ${where(key)} do not include its default, ${json(node.value)}`)
     }
     for (const allowed of key.values ?? []) {
-      if (!TYPE_CHECKS[key.type](allowed.value)) {
+      if (!matchesType(key.type, allowed.value)) {
         problems.push(`the allowed value ${json(allowed.value)} of \`${key.path}\` in ${where(key)} is not a \`${key.type}\``)
       }
     }
@@ -304,51 +354,38 @@ export function checkKeys (keys: ConfigKey[], files: DefaultsFile[]): { keys: Co
     const isLeaf = !isObject(node.value) || Object.keys(node.value).length === 0
     if (isLeaf && !covered(path)) problems.push(`\`${path}\` in ${node.file} is not documented on any page in docs/config`)
   }
+  const order = [...nodes.keys()]
+  fields.sort((a, b) => order.indexOf(a.path) - order.indexOf(b.path))
   return { keys: fields, problems }
 }
 
-const DOCS_CONFIG_DIR = fileURLToPath(new URL('../config/', import.meta.url))
-const REPO_ROOT = fileURLToPath(new URL('../../', import.meta.url))
-/** The default config files, as repo paths. Both containers can share one config, so they are checked as one. */
-const DEFAULTS_FILES = ['app/config.json', 'upload-app/config.json']
-
-/**
- * Read every page in docs/config and both default config files, and check
- * them against each other. Returns `checkKeys`' keys and problems, with the
- * pages' own format problems first.
- */
-export function readConfigSchema (): { keys: ConfigKey[], problems: string[] } {
-  const keys: ConfigKey[] = []
-  const problems: string[] = []
-  for (const file of readdirSync(DOCS_CONFIG_DIR).filter(name => name.endsWith('.md')).sort()) {
-    const page = parsePage(readFileSync(join(DOCS_CONFIG_DIR, file), 'utf8'), '/config/' + basename(file, '.md'))
-    keys.push(...page.keys)
-    problems.push(...page.problems)
-  }
-  const files = DEFAULTS_FILES.map(name => ({ name, config: JSON.parse(readFileSync(join(REPO_ROOT, name), 'utf8')) }))
-  const checked = checkKeys(keys, files)
-  return { keys: checked.keys, problems: [...problems, ...checked.problems] }
+/** One row of the tables on Renamed config keys. */
+export interface RenamedKey {
+  /** The old dotted path. */
+  from: string
+  /** The current dotted path. */
+  to: string
+  /** The Current key cell as markdown, which can say how the values changed. */
+  note: string
 }
 
 /**
- * Fails `vitepress build` when the config reference pages and the default
- * config files disagree, so a mismatch never deploys. `vitepress dev` only
- * warns, so a half-edited page doesn't stop the server.
+ * Read the renamed keys from config/upgrading.md: every table with `Old key`
+ * and `Current key` columns, taking the first inline-code path in each cell.
  */
-export function configSchemaPlugin (): Plugin {
-  let isBuild = false
-  return {
-    name: 'ipp-config-schema',
-    configResolved (config) {
-      isBuild = config.command === 'build'
-    },
-    buildStart () {
-      const { problems } = readConfigSchema()
-      if (problems.length === 0) return
-      const message = 'The config reference pages (docs/config) and the default config files disagree. ' +
-        'See "Config reference pages" in docs/README.md.\n' + problems.map(problem => '  - ' + problem).join('\n')
-      if (isBuild) this.error(message)
-      else this.warn(message)
+export function parseRenamedKeys (markdown: string): RenamedKey[] {
+  const renamed: RenamedKey[] = []
+  for (const block of toBlocks(markdown)) {
+    if (block.kind !== 'table') continue
+    const [header, ...rows] = block.rows
+    const from = header.indexOf('Old key')
+    const to = header.indexOf('Current key')
+    if (from === -1 || to === -1) continue
+    for (const row of rows) {
+      const oldPath = /`([^`]+)`/.exec(row[from])?.[1]
+      const newPath = /`([^`]+)`/.exec(row[to])?.[1]
+      if (oldPath && newPath) renamed.push({ from: oldPath, to: newPath, note: row[to] })
     }
   }
+  return renamed
 }

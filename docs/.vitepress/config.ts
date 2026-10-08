@@ -1,5 +1,5 @@
 import { defineConfigWithTheme, type DefaultTheme } from 'vitepress'
-import { configSchemaPlugin } from './configSchema'
+import { configCheckPlugin } from './configCheck'
 
 const REPO_URL = 'https://github.com/alangrainger/immich-public-proxy'
 
@@ -46,7 +46,7 @@ export default async () => defineConfigWithTheme<ThemeConfig>({
   ],
   vite: {
     // Fails the build when the config reference pages and the default config files disagree
-    plugins: [configSchemaPlugin()]
+    plugins: [configCheckPlugin()]
   },
   themeConfig: {
     logo: '/ipp.svg',
@@ -82,6 +82,7 @@ export default async () => defineConfigWithTheme<ThemeConfig>({
         text: 'Configuration',
         items: [
           { text: 'Overview', link: '/config/' },
+          { text: 'Config generator', link: '/config/generator' },
           { text: 'Environment variables', link: '/config/environment-variables' },
           { text: 'General options', link: '/config/ipp-options' },
           { text: 'Gallery', link: '/config/gallery' },

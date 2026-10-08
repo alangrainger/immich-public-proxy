@@ -1,17 +1,13 @@
 {
   "ipp": {
-    "responseHeaders": {
-      "Cache-Control": "public, max-age=2592000",
-      "Access-Control-Allow-Origin":  "*"
-    },
+    "allowDownload": 0,
     "maxDownloadQuality": "original",
+    "downloadedFilename": 2,
     "maxZoomQuality": "preview",
     "motionPhotos": true,
-    "downloadedFilename": 2,
-    "allowDownload": 0,
-    "uploadUrl": "/upload",
-    "allowSlugLinks": true,
     "showHomePage": true,
+    "allowSlugLinks": true,
+    "uploadUrl": "/upload",
     "showMetadata": {
       "description": {
         "caption": false,
@@ -39,26 +35,30 @@
         "webLink": true
       }
     },
-    "customInvalidResponse": false,
     "gallery": {
-      "singleImage": false,
-      "singleVideo": true,
-      "singleItemAutoOpen": true,
       "showTitle": true,
       "showDescription": false,
       "showExpiryDate": false,
       "expiryDateFormat": "YYYY-MM-DD",
       "expiryDateLocale": "",
-      "groupByDate": false,
       "showDownloadZip": true,
+      "groupByDate": false,
+      "singleImage": false,
+      "singleVideo": true,
+      "singleItemAutoOpen": true,
       "cacheTime": 300
     },
     "lightbox": {
       "showArrows": true,
-      "showDownload": true,
       "mobileArrows": false,
+      "showDownload": true,
       "autoPlayVideos": false,
       "options": {}
+    },
+    "customInvalidResponse": false,
+    "responseHeaders": {
+      "Cache-Control": "public, max-age=2592000",
+      "Access-Control-Allow-Origin": "*"
     }
   }
 }

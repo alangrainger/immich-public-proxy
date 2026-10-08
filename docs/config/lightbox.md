@@ -26,17 +26,17 @@ Hide the download button inside the lightbox even though zip downloads are other
 
 Show the prev/next arrows on desktop. They appear when the user hovers the lightbox.
 
-## `showDownload`
-
-**Type:** `bool` · **Default:** `true`
-
-Show a download button in the lightbox toolbar. Only takes effect when downloads are also allowed by [`allowDownload`](/config/ipp-options#allowdownload).
-
 ## `mobileArrows`
 
 **Type:** `bool` · **Default:** `false`
 
 Show prev/next arrows on mobile (screens under 640px wide). Off by default, as visitors swipe instead.
+
+## `showDownload`
+
+**Type:** `bool` · **Default:** `true`
+
+Show a download button in the lightbox toolbar. Only takes effect when downloads are also allowed by [`allowDownload`](/config/ipp-options#allowdownload).
 
 ## `autoPlayVideos`
 

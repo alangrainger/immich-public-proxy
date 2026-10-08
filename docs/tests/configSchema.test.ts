@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { checkKeys, parsePage, readConfigSchema, type ConfigKey, type ConfigType } from '../.vitepress/configSchema'
+import { readConfigSchema } from '../.vitepress/configCheck'
+import { checkKeys, keyLabel, parsePage, parseRenamedKeys, sameValue, type ConfigKey, type ConfigType } from '../.vitepress/configSchema'
 
 /*
   The first test is the one that matters: the same check `vitepress build`
@@ -120,9 +121,9 @@ describe('parsePage', () => {
       '| `iso`  | `bool` | `true`  | ISO sensitivity. |'
     ].join('\n')), '/config/metadata')
     expect(problems).toEqual([])
-    expect(keys.map(key => [key.path, key.default, key.anchor])).toEqual([
-      ['ipp.showMetadata.exif.make', false, 'exif-group'],
-      ['ipp.showMetadata.exif.iso', true, 'exif-group']
+    expect(keys.map(key => [key.path, key.default, key.anchor, key.group])).toEqual([
+      ['ipp.showMetadata.exif.make', false, 'exif-group', 'EXIF group'],
+      ['ipp.showMetadata.exif.iso', true, 'exif-group', 'EXIF group']
     ])
   })
 })
@@ -197,8 +198,54 @@ describe('checkKeys', () => {
     expect(keys.map(field => field.path)).toEqual(['ipp.gallery.showTitle'])
   })
 
+  it('returns the keys in config.json order, not page order', () => {
+    const { keys } = checkKeys(
+      [key('ipp.b', 'bool', { default: true }), key('ipp.a', 'bool', { default: true })],
+      [{ name: APP, config: { ipp: { a: true, b: true } } }]
+    )
+    expect(keys.map(field => field.path)).toEqual(['ipp.a', 'ipp.b'])
+  })
+
   it('reports a missing default on anything but an object key', () => {
     const { problems } = checkKeys([key('ipp.showTitle', 'bool')], [{ name: APP, config: { ipp: { showTitle: true } } }])
     expect(problems).toEqual(['`ipp.showTitle` has no default in docs/config/test.md'])
+  })
+})
+
+describe('parseRenamedKeys', () => {
+  it('reads the first key in each cell of the Old key and Current key tables', () => {
+    const renamed = parseRenamedKeys([
+      '# Renamed config keys',
+      '',
+      '| Old key                 | Current key                            |',
+      '|-------------------------|----------------------------------------|',
+      '| `ipp.allowDownloadAll`  | `ipp.allowDownload`, same `0` / `1`    |',
+      '',
+      '| Group | Description |',
+      '|-------|-------------|',
+      '| `exif` | Not a rename. |'
+    ].join('\n'))
+    expect(renamed).toEqual([{ from: 'ipp.allowDownloadAll', to: 'ipp.allowDownload', note: '`ipp.allowDownload`, same `0` / `1`' }])
+  })
+})
+
+describe('sameValue', () => {
+  it('compares JSON values deeply, whatever the order of object keys', () => {
+    expect(sameValue({ a: 1, b: [1, { c: null }] }, { b: [1, { c: null }], a: 1 })).toBe(true)
+    expect(sameValue({ a: 1 }, { a: 1, b: undefined })).toBe(false)
+    expect(sameValue([1, 2], [2, 1])).toBe(false)
+    expect(sameValue(0, false)).toBe(false)
+  })
+})
+
+describe('keyLabel', () => {
+  it('writes the last part of the path as words, with acronyms in capitals', () => {
+    expect(keyLabel('ipp.lightbox.showArrows')).toBe('Show arrows')
+    expect(keyLabel('ipp.upload.notifyUrl')).toBe('Notify URL')
+    expect(keyLabel('ipp.showMetadata.exif')).toBe('EXIF')
+  })
+
+  it('uses the label from LABELS where there is one', () => {
+    expect(keyLabel('ipp.showMetadata.exif.dateTimeOriginal')).toBe('Date taken')
   })
 })

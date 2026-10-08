@@ -45,7 +45,7 @@ rather than the Diátaxis term.
 | Group           | Kind      | Reader's question                          | Rules |
 |-----------------|-----------|--------------------------------------------|-------|
 | Getting started | Tutorial  | What is this, and how do I get it running? | Ordered as a path: Introduction, Installation, Sharing from Immich, Upgrading. Numbered steps, one happy path, defaults only. Link to reference pages rather than explaining options inline. |
-| Configuration   | Reference | What does this key do?                     | One page per `ipp.*` group, mirroring `app/config.json`. Every key has a `**Type:** … · **Default:** …` line and a short description; each page opens with a worked example. Complete and neutral: no advice, no tutorials. |
+| Configuration   | Reference | What does this key do?                     | One page per `ipp.*` group, mirroring `app/config.json`. Every key has a `**Type:** … · **Default:** …` line and a short description; each page opens with a worked example. Complete and neutral: no advice, no tutorials. The Config generator, after the overview, is a tool built from these pages, not a page to add content to. |
 | Guides          | How-to    | How do I achieve this goal?                | One goal per page and the title names the goal. Assume IPP is installed. Label every config block with the proxy or platform it is for; Caddy first, then others. |
 | Troubleshooting | How-to    | Why is this happening?                     | One page, one `##` per problem. The heading is the symptom as the user sees it (a log line, or what they observe), then the cause, then the fix, then links to the GitHub issues. |
 
@@ -72,7 +72,8 @@ started because it is what people read first, not because it is a tutorial. If e
   sidebar label and H1 instead. That is why "General options" is served from `/config/ipp-options` and "Sharing from
   Immich" from `/how-to-use`.
 - Internal links are absolute site paths with optional anchors (`/config/gallery#showtitle`), never relative file
-  links. Anchors are the heading text lowercased with backticks stripped and spaces as hyphens; keep headings that
+  links. Anchors are the heading text lowercased with backticks stripped and spaces and underscores as hyphens
+  (`IPP_CONFIG` is `#ipp-config`); keep headings that
   are link targets free of other punctuation.
 - Config keys are written as `` `gallery.showTitle` `` and linked to their section the first time they appear on a page.
 - Callouts use GitHub syntax (`> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`) and are kept for things that bite.
@@ -85,15 +86,21 @@ started because it is what people read first, not because it is a tutorial. If e
 
 ## Config reference pages
 
-The pages in `config/` are the only description of the config keys, so the build checks them against
-`app/config.json` and `upload-app/config.json`, both ways (`.vitepress/configSchema.ts`). A disagreement fails
-`npm run build`, and `npm run dev` prints it as a warning. `npm test` at the repo root runs the same check without
-building the site (`tests/configSchema.test.ts`). The check fails when:
+The pages in `config/` are the only description of the config keys. The Config generator (`config/generator.md`) is
+built from them, and the build checks them against `app/config.json` and `upload-app/config.json`, both ways. A
+disagreement fails `npm run build`, and `npm run dev` prints it as a warning. `npm test` at the repo root runs the same
+check without building the site (`tests/configSchema.test.ts`). The check fails when:
 
 - a key in either file is not documented, or is documented twice;
 - a documented key is in neither file;
 - a documented type or default differs from the file, or the allowed values leave out the default;
-- a key in both files has a different default in each.
+- a key in both files has a different default in each;
+- a row of Renamed config keys (`config/upgrading.md`) names a current key that no page documents;
+- a label in `LABELS` (see below) is for a key that no page documents.
+
+The parsing and the checks are in `.vitepress/configSchema.ts`, which also runs in the browser for the generator;
+reading the files and failing the build are in `.vitepress/configCheck.ts`. The generator itself is
+`.vitepress/theme/components/ConfigGenerator.vue`, fed by the data loader next to it.
 
 For the same reason the docs workflow also runs on a change to either `config.json`: a key or default changed on
 `main` redeploys the site, and the deploy fails if the page was not updated in the same push.
@@ -109,11 +116,19 @@ The check reads only this format:
   `object`, `` `bool` or `string` ``, or `various` (any JSON value), and the default is JSON. Leave the default out
   only on an object key: a group whose keys are documented on their own page (`gallery` on General options), or a
   free-form object such as `responseHeaders`, whose default is taken from `config.json`.
-- **Description.** The paragraph after the Type line. It is the key's summary, so it should make sense on its own.
+- **Description.** The paragraph after the Type line. The generator shows it beside the field, so it should make
+  sense on its own. A `#anchor` link in it is pointed at the key's own page.
 - **Allowed values.** A bullet list directly after the description whose every item starts with an inline-code JSON
-  value: `` - `"original"` - the full-resolution original file ``. Any other list is prose.
+  value: `` - `"original"` - the full-resolution original file ``. Any other list is prose. These become the
+  generator's choices, so list every value IPP takes, aliases included (`true` for `groupByDate`).
 - **Flag tables.** A section whose first paragraph starts ``Under `ipp.showMetadata.exif`.`` and that has a table
   with `Option`, `Type`, `Default` and `Description` columns documents one key per row, as on the Metadata page.
+
+The generator has one section per reference page, in sidebar order and under the sidebar label, so a new reference
+page needs its sidebar entry before its keys appear there. Its field labels are the key names as words (`showArrows`
+is "Show arrows"). Where that reads badly or a number field needs its unit, `LABELS` in `.vitepress/configSchema.ts`
+gives the label instead; a key name with an acronym in it goes in `ACRONYMS` there, so the label writes it in capitals. Renamed config keys feeds its paste box: a pasted old key
+is shown with the Current key cell of its row, so keep that cell readable on its own.
 
 ## The README
 

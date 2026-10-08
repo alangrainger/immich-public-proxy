@@ -1,7 +1,8 @@
 import DefaultTheme from 'vitepress/theme'
 import { useData } from 'vitepress'
-import { h } from 'vue'
+import { h, type App } from 'vue'
 import type { ThemeConfig } from '../config'
+import ConfigGenerator from './components/ConfigGenerator.vue'
 import './custom.css'
 
 const DEMO_URL = 'https://demo.ipp.nz/s/demo-gallery'
@@ -46,10 +47,14 @@ const StarCount = {
  *   - use the live-demo screenshot as the hero image (`home-hero-image`),
  *     absolutely centred within the hero image container so it lines up
  *     vertically with the hero text;
- *   - place the IPP shield logo below the feature grid (`home-features-after`).
+ *   - place the IPP shield logo below the feature grid (`home-features-after`);
+ *   - register `<ConfigGenerator />` for the Config generator page.
  */
 export default {
   extends: DefaultTheme,
+  enhanceApp ({ app }: { app: App }) {
+    app.component('ConfigGenerator', ConfigGenerator)
+  },
   Layout () {
     return h(DefaultTheme.Layout, null, {
       'nav-bar-content-after': () => h(StarCount),
