@@ -55,7 +55,9 @@ Other visitors see the new photos in the gallery within a few minutes. See
 
 ## What you need
 
-- IPP 4.0 or newer and Immich 3.0.0 or newer.
+- IPP 4.0 or newer and Immich 3.0.0 or newer. Restarting the IPP container does not update it: run
+  `docker compose pull` first (see [Updating IPP](/upgrading#updating-ipp)). A 3.x IPP serves the gallery as before
+  and never shows the button, whatever the upload service does.
 - A public route to the upload service, either:
   - a path on the IPP hostname, such as `photos.example.com/upload`, or
   - its own hostname, such as `upload.example.com`. Use this if a tunnel points straight at IPP with no reverse
@@ -127,6 +129,11 @@ photos.example.com {
 
 #### nginx
 
+No trailing slash on the upload `proxy_pass`. With `proxy_pass http://ipp-upload:3000/;`, nginx replaces the
+`/upload/` prefix with that `/` and the service receives `/share/<key>` instead of `/upload/share/<key>`. It then
+writes every link on its pages without `/upload`, so the browser sends them to IPP instead: the page's script is a
+404 and the password form posts to the wrong service, which asks for the password again.
+
 ```nginx
 server {
     listen 443 ssl;
@@ -194,6 +201,16 @@ Open `/healthcheck` on the upload URL: `https://photos.example.com/upload/health
 `https://upload.example.com/healthcheck`. It answers `ok` when the upload service can reach Immich, and a 503 when
 it cannot. With the upload service on a path on the IPP hostname, IPP shows the **Add photos** button only while
 this answers `ok`. With its own hostname, IPP shows the button whenever `uploadUrl` is set.
+
+An empty page at `https://photos.example.com/upload/healthcheck` means the request reached IPP, not the upload
+service: IPP answers its own hostname's `/upload/healthcheck` with nothing when the route is missing. Check the
+`/upload` route in the reverse proxy.
+
+Then open `https://photos.example.com/upload/share/<key>` for a share that allows uploads. The upload page should
+load with its styling, and a password-protected share should accept its password once. See
+[The "Add photos" button does not appear](/troubleshooting#the-add-photos-button-does-not-appear) and
+[The upload page asks for the password again](/troubleshooting#the-upload-page-asks-for-the-password-again-or-its-script-is-a-404)
+if not.
 
 ## Turn on uploads for a share
 

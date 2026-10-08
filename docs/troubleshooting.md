@@ -30,6 +30,51 @@ different message that names the size.
 
 See [Request size limits](/visitor-uploads#request-size-limits).
 
+## The "Add photos" button does not appear
+
+The upload service runs and its `/healthcheck` answers `ok`, but a share with **Allow public user to upload** turned
+on shows no button in the gallery. View the gallery page's source and look for `id="upload-link"`:
+
+- **The page source has no `upload-link`, and the script URL is `/share/static/3.x.x/...`.** IPP is still 3.x, which
+  has no upload button. Restarting a container does not update it. Run `docker compose pull` and then
+  `docker compose up -d` (in Dockge, use **Update**, not **Restart**). See [Updating IPP](/upgrading#updating-ipp).
+- **No `upload-link`, and the version is 4.0 or newer.** IPP sees no upload service to link to: either the share's
+  upload option is off in Immich, or [`uploadUrl`](/config/ipp-options#uploadurl) is set to an empty string or
+  something other than a path or an absolute URL. A changed `config.json` or `CONFIG` needs a restart.
+- **`upload-link` is there with a `hidden` attribute.** IPP assumed the service at `/upload` on its own hostname and
+  the browser's check of `/upload/healthcheck` there did not answer `ok`. Open that URL on the **gallery** hostname,
+  for example `https://photos.example.com/upload/healthcheck`. An empty page means the reverse proxy sent the
+  request to IPP rather than to the upload service, so add or fix the `/upload` route. If the upload service has its
+  own hostname, set [`uploadUrl`](/config/ipp-options#uploadurl) to it in IPP's config; a setting elsewhere in the
+  compose file does nothing.
+
+See [Let visitors send photos back](/visitor-uploads#check-the-route) and
+[issue #300](https://github.com/alangrainger/immich-public-proxy/issues/300).
+
+## The upload page asks for the password again, or its script is a 404
+
+The upload page opens from the gallery's **Add photos** button, but a password-protected share asks for its
+password again and refuses the right one, or the browser's network tab shows a 404 for
+`/share/static/<version>/js/client/upload.js` on the gallery hostname.
+
+The reverse proxy is stripping `/upload` from the path before it reaches the upload service. The service then writes
+its links without that prefix, so the page's script and its password form go to IPP instead of back to the upload
+service. The password is accepted by IPP, which the gallery had already unlocked, and the upload service never
+sees it.
+
+In nginx the cause is a trailing slash on the upload `proxy_pass`: `proxy_pass http://ipp-upload:3000/;` replaces
+the matched `/upload/` with that `/`. Remove the slash so the path is passed as is:
+
+```nginx
+location /upload/ {
+    proxy_pass http://ipp-upload:3000;
+}
+```
+
+In Caddy, use `handle /upload/*`, not `handle_path`, which strips the prefix. See
+[Route it through your reverse proxy](/visitor-uploads#route-it-through-your-reverse-proxy) and
+[issue #301](https://github.com/alangrainger/immich-public-proxy/issues/301).
+
 ## Link previews show `http://` or a private IP
 
 The gallery itself uses relative URLs, so it works behind any reverse proxy. The one place IPP needs a fully qualified
