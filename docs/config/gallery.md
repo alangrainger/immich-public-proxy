@@ -65,7 +65,7 @@ With it off, zip downloads are hidden while single downloads in the lightbox sta
 
 Group the gallery's thumbnails by date, with a header above each group.
 
-- `false` - no grouping (default).
+- `false` - no grouping.
 - `"month"` - month headers like "December 2024".
 - `"day"` - day headers like "Wed, 25 Dec 2024" (matching Immich's own timeline format).
 - `true` - the same as `"month"`.
