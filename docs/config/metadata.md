@@ -34,11 +34,11 @@ Show the description in the sidebar only (not as a lightbox caption), expose cam
 
 ## Overview
 
-| Group         | Type     | Description                                                                                     |
-|---------------|----------|-------------------------------------------------------------------------------------------------|
-| `description` | `object` | Where to show the description. `{ "caption": bool, "sidebar": bool }`. Both default `false`. See [Description](#description). |
-| `exif`        | `object` | Camera / file EXIF group. Per-field opt-in flags, all default `false`. See [EXIF group](#exif-group). |
-| `location`    | `object` | Location group (city / state / country / GPS). Per-field opt-in flags, all default `false`. See [Location group](#location-group). |
+| Group         | Type     | Description                                                                                                      |
+|---------------|----------|------------------------------------------------------------------------------------------------------------------|
+| `description` | `object` | Where to show the description: `{ "caption": bool, "sidebar": bool }`. See [Description](#description).          |
+| `exif`        | `object` | Camera / file EXIF group, one opt-in flag per field. See [EXIF group](#exif-group).                              |
+| `location`    | `object` | Location group (city / state / country / GPS), one opt-in flag per field. See [Location group](#location-group). |
 
 Every field defaults to `false` and is sent to visitors only when its flag is `true`. There is no master switch, so a field IPP adds in a future release stays hidden until you turn it on.
 
@@ -59,7 +59,7 @@ Set both to show in both places; set neither and the description is not included
 
 ## EXIF group
 
-Under `ipp.showMetadata.exif`. Every flag defaults to `false`.
+Under `ipp.showMetadata.exif`.
 
 | Option             | Type   | Default | Description                                                                                                       |
 |--------------------|--------|---------|-------------------------------------------------------------------------------------------------------------------|
@@ -78,7 +78,7 @@ Under `ipp.showMetadata.exif`. Every flag defaults to `false`.
 
 ## Location group
 
-Under `ipp.showMetadata.location`. Every flag defaults to `false`, except `webLink` which defaults to `true`.
+Under `ipp.showMetadata.location`.
 
 | Option    | Type   | Default | Description                                                                                                                                                         |
 |-----------|--------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
