@@ -16,11 +16,11 @@ available in Immich.
 When the proxy receives a request, it will come as a link like this:
 
 ```
-https://your-proxy-url.com/share/ffSw63qnIYMtpmg0RNvOui0Dpio7BbxsObjvH8YZaobIjIAzl5n7zTX5d6EDHdOYEvo
+https://photos.example.com/share/ffSw63qnIYMtpmg0RNvOui0Dpio7BbxsObjvH8YZaobIjIAzl5n7zTX5d6EDHdOYEvo
 ```
 
 The part after `/share/` is the shared link's key in Immich. A shared link with a custom URL in Immich uses that
-instead, e.g. `https://your-proxy-url.com/s/my-album`.
+instead, e.g. `https://photos.example.com/s/my-album`.
 
 **Immich Public Proxy** takes that key and makes an API call to your Immich instance over your local network, to ask
 what photos or videos are shared in that share URL.

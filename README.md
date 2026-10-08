@@ -39,7 +39,7 @@ Read more in the [Introduction](https://docs.ipp.nz/introduction), including
 
 1. Download the [docker-compose.yml](https://github.com/alangrainger/immich-public-proxy/blob/main/docker-compose.yml) file.
 2. Set `IMMICH_URL` to the local (not public) URL of your Immich server, and `PUBLIC_BASE_URL` to the public URL of IPP.
-3. Run `docker-compose up -d` and check that `https://your-proxy-url.com/share/healthcheck` responds.
+3. Run `docker-compose up -d` and check that `https://photos.example.com/share/healthcheck` responds.
 4. In Immich's **Server Settings**, set the "External domain" to your IPP URL. Every link Immich generates from now on
    points at the proxy.
 

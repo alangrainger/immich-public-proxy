@@ -6,12 +6,12 @@ IPP has no admin interface of its own.
 Share your photos, videos and albums as normal through Immich. Because you set the **External domain** in Immich's
 settings to the URL of IPP, the links Immich generates already point at the proxy:
 
-<img src="/share-link.webp" width="751" height="524" alt="Sharing a link from Immich">
+<img src="./public/share-link.webp" width="751" height="524" alt="Sharing a link from Immich">
 
 ## Share links
 
-A standard link looks like `https://your-proxy-url.com/share/<key>`, where the key is the shared link's public ID
-in Immich. If you give the shared link a custom URL in Immich, IPP serves it at `https://your-proxy-url.com/s/<slug>`
+A standard link looks like `https://photos.example.com/share/<key>`, where the key is the shared link's public ID
+in Immich. If you give the shared link a custom URL in Immich, IPP serves it at `https://photos.example.com/s/<slug>`
 instead. Slug links can be turned off with [`allowSlugLinks`](/config/ipp-options#allowsluglinks).
 
 The settings on the shared link in Immich are respected:

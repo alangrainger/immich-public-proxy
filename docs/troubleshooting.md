@@ -6,7 +6,7 @@ If you're using Cloudflare and videos do not play well, set your `/share/video/*
 [this Cloudflare community thread](https://community.cloudflare.com/t/mp4-wont-load-in-safari-using-cloudflare/10587/48)
 for the background.
 
-<a href="/cloudflare-video-cache.webp"><img src="/cloudflare-video-cache.webp" style="width:70%" alt="Cloudflare cache bypass rule for video paths"></a>
+<a href="/cloudflare-video-cache.webp"><img src="./public/cloudflare-video-cache.webp" style="width:70%" alt="Cloudflare cache bypass rule for video paths"></a>
 
 ## "Download all" fails partway through
 
@@ -86,7 +86,7 @@ Set `PUBLIC_BASE_URL` in your `docker-compose.yml` to the public address of IPP,
 
 ```yaml
 environment:
-  PUBLIC_BASE_URL: https://your-proxy-url.com
+  PUBLIC_BASE_URL: https://photos.example.com
 ```
 
 If you serve IPP from several domains, leave it unset and make sure your reverse proxy forwards the original `Host`

@@ -27,7 +27,8 @@ and rendered by the theme, so visitors' browsers never call GitHub. A local buil
 and omits the pill; nothing is wrong. The deploy workflow also rebuilds weekly so the number stays current.
 
 The sidebar is hand-maintained in `.vitepress/config.ts`, so a new page is invisible until it is added there.
-Static files (images, favicon) live in `public/` and are referenced by absolute path, e.g. `/share-link.webp`.
+Static files (images, favicon) live in `public/` and are referenced by relative path, e.g. `./public/share-link.webp`,
+which renders on GitHub as well; VitePress rewrites it to a hashed asset at build time.
 `public/CNAME` holds the custom domain; it is copied to the root of the build and must stay there.
 
 Publishing is automatic. Any push to `main` that touches `docs/` runs the `docs.yaml` workflow, which builds the
@@ -78,7 +79,7 @@ started because it is what people read first, not because it is a tutorial. If e
 - Config keys are written as `` `gallery.showTitle` `` and linked to their section the first time they appear on a page.
 - Callouts use GitHub syntax (`> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`) and are kept for things that bite.
 - Code fences are tagged `yaml`, `json` or `bash`. Caddyfiles use a plain fence; there is no highlighter for them.
-- Images are `<img src="/name.webp" width="…" height="…" alt="…">` with real dimensions so the page does not shift
+- Images are `<img src="./public/name.webp" width="…" height="…" alt="…">` with real dimensions so the page does not shift
   while loading.
 - Types and defaults come from `app/config.json` and `upload-app/config.json`. The build checks them; see
   [Config reference pages](#config-reference-pages).

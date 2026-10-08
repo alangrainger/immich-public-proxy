@@ -12,7 +12,7 @@
    not be a public URL.** Most likely this will be a local IP and port; whatever your Immich container runs on.
 
 3. Update or remove the value for `PUBLIC_BASE_URL`. This should be the public base URL for IPP, without a trailing
-   slash (example `https://your-proxy-url.com`). If you remove this value, it will dynamically generate it based on
+   slash (example `https://photos.example.com`). If you remove this value, it will dynamically generate it based on
    the request hostname. This can be useful if you are [serving from multiple domains](/running-on-single-domain).
 
 4. Start the docker container. Check the container console output for any error messages.
@@ -23,12 +23,12 @@ docker-compose up -d
 
 5. Point your reverse proxy at the container on port 3000, so IPP is served over HTTPS at your `PUBLIC_BASE_URL`.
    See [Put IPP behind a reverse proxy](/reverse-proxy) for Caddy, nginx and Traefik examples. You can test that it
-   is working by visiting `https://your-proxy-url.com/share/healthcheck`.
+   is working by visiting `https://photos.example.com/share/healthcheck`.
 
 6. Set the "External domain" in your Immich **Server Settings** to be whatever domain you use to publicly serve
    Immich Public Proxy:
 
-<img src="/server-settings.png" width="400" height="182" alt="Immich server settings - external domain">
+<img src="./public/server-settings.png" width="445" height="181" alt="Immich server settings - external domain">
 
 Now whenever you share an image or gallery through Immich, it will automatically create the correct public path for
 you.

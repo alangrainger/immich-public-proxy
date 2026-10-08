@@ -53,7 +53,7 @@ services:
     security_opt:
       - no-new-privileges
     environment:
-      PUBLIC_BASE_URL: https://your-proxy-url.com
+      PUBLIC_BASE_URL: https://photos.example.com
       IMMICH_URL: http://your-internal-immich-server:2283
     healthcheck:
       test: curl -sf -m 4 http://localhost:3000/share/healthcheck -o /dev/null || exit 1
@@ -73,7 +73,7 @@ services:
       - no-new-privileges
     environment:
       IMMICH_URL: http://your-internal-immich-server:2283
-      PUBLIC_BASE_URL: https://your-proxy-url.com
+      PUBLIC_BASE_URL: https://photos.example.com
     healthcheck:
       test: curl -sf -m 4 http://localhost:3000/healthcheck -o /dev/null || exit 1
       start_period: 10s

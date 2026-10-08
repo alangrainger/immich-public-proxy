@@ -16,7 +16,7 @@ server:
         - name: gateway
           namespace: kube-system
       hostnames:
-        - your-immich-url.com
+        - immich.example.com
       rules:
         - backendRefs:
             - name: immich-server-main
@@ -28,7 +28,7 @@ server:
         - name: gateway
           namespace: kube-system
       hostnames:
-        - your-proxy-url.com
+        - photos.example.com
       rules:
         - backendRefs:
             - name: immich-server-immich-public-proxy
@@ -44,7 +44,7 @@ server:
             pullPolicy: IfNotPresent
           env:
             IMMICH_URL: http://immich-server-main:2283  # the in-cluster Immich service, not your public URL
-            PUBLIC_BASE_URL: https://your-proxy-url.com
+            PUBLIC_BASE_URL: https://photos.example.com
           # Optional lockdown: IPP writes nothing to disk and needs no extra privileges
           securityContext:
             readOnlyRootFilesystem: true
@@ -80,7 +80,7 @@ server:
       enabled: true
 
       hosts:
-        - host: your-immich-url.com
+        - host: immich.example.com
           paths:
             - path: /
               pathType: Prefix
@@ -89,7 +89,7 @@ server:
     immich-public-proxy:
       enabled: true
       hosts:
-        - host: your-proxy-url.com
+        - host: photos.example.com
           paths:
             - path: /
               pathType: Prefix

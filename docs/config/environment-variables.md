@@ -19,7 +19,7 @@ From inside a container, `localhost` does not reach Immich. If IPP logs "Unable 
 
 **Optional** · **Default:** derived from each request
 
-The public base URL of IPP without a trailing slash, for example `https://your-proxy-url.com`. The gallery uses
+The public base URL of IPP without a trailing slash, for example `https://photos.example.com`. The gallery uses
 relative URLs everywhere except the `og:image` tag that messaging apps read for link previews, which must be fully
 qualified. When unset, IPP builds it from the incoming request's protocol and `Host` header.
 

@@ -49,7 +49,7 @@ For one or two keys, pass the JSON in the `CONFIG` environment variable instead 
 
 ```yaml
   environment:
-    PUBLIC_BASE_URL: https://your-proxy-url.com
+    PUBLIC_BASE_URL: https://photos.example.com
     IMMICH_URL: http://your-internal-immich-server:2283
     CONFIG: |
       {
