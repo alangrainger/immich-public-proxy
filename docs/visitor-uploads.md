@@ -152,6 +152,29 @@ server {
 }
 ```
 
+#### Traefik
+
+Just copy your current IPP router, change the service to IPP Upload container and add `` `&& PathPrefix(`/upload`)` `` to the host.
+
+```traefik
+ ipp:
+   entryPoints:
+     - websecure
+   service: ipp
+   rule: "Host(`ipp.domain.com`)"
+   tls:
+     certResolver: letsencrypt
+
+ ipp-upload:
+   entryPoints:
+     - websecure
+   service: ipp-upload
+   rule: "Host(`ipp.domain.com`) && PathPrefix(`/upload`)"
+   priority: 10
+   tls:
+     certResolver: letsencrypt
+```
+
 ### Own hostname
 
 Send everything on a separate upload hostname to the upload service.
@@ -178,6 +201,18 @@ server {
         proxy_pass http://ipp-upload-address:port;
     }
 }
+```
+
+#### Traefik
+
+```traefik
+ ipp:
+   entryPoints:
+     - websecure
+   service: ipp-upload
+   rule: "Host(`upload.domain.com`)"
+   tls:
+     certResolver: letsencrypt
 ```
 
 #### Tell IPP the upload URL
