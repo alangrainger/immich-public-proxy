@@ -2,8 +2,8 @@
 
 A client certificate lets a device prove who it is before it reaches Immich. You act as your own certificate
 authority (CA), issue one certificate per person or device, and install each one where it is used. The proxy trusts
-your CA and refuses everything else. This page makes the certificates; [Your own reverse proxy](/securing-immich/reverse-proxy)
-puts them to work.
+your CA and refuses everything else. This page covers making the certificates;
+[Your own reverse proxy](/securing-immich/reverse-proxy) covers the proxy config.
 
 ## Generate a certificate
 
@@ -35,7 +35,7 @@ echo
 openssl pkcs12 -export -inkey "certs/$NAME.key" -in "certs/$NAME.crt" -out "certs/$NAME.pfx"
 ```
 
-You end up with:
+The script produces:
 
 - `client-ca.crt` - give this to your reverse proxy. It is the only file the proxy needs.
 - `client-ca.key` - keep it private. Anyone with it can issue certificates your proxy trusts.
@@ -47,10 +47,10 @@ the others.
 
 ## Revoke a certificate
 
-The proxy trusts every certificate your CA has signed, so taking a `.pfx` back is not enough. To cut a device off,
-make a new CA, issue new certificates to the devices you still want, and replace `client-ca.crt` at the proxy. The
-old certificates stop working at once. nginx can instead check a revocation list (`ssl_crl`); Caddy and Traefik
-cannot without plugins, so reissuing is the simplest reliable way.
+The proxy trusts every certificate your CA has signed, so a certificate stays valid until the CA is replaced. To cut
+a device off, make a new CA, issue new certificates to the devices you still want, and replace `client-ca.crt` at
+the proxy. The old certificates stop working immediately. nginx can instead check a revocation list (`ssl_crl`);
+Caddy and Traefik cannot without plugins, so reissuing is the only option there.
 
 ## Expiry
 
@@ -64,6 +64,6 @@ and install the new `.pfx`.
   client certificates from its own CA, and the ones made here are not used.
 - A VPN: no certificates are needed.
 
-The Immich app imports the `.pfx` under **Settings**, **Advanced**, at the bottom of the page. Immich calls this
-support experimental: video playback in the app does not present the certificate, so videos play only on the web or
-over a VPN.
+Installing a `.pfx` on each platform is in [Install the certificate on your devices](/securing-immich/devices). The
+Immich app's support is experimental and its video player does not use the certificate; see
+[Authenticating the Immich app](/securing-immich/immich-app) for the alternative.
