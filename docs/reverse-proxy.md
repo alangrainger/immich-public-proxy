@@ -2,7 +2,8 @@
 
 IPP listens on plain HTTP on port 3000 and expects a reverse proxy in front of it to terminate TLS and give it a public
 hostname. Any proxy will do. This page gives the minimal config for the common ones and the few things IPP needs from
-whichever you use.
+whichever you use. The same proxy can lock Immich down on a second hostname: see
+[Securing Immich](/securing-immich/).
 
 ## What the proxy must do
 
@@ -48,7 +49,7 @@ Add your `ssl_certificate` lines as for any other site.
 
 ## Traefik
 
-A dynamic configuration file, in the same style as the [mTLS guide](/securing-immich-with-mtls#using-traefik):
+A dynamic configuration file, in the same style as the [Immich one](/securing-immich/reverse-proxy#traefik):
 
 ```yaml
 http:
@@ -87,4 +88,4 @@ Immich. If link previews in a messaging app show `http://` or a private address,
   a path or its own hostname.
 - [Redirect root domain to a share](/redirect-root-to-share).
 - [Custom error pages from the proxy](/config/error-responses#customising-the-response-using-your-reverse-proxy).
-- [Securing Immich with mTLS](/securing-immich-with-mtls): lock Immich itself down so only IPP is public.
+- [Securing Immich](/securing-immich/): lock Immich itself down so only IPP is public.

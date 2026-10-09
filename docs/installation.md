@@ -61,4 +61,9 @@ domain. See [Running on a single domain](/running-on-single-domain).
 
 See the [Kubernetes install docs](/kubernetes).
 
+## Before you go public
+
+IPP is meant to be the only part of your setup on the internet. Before you share a link, check that Immich itself is
+not reachable from outside: see [Securing Immich](/securing-immich/).
+
 Next: [Sharing from Immich](/how-to-use).

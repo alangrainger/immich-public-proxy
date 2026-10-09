@@ -21,6 +21,7 @@ features:
   - icon: 🔒
     title: Locked down by design
     details: IPP sits in front of Immich and only serves what you have explicitly shared. It needs no API key and knows nothing about your instance, keeping the attack surface tiny.
+    link: /securing-immich/
   - icon: 📤
     title: Let visitors upload photos (optional)
     details: You can optionally enable uploads, so guests can add their own photos and videos to a share. This doesn't need an Immich API key.

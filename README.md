@@ -62,8 +62,8 @@ Everything is at **[docs.ipp.nz](https://docs.ipp.nz)**:
 - [Configuration](https://docs.ipp.nz/config/): downloads, gallery layout, lightbox, metadata privacy, error responses
 - Guides: [let visitors send photos back](https://docs.ipp.nz/visitor-uploads),
   [single domain with Immich](https://docs.ipp.nz/running-on-single-domain),
-  [redirect your root domain to a share](https://docs.ipp.nz/redirect-root-to-share),
-  [securing Immich with mTLS](https://docs.ipp.nz/securing-immich-with-mtls)
+  [redirect your root domain to a share](https://docs.ipp.nz/redirect-root-to-share)
+- [Securing Immich](https://docs.ipp.nz/securing-immich/): keep Immich private and IPP the only public surface
 - [Troubleshooting](https://docs.ipp.nz/troubleshooting)
 
 ## Feature requests

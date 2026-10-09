@@ -48,6 +48,7 @@ rather than the Diátaxis term.
 | Getting started | Tutorial  | What is this, and how do I get it running? | Ordered as a path: Introduction, Installation, Sharing from Immich, Upgrading. Numbered steps, one happy path, defaults only. Link to reference pages rather than explaining options inline. |
 | Configuration   | Reference | What does this key do?                     | One page per `ipp.*` group, mirroring `app/config.json`. Every key has a `**Type:** … · **Default:** …` line and a short description; each page opens with a worked example. Complete and neutral: no advice, no tutorials. The Config generator, after the overview, is a tool built from these pages, not a page to add content to. |
 | Guides          | How-to    | How do I achieve this goal?                | One goal per page and the title names the goal. Assume IPP is installed. Label every config block with the proxy or platform it is for; Caddy first, then others. |
+| Securing Immich | How-to    | How do I keep Immich off the internet?     | About Immich, not IPP. The Overview (`securing-immich/index.md`) holds the threat model and the choice of route; each route has one page that is complete on its own. |
 | Troubleshooting | How-to    | Why is this happening?                     | One page, one `##` per problem. The heading is the symptom as the user sees it (a log line, or what they observe), then the cause, then the fix, then links to the GitHub issues. |
 
 Explanation (how IPP works, the security model, design principles) lives in **Introduction**. It sits in Getting
@@ -62,6 +63,7 @@ started because it is what people read first, not because it is a tutorial. If e
 | An environment variable                        | `config/environment-variables.md` |
 | Something visitors to a share will notice      | `how-to-use.md` (Sharing from Immich) |
 | A reverse-proxy or hosting recipe              | A new page under Guides |
+| A way to lock Immich down (not IPP)            | A page under Securing Immich, linked from the Overview's route table |
 | The fix for a recurring support question       | `troubleshooting.md`, symptom first |
 | A design decision or a "why"                   | `introduction.md` |
 | Developer or contributor information           | `CONTRIBUTING.md` at the repo root, not the site |
@@ -71,7 +73,9 @@ started because it is what people read first, not because it is a tutorial. If e
 - The H1 is the sidebar label. The first paragraph says what the page covers.
 - Paths are public URLs, linked from GitHub issues and forums: do not rename or move a published page. Change the
   sidebar label and H1 instead. That is why "General options" is served from `/config/ipp-options` and "Sharing from
-  Immich" from `/how-to-use`.
+  Immich" from `/how-to-use`. If a page must move, leave a redirect at the old path: a static HTML file in `public/`
+  with an instant `meta refresh` and a `canonical` link to the new URL, as `public/securing-immich-with-mtls.html`
+  does. GitHub Pages cannot send a real redirect, and search engines treat this one as permanent.
 - Internal links are absolute site paths with optional anchors (`/config/gallery#showtitle`), never relative file
   links. Anchors are the heading text lowercased with backticks stripped and spaces and underscores as hyphens
   (`IPP_CONFIG` is `#ipp-config`); keep headings that

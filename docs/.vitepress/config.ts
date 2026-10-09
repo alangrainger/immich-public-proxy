@@ -100,8 +100,15 @@ export default async () => defineConfigWithTheme<ThemeConfig>({
           { text: 'Let visitors send photos back', link: '/visitor-uploads' },
           { text: 'Tag and review visitor uploads', link: '/tag-and-review-uploads' },
           { text: 'Single domain with Immich', link: '/running-on-single-domain' },
-          { text: 'Redirect root domain to a share', link: '/redirect-root-to-share' },
-          { text: 'Securing Immich with mTLS', link: '/securing-immich-with-mtls' }
+          { text: 'Redirect root domain to a share', link: '/redirect-root-to-share' }
+        ]
+      },
+      {
+        text: 'Securing Immich',
+        items: [
+          { text: 'Overview', link: '/securing-immich/' },
+          { text: 'Your own reverse proxy', link: '/securing-immich/reverse-proxy' },
+          { text: 'Client certificates (mTLS)', link: '/securing-immich/client-certificates' }
         ]
       },
       { text: 'Troubleshooting', link: '/troubleshooting' }
