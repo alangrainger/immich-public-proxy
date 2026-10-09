@@ -60,8 +60,8 @@ and install the new `.pfx`.
 ## Where they are used
 
 - [Your own reverse proxy](/securing-immich/reverse-proxy): the proxy checks the certificate against `client-ca.crt`.
-- Cloudflare: Access mutual TLS with your own CA is on paid plans only. On the free plan, Cloudflare issues its own
-  client certificates from its own CA, and the ones made here are not used.
+- [Cloudflare](/securing-immich/cloudflare): on the free plan Cloudflare issues its own client certificates, and
+  the ones made here are not used. Access mutual TLS, on the paid Zero Trust plans, checks these instead.
 - A VPN: no certificates are needed.
 
 Installing a `.pfx` on each platform is in [Install the certificate on your devices](/securing-immich/devices). The

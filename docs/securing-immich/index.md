@@ -50,7 +50,9 @@ the edge, and [Authenticated Origin Pulls](https://developers.cloudflare.com/ssl
 stop requests that skipped the edge from reaching your proxy.
 
 Cloudflare sits in the middle of your traffic, and its 100 MB request limit on the Free and Pro plans blocks large
-video uploads from the app. A step-by-step guide for this route is coming.
+video uploads from the app.
+
+Guide: [Cloudflare](/securing-immich/cloudflare).
 
 ### B: Your own reverse proxy
 

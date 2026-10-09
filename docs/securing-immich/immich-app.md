@@ -2,7 +2,7 @@
 
 With Cloudflare or your own reverse proxy in front of Immich, the app has to get past the certificate check or the
 header rule before it can log in. The app has two ways to do that, both under **Settings**, **Advanced**, and both
-marked experimental by Immich. This page compares them; [Install the certificate on your devices](/securing-immich/devices)
+marked [experimental](https://docs.immich.app/FAQ/) by Immich. This page compares them; [Install the certificate on your devices](/securing-immich/devices)
 has the steps.
 
 ## Client certificate
@@ -12,20 +12,17 @@ certificate store, so installing the certificate on Android or iOS does nothing 
 
 What works: logging in, browsing, backup and the photo viewer.
 
-What does not, according to Immich's [FAQ](https://docs.immich.app/FAQ/) and issue tracker:
+What does not:
 
-- **Video playback.** The app's video players do not present the certificate, so videos fail to play from outside
+- **Video playback.** The app's video player does not present the certificate, so videos fail to play from outside
   while photos work.
 - **iOS widgets** cannot use it.
-- **Updates** have been reported to drop it. Import it again from the login screen.
-
-Immich says it is not developing these features further.
+- **App updates** sometimes drop it. Import it again from the login screen.
 
 ## Secret header
 
-Under **Custom proxy headers** the app sends a header of your choosing with every request, and the proxy or
-Cloudflare refuses requests without the right value. The app's video player sends it too (checked against the app's
-source on 2026-10-09), so video playback works.
+Under **Custom proxy headers** the app sends a header of your choosing with every request, video playback included,
+and the proxy or Cloudflare refuses requests without the right value.
 
 Its limits:
 

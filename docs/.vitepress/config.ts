@@ -108,6 +108,7 @@ export default async () => defineConfigWithTheme<ThemeConfig>({
         items: [
           { text: 'Overview', link: '/securing-immich/' },
           { text: 'Authenticating the Immich app', link: '/securing-immich/immich-app' },
+          { text: 'Cloudflare', link: '/securing-immich/cloudflare' },
           { text: 'Your own reverse proxy', link: '/securing-immich/reverse-proxy' },
           { text: 'Client certificates (mTLS)', link: '/securing-immich/client-certificates' },
           { text: 'Install the certificate on your devices', link: '/securing-immich/devices' }
