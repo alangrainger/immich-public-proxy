@@ -166,3 +166,46 @@ your resolver to return an empty `NOERROR` (NODATA) rather than `NXDOMAIN` for t
 
 See issues [#203](https://github.com/alangrainger/immich-public-proxy/issues/203) and
 [#263](https://github.com/alangrainger/immich-public-proxy/issues/263) for the full investigation.
+
+## The Immich app says "Server not reachable" but the web UI works
+
+Something in front of the Immich hostname shows a login page: Cloudflare Access with an identity provider, or
+Authelia or Authentik forward-auth. The app cannot log in through it. Remove it from the Immich hostname, use the
+identity provider as an [OAuth provider inside Immich](https://docs.immich.app/administration/oauth/) if you want
+it, and authenticate the app with a certificate or a secret header instead. See
+[What not to do](/securing-immich/#what-not-to-do) and [Authenticating the Immich app](/securing-immich/immich-app).
+
+## Videos do not play in the Immich app from outside, but photos do
+
+The app has a client certificate imported, and its video player does not present it. Switch the app to the secret
+header, or use a VPN. See [Authenticating the Immich app](/securing-immich/immich-app).
+
+## Large video uploads from the Immich app fail
+
+Cloudflare refuses request bodies over 100 MB on the Free and Pro plans, Cloudflare Tunnel included. **Automatic
+URL switching** under the app's **Settings**, **Networking** uses a local address on your home Wi-Fi, which bypasses
+Cloudflare for uploads made at home; otherwise the file needs a route that does not pass through Cloudflare. See
+[Cloudflare](/securing-immich/cloudflare).
+
+## The Immich web UI shows "Server Status Offline"
+
+The reverse proxy is not forwarding WebSockets. For nginx, the `Upgrade` and `Connection` headers in
+[Your own reverse proxy](/securing-immich/reverse-proxy#nginx) fix it; Caddy and Traefik forward them without
+configuration.
+
+## The browser never asks for the client certificate
+
+The certificate is in a store the browser does not read. On Android it must be installed as a **VPN & app user
+certificate**, not a CA certificate; Firefox has its own store and does not see the system one. On Cloudflare, the
+hostname must also be in the **Hosts** list on the Client Certificates page. See
+[Install the certificate on your devices](/securing-immich/devices) and [Cloudflare](/securing-immich/cloudflare).
+
+## Cloudflare returns 403 to the Immich app
+
+The security rule is blocking it: the app has no certificate imported, or the secret header is not set in the app,
+or its name or value does not match the rule. See [Cloudflare](/securing-immich/cloudflare#cloudflare-client-certificates).
+
+## The Immich app lost its certificate after an update
+
+Log out, then import it again from the login screen under **Settings**, **Advanced**, **SSL client certificate**.
+See [Install the certificate on your devices](/securing-immich/devices#immich-app).

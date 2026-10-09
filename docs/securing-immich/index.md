@@ -64,8 +64,11 @@ Guide: [Your own reverse proxy](/securing-immich/reverse-proxy).
 
 ### C: VPN
 
-Immich is not on the internet at all. Each device joins a private network, such as Tailscale, WireGuard or Cloudflare
-WARP, and reaches Immich as if it were at home. The app works completely, video included, with no certificates.
+Immich is not on the internet at all. Each device joins a private network and reaches Immich as if it were at home:
+[Tailscale](https://tailscale.com/kb/1017/install), [WireGuard](https://www.wireguard.com/quickstart/), or
+[Cloudflare WARP with a private network route](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/private-net/)
+if you are already on Cloudflare. No port to open, works behind CGNAT, nothing per device beyond the VPN app, and
+the Immich app works completely, video included, with no certificates.
 
 Every device needs the VPN app running, phones may suspend background upload while it is off, and nobody outside
 the network can reach Immich, so sharing goes through IPP. IPP still needs a public route, through a reverse proxy
@@ -85,6 +88,29 @@ Routes A and B need each device to identify itself before it reaches Immich. The
 
 The common setup is both: the header on phones, a certificate in browsers. The trade-offs are on
 [Authenticating the Immich app](/securing-immich/immich-app).
+
+## Hardening checklist
+
+Whichever route you take:
+
+- **Immich's port is published to nobody.** Only the proxy and IPP reach it, on an internal Docker network or the
+  LAN. Never forward 2283.
+- **The proxy forwards everything Immich needs**: WebSockets, large request bodies, long timeouts, the forwarded
+  headers, and the whole hostname rather than a path. The settings are in
+  [Immich's reverse proxy page](https://docs.immich.app/administration/reverse-proxy) and included in
+  [Your own reverse proxy](/securing-immich/reverse-proxy).
+- **IPP runs locked down**, with `read_only`, `cap_drop: ALL` and `no-new-privileges` as in the compose file on
+  [Installation](/installation).
+- **IPP and Immich have separate hostnames**, or follow [Single domain with Immich](/running-on-single-domain)
+  if they must share one.
+- **[`PUBLIC_BASE_URL`](/config/environment-variables#public_base_url) is set**, so link previews never show a
+  private address.
+- **IPP is rate limited at the proxy**, with the proxy's own limiter or fail2ban. If you run the upload service,
+  limit its hostname or path separately. On Cloudflare, a country block is one rule if your visitors are all in one
+  place.
+- **Immich and IPP are kept updated.** See [Upgrading](/upgrading).
+- **The CA key and the `.pfx` files are backed up** somewhere other than the server, if you issue your own
+  certificates.
 
 ## Where IPP sits
 
