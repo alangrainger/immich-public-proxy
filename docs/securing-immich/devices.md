@@ -6,21 +6,21 @@ the copy once it is installed. Every import asks for the password you chose when
 
 ## Immich app
 
-The app keeps its own copy of the certificate, separate from the phone's certificate store, and can only import or
-remove it before you log in.
+The certificate can only be added or removed before you log in.
 
-1. Get the `.pfx` file onto the phone.
+1. On Android, first install the `.pfx` into the phone's store as described under [Android](#android) below. On
+   iOS, get the file onto the device.
 2. Open the app. On the login screen, open **Settings**, then **Advanced**.
-3. Under **SSL client certificate**, tap **Import**, choose the file and enter its password.
+3. Under **SSL client certificate**, tap **Import**. Android shows the phone's installed certificates: pick yours.
+   iOS opens a file picker: choose the `.pfx` and enter its password.
 4. Go back and log in with your Immich server address.
 
-To remove it, log out and use the same setting. Video playback in the app does not use the certificate; the
-alternative for that is a secret header under **Custom proxy headers** on the same screen. See
-[Authenticating the Immich app](/securing-immich/immich-app).
+To remove it, log out and use the same setting. The alternative to a certificate is a secret header under
+**Custom proxy headers** on the same screen. See [Authenticating the Immich app](/securing-immich/immich-app).
 
 ## Android
 
-For the browser only: the Immich app ignores the system store. Menu names vary a little by version and maker.
+Used by both the browser and the Immich app. Menu names vary a little by version and maker.
 
 - **Stock Android:** Settings, **Security & privacy**, **More security settings**, **Encryption & credentials**,
   **Install a certificate**, **VPN & app user certificate**. Choose the file and enter its password.

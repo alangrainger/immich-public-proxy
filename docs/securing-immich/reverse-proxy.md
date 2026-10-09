@@ -151,7 +151,7 @@ Traefik forwards WebSockets and the forwarded headers on its own.
 
 ## Secret header instead of a certificate
 
-The Immich app can send a header of your choosing on every request, which also covers video playback. See [Authenticating the Immich app](/securing-immich/immich-app) for the trade-offs.
+The Immich app can send a header of your choosing on every request. See [Authenticating the Immich app](/securing-immich/immich-app) for the trade-offs.
 The proxy then refuses any request without the right value. These blocks replace the certificate check above;
 `long-random-secret` is the value you put in the app.
 
@@ -186,7 +186,7 @@ immich.example.com {
 
 ## Certificate or header
 
-The common setup: phones send the header, browsers present a certificate, and the proxy accepts either.
+If some devices use the header and others a certificate, the proxy can accept either.
 
 **Caddy**
 

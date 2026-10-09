@@ -20,10 +20,11 @@ bug in the code that answers before you log in. Immich's maintainers leave prote
 - **Forward port 2283** to the internet. Any bug in Immich is then reachable by anyone.
 - **Rely on Immich's login page alone.** It only applies once a request has reached Immich.
 - **Put a login page in front of the whole hostname**, such as Cloudflare Access with an identity provider, or
-  Authelia or Authentik forward-auth. The Immich app cannot log in through it and reports "Server not reachable". Use
+  Authelia or Authentik forward-auth. The Immich app cannot log in through it and reports "Could not connect to
+  server". Use
   your identity provider as an [OAuth provider inside Immich](https://docs.immich.app/administration/oauth/) instead.
-- **Use basic auth as a substitute.** The app's support for it is experimental and breaks the same features as a
-  client certificate does.
+- **Use basic auth as a substitute.** It is one shared password for every device, with the same limits as the
+  secret header.
 - **Hide behind an unusual port or hostname.** Port scanners and certificate transparency logs find both.
 - **Leave a Cloudflare Tunnel or proxy hostname open** with nothing checking who is calling. It is still reachable
   by anyone.
@@ -38,7 +39,6 @@ bug in the code that answers before you log in. Immich's maintainers leave prote
 | Largest upload from the app | 100 MB on the Free and Pro plans | Whatever your proxy allows | No limit |
 | Third party in the path | Cloudflare terminates TLS and sees the traffic | None | Only the coordination server; traffic is end to end |
 | On each device | A certificate or a secret header in the Immich app | Same | The VPN app, kept running |
-| Video playback in the app from outside | With the secret header, not with a certificate in the app | Same | Works |
 | Sharing with non-members | Through IPP | Through IPP | Through IPP |
 
 ### A: Cloudflare
@@ -68,7 +68,7 @@ Immich is not on the internet at all. Each device joins a private network and re
 [Tailscale](https://tailscale.com/kb/1017/install), [WireGuard](https://www.wireguard.com/quickstart/), or
 [Cloudflare WARP with a private network route](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/private-net/)
 if you are already on Cloudflare. No port to open, works behind CGNAT, nothing per device beyond the VPN app, and
-the Immich app works completely, video included, with no certificates.
+the Immich app needs no certificate.
 
 Every device needs the VPN app running, phones may suspend background upload while it is off, and nobody outside
 the network can reach Immich, so sharing goes through IPP. IPP still needs a public route, through a reverse proxy
@@ -78,16 +78,13 @@ or Cloudflare. The vendors' own docs cover the setup.
 
 Routes A and B need each device to identify itself before it reaches Immich. There are two ways:
 
-- **A client certificate.** One per person or device, so any one can be revoked on its own. Browsers use the
-  operating system's certificate store; the Immich app imports its own copy, and its video player does not use it.
-  See [Client certificates](/securing-immich/client-certificates) and
+- **A client certificate.** One per person or device, so any one can be revoked on its own. Browsers and the
+  Immich app both use it. See [Client certificates](/securing-immich/client-certificates) and
   [Install the certificate on your devices](/securing-immich/devices).
-- **A secret header.** The app sends a header of your choosing on every request, video included, and the proxy or
-  Cloudflare refuses requests without it. It is a shared secret rather than an identity, and a browser cannot send
-  it.
+- **A secret header.** The app sends a header of your choosing on every request, and the proxy or Cloudflare
+  refuses requests without it. It is a shared secret rather than an identity, and a browser cannot send it.
 
-The common setup is both: the header on phones, a certificate in browsers. The trade-offs are on
-[Authenticating the Immich app](/securing-immich/immich-app).
+The trade-offs are on [Authenticating the Immich app](/securing-immich/immich-app).
 
 ## Hardening checklist
 

@@ -64,6 +64,5 @@ and install the new `.pfx`.
   the ones made here are not used. Access mutual TLS, on the paid Zero Trust plans, checks these instead.
 - A VPN: no certificates are needed.
 
-Installing a `.pfx` on each platform is in [Install the certificate on your devices](/securing-immich/devices). The
-Immich app's support is experimental and its video player does not use the certificate; see
-[Authenticating the Immich app](/securing-immich/immich-app) for the alternative.
+Installing a `.pfx` on each platform, including in the Immich app, is in
+[Install the certificate on your devices](/securing-immich/devices).
