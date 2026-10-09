@@ -16,7 +16,7 @@ choose to [review them first](/tag-and-review-uploads#review-uploads-before-they
 - [Add the upload service](#add-the-upload-service)
 - [Route it through your reverse proxy](#route-it-through-your-reverse-proxy)
 - [Turn on uploads for a share](#turn-on-uploads-for-a-share)
-- [Set a storage quota](#set-a-storage-quota)
+- [Set a storage quota](#set-a-storage-quota-optional)
 - [Request size limits](#request-size-limits)
 - [Get a notification for each upload](#get-a-notification-for-each-upload)
 - [Turn uploads off](#turn-uploads-off)
@@ -262,7 +262,7 @@ separate from IPP's, and the password never passes between the two.
 > [`gallery.singleImage`](/config/gallery#singleimage) to `true` to show a gallery page instead, or give visitors the
 > upload page's own link: the share's path on the upload URL, such as `https://photos.example.com/upload/share/<key>`.
 
-## (Optional) Set a storage quota
+## Set a storage quota (optional)
 
 By default an Immich user has unlimited storage. Set a quota on the user who owns the shares that accept uploads, so
 visitors cannot fill the disk: in Immich go to **Administration**, **User Management**, edit the user and set
