@@ -36,8 +36,8 @@ Cloudflare issues certificates from its own CA, up to 100 active per zone, on ev
 3. Repeat for each device, so that any one can be revoked on its own.
 4. In the **Hosts** section of the same page, select **Edit** and enter the Immich subdomain (`immich` for
    `immich.example.com`). Cloudflare now asks for a certificate on that hostname.
-5. Asking is not enforcing. Go to **Security**, **WAF**, **Custom rules** and create a rule with the action
-   **Block** and this expression, using the Expression Builder's edit mode:
+5. Asking is not enforcing. Go to **Security**, **Security rules**, select **Create rule**, **Custom rules**, and
+   create a rule with the action **Block** and this expression, using the expression editor:
 
    ```
    http.host eq "immich.example.com"
