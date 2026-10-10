@@ -168,6 +168,29 @@ const SECTIONS = data.sections.map(section => {
   return { title: section.title, blocks }
 })
 
+/** The words a field is found by: its section, flag table, label, key and description, in lower case. */
+const SEARCH_TEXT = new Map(data.sections.flatMap(section => section.fields.map(field =>
+  [field.path, [section.title, field.group, field.label, field.path, field.html.replace(/<[^>]*>/g, '')].join(' ').toLowerCase()]
+)))
+
+// With the form at module scope, so the filter is still applied after a Details link and back
+const filter = ref('')
+
+/** The sections with only the fields that contain every word typed, or all of them while the box is empty. */
+const visibleSections = computed(() => {
+  const words = filter.value.toLowerCase().split(/\s+/).filter(Boolean)
+  if (words.length === 0) return SECTIONS
+  const matches = (field: GeneratorField) => words.every(word => SEARCH_TEXT.get(field.path)?.includes(word))
+  return SECTIONS.flatMap(section => {
+    const blocks = section.blocks.flatMap((block): Block[] => {
+      if ('field' in block) return matches(block.field) ? [block] : []
+      const fields = block.fields.filter(matches)
+      return fields.length ? [{ ...block, fields }] : []
+    })
+    return blocks.length ? [{ ...section, blocks }] : []
+  })
+})
+
 const fieldId = (field: GeneratorField) => 'ipp-cg-' + field.path
 </script>
 
@@ -241,7 +264,20 @@ onMounted(() => {
           </template>
         </details>
 
-        <section v-for="section in SECTIONS" :key="section.title">
+        <div class="filter">
+          <input
+            v-model="filter"
+            class="input"
+            type="search"
+            placeholder="Filter options, e.g. download"
+            aria-label="Filter options"
+            spellcheck="false"
+          >
+          <button v-if="filter" type="button" class="clear" aria-label="Clear filter" @click="filter = ''">×</button>
+        </div>
+        <p v-if="filter && visibleSections.length === 0" class="empty">No options match "{{ filter }}".</p>
+
+        <section v-for="section in visibleSections" :key="section.title">
           <h2>{{ section.title }}</h2>
           <template v-for="block in section.blocks" :key="'field' in block ? block.field.path : block.path">
             <div v-if="'field' in block" class="field" :class="{ changed: isChanged(block.field) }">
@@ -480,6 +516,35 @@ textarea.input {
   resize: vertical;
 }
 
+.filter {
+  position: relative;
+  margin-top: 24px;
+}
+
+.filter .input {
+  padding-right: 36px;
+}
+
+/* One clear button, ours, on every browser */
+.filter .input::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.filter .clear {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 36px;
+  height: 100%;
+  color: var(--vp-c-text-2);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.filter .clear:hover {
+  color: var(--vp-c-text-1);
+}
+
 .switch {
   appearance: none;
   position: relative;
@@ -519,6 +584,7 @@ textarea.input {
 .switch:focus-visible,
 .button:focus-visible,
 .reset:focus-visible,
+.clear:focus-visible,
 .tabs button:focus-visible {
   outline: 2px solid var(--vp-c-brand-1);
   outline-offset: 2px;
