@@ -517,8 +517,19 @@ textarea.input {
   resize: vertical;
 }
 
+/* Stays in view while scrolling the options. 48px is the theme's sticky menu bar on narrow screens, which it doesn't expose as a variable */
 .filter {
-  position: relative;
+  position: sticky;
+  top: 48px;
+  z-index: 1;
+  padding: 8px 0;
+  background: var(--vp-c-bg);
+}
+
+@media (min-width: 960px) {
+  .filter {
+    top: var(--vp-nav-height);
+  }
 }
 
 .filter .input {
