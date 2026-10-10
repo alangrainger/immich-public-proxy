@@ -16,7 +16,7 @@ choose to [review them first](/tag-and-review-uploads#review-uploads-before-they
 - [Add the upload service](#add-the-upload-service)
 - [Route it through your reverse proxy](#route-it-through-your-reverse-proxy)
 - [Turn on uploads for a share](#turn-on-uploads-for-a-share)
-- [Set a storage quota](#set-a-storage-quota)
+- [Set a storage quota](#optional-set-a-storage-quota)
 - [Request size limits](#request-size-limits)
 - [Get a notification for each upload](#get-a-notification-for-each-upload)
 - [Turn uploads off](#turn-uploads-off)
@@ -152,6 +152,29 @@ server {
 }
 ```
 
+#### Traefik
+
+Just copy your current IPP router, change the service to IPP Upload container and add `` `&& PathPrefix(`/upload`)` `` to the host.
+
+```traefik
+ ipp:
+   entryPoints:
+     - websecure
+   service: ipp
+   rule: "Host(`ipp.domain.com`)"
+   tls:
+     certResolver: letsencrypt
+
+ ipp-upload:
+   entryPoints:
+     - websecure
+   service: ipp-upload
+   rule: "Host(`ipp.domain.com`) && PathPrefix(`/upload`)"
+   priority: 10
+   tls:
+     certResolver: letsencrypt
+```
+
 ### Own hostname
 
 Send everything on a separate upload hostname to the upload service.
@@ -178,6 +201,18 @@ server {
         proxy_pass http://ipp-upload-address:port;
     }
 }
+```
+
+#### Traefik
+
+```traefik
+ ipp:
+   entryPoints:
+     - websecure
+   service: ipp-upload
+   rule: "Host(`upload.domain.com`)"
+   tls:
+     certResolver: letsencrypt
 ```
 
 #### Tell IPP the upload URL
