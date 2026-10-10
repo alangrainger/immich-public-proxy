@@ -270,7 +270,7 @@ onMounted(() => {
             v-model="filter"
             class="input"
             type="search"
-            placeholder="Filter options, e.g. download"
+            placeholder="Filter options, e.g. video"
             aria-label="Filter options"
             spellcheck="false"
           >
