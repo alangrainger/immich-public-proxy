@@ -264,6 +264,7 @@ onMounted(() => {
           </template>
         </details>
 
+        <h2>Config options</h2>
         <div class="filter">
           <input
             v-model="filter"
@@ -278,7 +279,7 @@ onMounted(() => {
         <p v-if="filter && visibleSections.length === 0" class="empty">No options match "{{ filter }}".</p>
 
         <section v-for="section in visibleSections" :key="section.title">
-          <h2>{{ section.title }}</h2>
+          <h3>{{ section.title }}</h3>
           <template v-for="block in section.blocks" :key="'field' in block ? block.field.path : block.path">
             <div v-if="'field' in block" class="field" :class="{ changed: isChanged(block.field) }">
               <div class="head">
@@ -518,7 +519,6 @@ textarea.input {
 
 .filter {
   position: relative;
-  margin-top: 24px;
 }
 
 .filter .input {
