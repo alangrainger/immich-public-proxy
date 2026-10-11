@@ -49,9 +49,7 @@ Full instructions, including Kubernetes: **[Installation](https://docs.ipp.nz/in
 
 ### Let visitors send photos back
 
-Visitors can add their own photos and videos to a share, for example guests at a wedding. This needs a second,
-optional container, `immich-public-proxy-upload`, and the "Allow public user to upload" option on the share in Immich.
-The IPP container itself stays read-only. See
+Visitors can optimally add their own photos and videos to a share, for example guests at a wedding. See
 **[Let visitors send photos back](https://docs.ipp.nz/visitor-uploads)**.
 
 ## Documentation
