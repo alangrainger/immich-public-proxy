@@ -14,7 +14,6 @@
 
 Share your Immich photos and albums in a safe way without exposing your Immich instance to the public. 
 
-
 **This does not need an API key, or any privileged access to Immich.** Setup takes less than a minute, and you never need to touch it again as all of your sharing stays managed within Immich.
 
 See a [Live demo gallery](https://demo.ipp.nz/s/demo-gallery) serving straight out of my own Immich instance.
@@ -35,6 +34,9 @@ what you have shared.
 Read more in the [Introduction](https://docs.ipp.nz/introduction), including
 [why not just expose Immich's `/share/` path](https://docs.ipp.nz/introduction#why-not-expose-immich-directly).
 
+Visitors can optionally add their own photos and videos to a share, for example guests at a wedding. See
+**[Let visitors send photos back](https://docs.ipp.nz/visitor-uploads)**.
+
 ## Quick start
 
 1. Download the [docker-compose.yml](https://github.com/alangrainger/immich-public-proxy/blob/main/docker-compose.yml) file.
@@ -46,11 +48,6 @@ Read more in the [Introduction](https://docs.ipp.nz/introduction), including
 If you use Cloudflare, set your `/share/video/*` path to Bypass Cache or videos may not play.
 
 Full instructions, including Kubernetes: **[Installation](https://docs.ipp.nz/installation)**.
-
-### Let visitors send photos back
-
-Visitors can optimally add their own photos and videos to a share, for example guests at a wedding. See
-**[Let visitors send photos back](https://docs.ipp.nz/visitor-uploads)**.
 
 ## Documentation
 
