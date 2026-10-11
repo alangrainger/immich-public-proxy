@@ -63,8 +63,7 @@ Everything is at **[docs.ipp.nz](https://docs.ipp.nz)**:
 
 ## Feature requests
 
-You can [add feature requests here](https://github.com/alangrainger/immich-public-proxy/discussions/categories/feature-requests?discussions_q=is%3Aopen+category%3A%22Feature+Requests%22+sort%3Atop),
-however my goal with this project is to keep it as lean as possible.
+You can [add feature requests here](https://github.com/alangrainger/immich-public-proxy/discussions/categories/feature-requests?discussions_q=is%3Aopen+category%3A%22Feature+Requests%22+sort%3Atop).
 
 IPP has **read-only** access to Immich and stores nothing: anything that needs an API key, modifies Immich, or would
 require storing a share key won't be considered. Visitor uploads are the one write path, and they live in their own
