@@ -14,7 +14,7 @@ import {
   enforceMinimumImmichVersion,
   errorHandler,
   getKeyTypeFromShare,
-  healthcheck,
+  healthcheckHandler,
   invalidPasswordResponse,
   isKey,
   KeyType,
@@ -75,8 +75,10 @@ function bodyDeadline (ms: number): RequestHandler {
 
 /*
   [ROUTE] Healthcheck, reachable at the root whatever the mount prefix, so one
-  compose healthcheck fits both routing shapes.
+  compose healthcheck fits both routing shapes. It answers `upload-ok` where
+  IPP answers `ok`, so the owner can tell which service a route reached.
 */
+const healthcheck = healthcheckHandler('upload-ok')
 app.get(['/healthcheck', '/share/healthcheck'], (_req, res, next) => {
   addNoStoreHeaders(res)
   next()
