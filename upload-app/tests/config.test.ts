@@ -20,7 +20,7 @@ describe('upload options', () => {
   it('takes a usable field separator, and falls back for one that could be part of a field', () => {
     setConfig({ ipp: { upload: { fieldSeparator: '^' } } })
     expect(fieldSeparator()).toBe('^')
-    for (const bad of ['', '-', 'a', '.', ' ', '/', 7, null]) {
+    for (const bad of ['', '-', 'a', '.', ' ', '/', '^^', '_', 7, null]) {
       setConfig({ ipp: { upload: { fieldSeparator: bad } } })
       expect(fieldSeparator()).toBe(',')
     }

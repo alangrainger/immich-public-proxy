@@ -113,7 +113,7 @@ photo, so the script stops unless you pass `--prefix`.
 | `--apply`             | off                     | Add the tags. Without it, the script only reports.                                        |
 | `--parent <tag>`      | `Uploaded`              | The parent tag. `--parent "Guests/Wedding"` gives `Guests/Wedding/jane-smith`.            |
 | `--prefix <text>`     | `upload.filenamePrefix` | The prefix the files were stored with, if it differs from the current setting.            |
-| `--separator <chars>` | `upload.fieldSeparator` | The separator the files were stored with, if it differs from the current setting. Quote it: `'^'`. |
+| `--separator <char>` | `upload.fieldSeparator` | The separator the files were stored with, if it differs from the current setting. Quote it: `'^'`. |
 
 ### Files uploaded with IPP 4.0.0
 

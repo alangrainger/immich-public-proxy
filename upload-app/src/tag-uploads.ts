@@ -28,12 +28,12 @@ const PERMISSIONS = 'asset.read, user.read, tag.create and tag.asset'
 
 const USAGE = `Tag visitor uploads in Immich by the name in their filename.
 
-Usage: node dist/tag-uploads.js [--apply] [--parent <tag>] [--prefix <text>] [--separator <chars>]
+Usage: node dist/tag-uploads.js [--apply] [--parent <tag>] [--prefix <text>] [--separator <char>]
 
   --apply              Add the tags. Without it, only report what would be tagged.
   --parent <tag>       Parent tag for the visitor tags. Default "${DEFAULT_PARENT}".
   --prefix <text>      Filename prefix to look for. Default ipp.upload.filenamePrefix.
-  --separator <chars>  Field separator to read. Default ipp.upload.fieldSeparator.
+  --separator <char>   Field separator to read. Default ipp.upload.fieldSeparator.
 
 IMMICH_API_KEY must hold an API key of the share owner, with the permissions
 ${PERMISSIONS}.`
@@ -235,7 +235,7 @@ export async function main (argv: string[]): Promise<number> {
       'Pass --prefix with the prefix the files were stored with.')
   }
   const separator = values.separator ?? fieldSeparator()
-  if (!isUsableSeparator(separator)) return usage('"' + separator + '" cannot be a field separator.')
+  if (!isUsableSeparator(separator, prefix)) return usage('"' + separator + '" cannot be a field separator with the prefix "' + prefix + '".')
   const parent = (values.parent ?? DEFAULT_PARENT).split('/').map(part => part.trim()).filter(Boolean).join('/')
   if (!parent) return usage('The parent tag is empty.')
 

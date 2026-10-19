@@ -117,8 +117,8 @@ visitor's own claim; IPP cannot check it. For what to do with it, see
 
 **Type:** `string` · **Default:** `","`
 
-The characters that end each visitor field in a stored filename, between the field and the original name, as in
-`ipp_upload_jane-smith,IMG_0042.jpg`. The visitor's name is the only field today. The separator is removed from the
+The single character that ends each visitor field in a stored filename, between the field and the original name, as
+in `ipp_upload_jane-smith,IMG_0042.jpg`. The visitor's name is the only field today. The separator is removed from the
 visitor's own filename, so it always marks the end of a field. A file sent with no fields has no separator at all.
 
 A comma reads naturally, but some people name their photos with one, as in `Venice, Italy.jpg`, and that comma is
@@ -134,8 +134,9 @@ lost. If your visitors do, set `"^"`: it is never written by a camera or a phone
 }
 ```
 
-Any punctuation that is legal in a filename works, with one or more characters. A letter, digit, hyphen, dot, space
-or a character that is illegal in a filename (`/ ? < > \ : * | "`) is not accepted, and the default is used instead.
+Any one punctuation character that is legal in a filename works. More than one character, a letter, digit, hyphen,
+dot, space, a character that is illegal in a filename (`/ ? < > \ : * | "`) or a character in
+[`filenamePrefix`](#filenameprefix) is not accepted, and the default is used instead.
 Changing it later leaves the files already stored with the old one. How the filename is read back is explained in
 [The separator](/tag-and-review-uploads#the-separator).
 

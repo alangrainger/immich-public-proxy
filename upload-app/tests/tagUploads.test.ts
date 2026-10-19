@@ -202,6 +202,8 @@ describe('main', () => {
   it('refuses an unknown flag or an unusable separator', async () => {
     expect(await main(['--aply'])).toBe(2)
     expect(await main(['--separator', '-'])).toBe(2)
+    expect(await main(['--separator', '_'])).toBe(2)
+    expect(errors[errors.length - 1]).toMatch(/with the prefix "ipp_upload_"/)
   })
 
   it('reads the separator from config, and exits 1 on an Immich error', async () => {

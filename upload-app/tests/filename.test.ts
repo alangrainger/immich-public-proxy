@@ -66,7 +66,6 @@ describe('uploadFilename', () => {
   it('uses the configured separator, and removes that one instead', () => {
     expect(uploadFilename('IMG_0042.jpg', 'ipp_upload_', 'jane-smith', '^')).toBe('ipp_upload_jane-smith^IMG_0042.jpg')
     expect(uploadFilename('Paris, France^2.jpg', 'ipp_upload_', 'jane-smith', '^')).toBe('ipp_upload_jane-smith^Paris, France2.jpg')
-    expect(uploadFilename('IMG_0042.jpg', 'ipp_upload_', 'jane-smith', '~~')).toBe('ipp_upload_jane-smith~~IMG_0042.jpg')
   })
 
   it('stays within 254 characters with the extension intact', () => {
@@ -113,14 +112,20 @@ describe('uploaderSlug', () => {
 
 describe('isUsableSeparator', () => {
   it('accepts punctuation that sanitize keeps', () => {
-    for (const separator of ['^', ',', '~', '#', '+', '^^', '~,']) expect(isUsableSeparator(separator)).toBe(true)
+    for (const separator of ['^', ',', '~', '#', '+']) expect(isUsableSeparator(separator, 'ipp_upload_')).toBe(true)
   })
 
-  it('rejects anything that could be part of a name or a filename, or is not a string', () => {
-    for (const separator of ['', 'a', '1', '-', '.', ' ', 'x^', '^ ', '/', ':', '*', '"', '\u0000', 'ñ', '٣']) {
-      expect(isUsableSeparator(separator)).toBe(false)
+  it('rejects more than one character, anything that could be part of a name or a filename, or a non-string', () => {
+    for (const separator of ['', 'a', '1', '-', '.', ' ', 'x^', '^ ', '/', ':', '*', '"', '\u0000', 'ñ', '٣', '^^', '~,', '#!']) {
+      expect(isUsableSeparator(separator, 'ipp_upload_')).toBe(false)
     }
-    expect(isUsableSeparator(undefined)).toBe(false)
-    expect(isUsableSeparator(1)).toBe(false)
+    expect(isUsableSeparator(undefined, 'ipp_upload_')).toBe(false)
+    expect(isUsableSeparator(1, 'ipp_upload_')).toBe(false)
+  })
+
+  it('rejects a character in the prefix, which would hide the prefix from the stacking check', () => {
+    expect(isUsableSeparator('_', 'ipp_upload_')).toBe(false)
+    expect(isUsableSeparator(',', 'ipp,upload ')).toBe(false)
+    expect(isUsableSeparator('_', 'ipp-upload-')).toBe(true)
   })
 })

@@ -25,14 +25,13 @@ const MAX_UPLOADER_LENGTH = 32
 export const DEFAULT_FIELD_SEPARATOR = ','
 
 /**
- * Whether `separator` can mark the end of a field: a string that `sanitize`
- * leaves alone, with no slug character, dot or whitespace in it. A letter,
- * digit or hyphen could be part of the name, a dot could be read as the
- * extension, and whitespace would be trimmed from the ends of a stem.
+ * Whether `separator` can end a field: one character, kept by `sanitize`, not
+ * in `prefix`, and never part of a slug, an extension or a trimmed stem.
  */
-export function isUsableSeparator (separator: unknown): separator is string {
-  if (typeof separator !== 'string' || separator === '') return false
-  if (sanitize(separator) !== separator) return false
+export function isUsableSeparator (separator: unknown, prefix: string): separator is string {
+  // Counted by code point, so an emoji is one character
+  if (typeof separator !== 'string' || [...separator].length !== 1) return false
+  if (sanitize(separator) !== separator || storedPrefix(prefix).includes(separator)) return false
   return !/[\p{L}\p{N}\-.\s]/u.test(separator)
 }
 
@@ -79,7 +78,7 @@ export function uploadFilename (raw: unknown, prefix: string, uploader = '', sep
   if (!parts) return undefined
   const extension = parts[2]
   // The separator is removed from the visitor's name so it only ever marks a field
-  const stem = sanitize(parts[1]).split(separator).join('').trim()
+  const stem = sanitize(parts[1]).replaceAll(separator, '').trim()
   // An empty stem is a dotfile; a leading dot is a traversal remnant.
   if (!stem || stem.startsWith('.')) return undefined
 
