@@ -34,8 +34,8 @@ given is stored in the filename between the prefix and the original name, with a
 - Search for `ipp_upload_jane-smith,` to see everything Jane sent.
 - Add a workflow per visitor to tag or sort their uploads: **Filter by filename**, match type `startsWith`, pattern
   `ipp_upload_jane-smith,`, then **Add Tags** with a tag such as `Uploaded/Jane Smith`.
-- Tag every visitor's uploads at once, including past ones, with the
-  [bulk-tag script](#tag-every-visitor-s-uploads-at-once).
+- Tag the uploads of every visitor, including past ones, in one go with the
+  [bulk-tag script](#bulk-tag-uploads-by-visitor-name).
 
 The comma matters: without it, `ipp_upload_jane` would also match `jane-smith` and `janet`. The name is whatever the
 visitor typed, made lower case with hyphens for spaces and punctuation. A visitor who leaves the field empty is stored
@@ -57,51 +57,71 @@ goes on the end, an empty one is written empty, and a file with no fields at all
 script that splits on the separator reads all of them: the last piece is the original filename, the rest are the
 fields in order.
 
-## Tag every visitor's uploads at once
+## Bulk-tag uploads by visitor name
 
-A workflow acts only on new uploads, and you need one for each visitor. The upload image includes a script that tags
-every upload with a visitor name, old and new, as `Uploaded/<name>`: `ipp_upload_jane-smith,IMG_0042.jpg` gets the
-tag `Uploaded/jane-smith`.
+A workflow only sees uploads that arrive after you create it, and you need a separate workflow for each visitor.
+The upload image includes a script that does the same job in one pass over your whole library: it finds every file
+whose name starts with the upload prefix, reads the visitor's name from the filename, and tags the file
+`Uploaded/<name>`. So `ipp_upload_jane-smith,IMG_0042.jpg` gets the tag `Uploaded/jane-smith`, whether it was
+uploaded yesterday or months ago.
 
-1. In Immich, sign in as the user who owns the shares. The script sees only that user's photos.
-2. Open **Account Settings**, then **API Keys**, and create a **New API Key** with the permissions `asset.read`,
-   `user.read`, `tag.create` and `tag.asset`.
-3. Run the script in the upload container. Without `--apply` it changes nothing, and lists each file under the tag
-   it would get:
+Adding a tag is something a share key cannot do, so the script needs an Immich API key. You pass the key to the one
+command that runs the script, and nothing else. The upload service itself still holds no key, as described in
+[Why IPP marks the filename](#why-ipp-marks-the-filename-instead-of-tagging).
+
+### Run the script
+
+1. **Create an API key.** In Immich, sign in as the user who owns the shares, open **Account Settings**, then
+   **API Keys**, and create a **New API Key** with the permissions `asset.read`, `user.read`, `tag.create` and
+   `tag.asset`. The script only tags photos that belong to the user who made the key.
+
+2. **Do a dry run.** The script runs inside the upload container, which is `ipp-upload` in the examples in this
+   guide. Without `--apply` it changes nothing, and lists each tag with the files that would get it:
 
    ```bash
    docker exec -e IMMICH_API_KEY=your-api-key ipp-upload node dist/tag-uploads.js
    ```
 
-4. Check the list, then run it again with `--apply` to add the tags:
+3. **Add the tags.** Check the list, then run the same command with `--apply`:
 
    ```bash
    docker exec -e IMMICH_API_KEY=your-api-key ipp-upload node dist/tag-uploads.js --apply
    ```
 
-5. Delete the API key in Immich if you don't plan to run the script again.
+4. **Delete the API key** in Immich if you don't plan to run the script again.
 
-The API key reaches only that one command. The upload service itself still holds no key, as described in
-[Why IPP marks the filename](#why-ipp-marks-the-filename-instead-of-tagging).
+You can run the script again after each event. It adds only the tags that are missing, so files that already have
+their tag are left as they are.
 
-The script reads [`upload.filenamePrefix`](/config/upload-service#filenameprefix) and
-[`upload.fieldSeparator`](/config/upload-service#fieldseparator) from the container's config. A second run adds only
-the tags that are missing, so you can run it again after each event. Files without a visitor name, trashed files and
-files of other users are left alone.
+### What is tagged and what is skipped
+
+- A file with the prefix and a visitor name is tagged `Uploaded/<name>`.
+- A file with the prefix but no name, from a visitor who left the name field empty, is left alone.
+- Files in the trash, and files that belong to other Immich users, are left alone.
+
+The script reads the prefix and the separator from the container's config, the same
+[`upload.filenamePrefix`](/config/upload-service#filenameprefix) and
+[`upload.fieldSeparator`](/config/upload-service#fieldseparator) the upload service uses. If you have changed either
+setting since some files were uploaded, run the script once more with `--prefix` or `--separator` set to the old
+value, so it can read those files too. When `upload.filenamePrefix` is `""`, visitor uploads look like any other
+photo, so the script stops unless you pass `--prefix`.
+
+### Options
 
 | Option                | Default                 | Effect                                                                                    |
 |-----------------------|-------------------------|-------------------------------------------------------------------------------------------|
 | `--apply`             | off                     | Add the tags. Without it, the script only reports.                                        |
 | `--parent <tag>`      | `Uploaded`              | The parent tag. `--parent "Guests/Wedding"` gives `Guests/Wedding/jane-smith`.            |
-| `--prefix <text>`     | `upload.filenamePrefix` | The prefix to look for, when the files were stored with a different one.                  |
-| `--separator <chars>` | `upload.fieldSeparator` | The separator to read, when the files were stored with a different one. Quote it: `'^'`. |
+| `--prefix <text>`     | `upload.filenamePrefix` | The prefix the files were stored with, if it differs from the current setting.            |
+| `--separator <chars>` | `upload.fieldSeparator` | The separator the files were stored with, if it differs from the current setting. Quote it: `'^'`. |
 
-The script does not run when `upload.filenamePrefix` is `""`, because visitor uploads then look like any other photo.
+### Files uploaded with IPP 4.0.0
 
-Uploads from IPP 4.0.0 kept any comma in the visitor's filename, so `ipp_upload_Venice, Italy.jpg` looks as if it
-has a visitor field. The script skips a file when the text before the separator is not a name IPP writes, or the
-text after it starts with a space, and lists each file it skips. A 4.0.0 file named `ipp_upload_venice,italy.jpg`
-still reads as a visitor called `venice`, so check the dry-run list before you use `--apply`.
+IPP 4.0.0 kept a comma in the visitor's own filename, so a file such as `ipp_upload_Venice, Italy.jpg` looks as if
+`Venice` were a visitor name. The script skips a file when the text before the separator is not a name IPP would
+write, such as one with capitals or spaces, or when the text after it starts with a space, and lists each file it
+skips. A 4.0.0 file named `ipp_upload_venice,italy.jpg` cannot be told apart from a visitor called `venice`, so
+check the dry-run list before you use `--apply`.
 
 ## Review uploads before they appear
 
