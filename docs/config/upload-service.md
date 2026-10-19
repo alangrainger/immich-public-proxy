@@ -1,5 +1,7 @@
 ---
 prefix: ipp.upload
+# The keys sit at ### under Options, so the right-hand menu needs the third level
+outline: [2, 3]
 ---
 
 # Upload service
