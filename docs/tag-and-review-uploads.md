@@ -48,7 +48,7 @@ have no album.
 Two things to know:
 
 - The upload is pulled back, not held back. The workflow runs a few seconds after the file is stored, and IPP
-  caches a share's photo list for up to 2 minutes, so a visitor who has the gallery open can see the photo for a
+  caches a share's photo list for [`shareCacheTime`](/config/ipp-options#sharecachetime), 2 minutes by default, so a visitor who has the gallery open can see the photo for a
   short while. Anyone who copied the photo's address in that window can keep opening it until you delete it.
 - Keeping a photo relies on Immich leaving it in the album while it is locked, which it does for photos a workflow
   moves. If a future Immich version removes it from the album instead, add the approved photos back to the album

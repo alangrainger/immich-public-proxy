@@ -12,6 +12,7 @@ import {
   cachedPromise,
   fetchSharedLink,
   getConfigOption,
+  getNumericConfigOption,
   invalidPasswordResponse,
   isKey,
   log,
@@ -46,8 +47,15 @@ import { h } from 'preact'
   read-only. In-place mutation persists for the cache lifetime and leaks
   across concurrent requests. The assets are sorted into display order here,
   before caching, so no caller needs to sort them; clone before mutating.
+
+  The TTL is `ipp.shareCacheTime`, so it bounds how long a visitor's upload
+  takes to reach the gallery. It is read on each `set` because this cache is
+  built at import time, before the config is loaded.
 */
-const shareCache = new TtlLruCache<Promise<SharedLinkResult>>({ ttlMs: 120_000, max: 100 })
+const shareCache = new TtlLruCache<Promise<SharedLinkResult>>({
+  ttlMs: () => Math.max(1, getNumericConfigOption('ipp.shareCacheTime', 120)) * 1000,
+  max: 100
+})
 
 /*
   Per-asset detail cache for the lazy album flow. When a `needsDetail` album

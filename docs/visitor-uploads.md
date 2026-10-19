@@ -315,11 +315,14 @@ The owner sees them in Immich at once. Other visitors see them in the gallery on
 
 1. Immich has made the thumbnail. That takes seconds for a photo and longer for a video, and IPP hides a photo until
    then.
-2. IPP's cache of the share has expired. It is kept for up to 2 minutes.
+2. IPP's cache of the share has expired. It is kept for [`shareCacheTime`](/config/ipp-options#sharecachetime),
+   2 minutes by default. You can lower it, at the cost of more calls to Immich.
 3. The visitor's browser has fetched the gallery page again. It keeps the page for
    [`gallery.cacheTime`](/config/gallery#cachetime), 5 minutes by default.
 
-So a new photo can take up to about 7 minutes to show for a visitor who already had the gallery open. The upload page
+So a new photo can take up to about 7 minutes to show for a visitor who already had the gallery open. The visitor
+who sent it skips step 3: after an upload, the upload page's "Back to gallery" link fetches a fresh copy of the
+gallery page. The upload page
 includes a short notice to let visitors know about the delay; you can change the wording or hide it with the
 [`notice`](/config/upload-service#notice) option.
 

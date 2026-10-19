@@ -22,10 +22,14 @@ interface Entry<V> {
 
 export class TtlLruCache<V> {
   private readonly entries = new Map<string, Entry<V>>()
-  private readonly ttlMs: number
+  private readonly ttlMs: number | (() => number)
   private readonly max: number
 
-  constructor (opts: { ttlMs: number, max: number }) {
+  /**
+   * `ttlMs` may be a function, read on each `set`, for a TTL that comes from
+   * config: a cache built at import time exists before the config is loaded.
+   */
+  constructor (opts: { ttlMs: number | (() => number), max: number }) {
     this.ttlMs = opts.ttlMs
     this.max = opts.max
   }
@@ -55,7 +59,8 @@ export class TtlLruCache<V> {
    * just in case).
    */
   set (key: string, value: V): void {
-    this.entries.set(key, { value, expiresAt: Date.now() + this.ttlMs })
+    const ttlMs = typeof this.ttlMs === 'function' ? this.ttlMs() : this.ttlMs
+    this.entries.set(key, { value, expiresAt: Date.now() + ttlMs })
     if (this.entries.size > this.max) {
       const oldest = this.entries.keys().next().value
       if (oldest !== undefined && oldest !== key) this.entries.delete(oldest)

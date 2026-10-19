@@ -146,6 +146,16 @@ Where the optional upload service (the `immich-public-proxy-upload` container) i
 - **An absolute URL**, such as `https://upload.example.com`, means the service has a hostname of its own. It is trusted without a check. The URL may include a path, such as `https://photos.example.com/upload`, which points at the same place as the default but without the check.
 - **An empty string** never shows the button.
 
+## `shareCacheTime`
+
+**Type:** `int` · **Default:** `120`
+
+How long, in seconds, IPP keeps a share's list of photos in memory before it asks Immich again. Photos added to a share, including [visitor uploads](/visitor-uploads#when-do-uploads-appear), don't show in the gallery until this runs out. The minimum is `1`.
+
+A shorter time costs more calls to Immich. Each refresh of an album takes one call, plus one for each month that has photos in it, so an album that spans two years takes about 25 calls. While someone is viewing that album, IPP refreshes it once per `shareCacheTime`: about 12 calls a minute at the default, and about 100 a minute at `15`. A share that nobody is viewing costs nothing.
+
+Other visitors also wait for [`gallery.cacheTime`](/config/gallery#cachetime), a separate cache in their browser. The visitor who sent the photo skips that one: the upload page's "Back to gallery" link fetches a fresh copy of the gallery page.
+
 ## `gallery`
 
 **Type:** `object`

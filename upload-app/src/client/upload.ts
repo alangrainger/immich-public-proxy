@@ -115,6 +115,20 @@ function showError (row: UploadRow, message: string) {
   row.li.appendChild(p)
 }
 
+/**
+ * After a file reaches the share, point "Back to gallery" at a fresh URL. The
+ * browser, and any CDN, cache the gallery page per URL, so the visitor then
+ * gets IPP's current copy of the share rather than the one from before. A new
+ * value each time, because the visitor may already have opened the last one.
+ */
+function freshenBackLink () {
+  const back = document.getElementById('upload-back') as HTMLAnchorElement | null
+  if (!back) return
+  const url = new URL(back.href)
+  url.searchParams.set('r', Math.random().toString(36).slice(2, 10))
+  back.href = url.toString()
+}
+
 /** Record a finished row: its state, its counter, and the button it keeps. */
 function finish (row: UploadRow, state: 'done' | 'duplicate' | 'error', message?: string, retryable = false) {
   setState(row, state)
@@ -122,10 +136,11 @@ function finish (row: UploadRow, state: 'done' | 'duplicate' | 'error', message?
   if (state === 'error') {
     stats.errors++
     if (message) showError(row, message)
-  } else if (state === 'duplicate') {
-    stats.duplicates++
   } else {
-    stats.uploaded++
+    if (state === 'duplicate') stats.duplicates++
+    else stats.uploaded++
+    // A duplicate is added to the share too
+    freshenBackLink()
   }
   setAction(row, retryable ? 'retry' : 'dismiss')
 }

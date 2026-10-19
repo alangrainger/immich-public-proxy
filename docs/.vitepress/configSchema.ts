@@ -51,6 +51,7 @@ export const LABELS: Record<string, string> = {
   'ipp.gallery.singleImage': 'Gallery page for a single image',
   'ipp.gallery.singleVideo': 'Gallery page for a single video',
   'ipp.gallery.singleItemAutoOpen': 'Open single items in the lightbox',
+  'ipp.shareCacheTime': 'Share cache time (seconds)',
   'ipp.gallery.cacheTime': 'Cache time (seconds)',
   'ipp.lightbox.autoPlayVideos': 'Autoplay videos',
   'ipp.showMetadata.exif.dateTimeOriginal': 'Date taken',

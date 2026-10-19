@@ -42,7 +42,7 @@ export function UploadPage ({ config, basePath, galleryLink, notice }: UploadPag
       <body>
         <header id="header">
           {galleryLink && (
-            <a class="header-action" href={galleryLink} title="Back to gallery" aria-label="Back to gallery">
+            <a id="upload-back" class="header-action" href={galleryLink} title="Back to gallery" aria-label="Back to gallery">
               <Icon path={ICON_ARROW_LEFT}/>
             </a>
           )}

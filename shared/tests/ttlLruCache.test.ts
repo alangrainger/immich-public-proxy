@@ -108,3 +108,16 @@ describe('TtlLruCache re-set', () => {
     expect(cache.get('a')).toBe('2')
   })
 })
+
+describe('TtlLruCache TTL getter', () => {
+  it('reads the TTL on each set, so a later change applies to the next entry', () => {
+    let ttlMs = 1000
+    const cache = new TtlLruCache<string>({ ttlMs: () => ttlMs, max: 10 })
+    cache.set('a', '1')
+    ttlMs = 100
+    cache.set('b', '2')
+    vi.advanceTimersByTime(100)
+    expect(cache.get('a')).toBe('1')
+    expect(cache.get('b')).toBeUndefined()
+  })
+})
