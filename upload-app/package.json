@@ -5,6 +5,7 @@
   "scripts": {
     "predev": "tsc -b ../shared",
     "dev": "concurrently -n core,server,client -c magenta,blue,green \"tsc -b -w --preserveWatchOutput ../shared\" \"tsx watch src/index.ts\" \"tsc -w -p tsconfig.client.json\"",
+    "dev:app": "concurrently -n server,client -c blue,green \"tsx watch src/index.ts\" \"tsc -w -p tsconfig.client.json\"",
     "build": "tsc -b && tsc -p tsconfig.client.json",
     "test": "vitest run",
     "test:watch": "vitest",

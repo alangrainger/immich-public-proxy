@@ -8,6 +8,7 @@
       "byteBudget": 10240,
       "filenamePrefix": "ipp_upload_",
       "notice": "Uploaded photos may not appear in the gallery immediately.",
+      "askName": true,
       "notifyUrl": "",
       "notifyHeaders": {},
       "notifyTimeout": 10000

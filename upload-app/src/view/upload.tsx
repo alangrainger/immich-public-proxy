@@ -52,6 +52,12 @@ export function UploadPage ({ config, basePath, galleryLink, notice }: UploadPag
           </div>
         </header>
         <main id="upload-main">
+          {config.askName && (
+            <label class="upload-name">
+              <span class="upload-name-label">Your name</span>
+              <input id="upload-name" type="text" maxLength={64} autocomplete="name" placeholder="Optional"/>
+            </label>
+          )}
           <button id="upload-choose" type="button" class="upload-placeholder">
             <Icon path={ICON_CLOUD_UPLOAD} class="upload-placeholder-icon"/>
             <span class="upload-placeholder-title">Add photos</span>

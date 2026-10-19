@@ -98,6 +98,22 @@ Set it to `""` to hide it.
 The text is shown exactly as written, without HTML or links, so you can translate it into your gallery's language. The
 reason for the delay is explained in [When do uploads appear](/visitor-uploads#when-do-uploads-appear).
 
+### `askName`
+
+**Type:** `bool` · **Default:** `true`
+
+Whether the upload page has an optional "Your name" field. The name goes into each stored filename between the prefix
+and the original name, followed by a comma, so `IMG_0042.jpg` from Jane Smith is stored as
+`ipp_upload_jane-smith,IMG_0042.jpg`. A file sent without a name is stored as `ipp_upload_IMG_0042.jpg`, with no
+comma. The visitor's browser remembers the name for the next share on the same install. With `false`, the field is
+not shown and a name sent anyway is ignored.
+
+The name is stored as a slug: lower case, letters and digits in any script, and a hyphen for anything else, at most 32
+characters. A comma in the visitor's own filename is removed, so the comma always marks the end of the name. A
+filename that already carries the prefix gets neither the prefix nor the name again. The name is the visitor's own
+claim; IPP cannot check it. For what to do with it, see
+[Find each visitor's uploads](/tag-and-review-uploads#find-each-visitors-uploads).
+
 ### `notifyUrl`
 
 **Type:** `string` · **Default:** `""`
@@ -111,13 +127,14 @@ token in the URL never reaches the log.
 ```json
 {
   "title": "Photo sent to Holiday 2025",
-  "message": "ipp_upload_IMG_0042.jpg (3.0 MB) was uploaded to Holiday 2025.",
+  "message": "ipp_upload_jane-smith,IMG_0042.jpg (3.0 MB) was uploaded to Holiday 2025 by jane-smith.",
   "data": {
     "event": "upload",
     "time": "2026-10-05T07:18:00.000Z",
     "share": { "type": "album", "id": "9f1c…", "title": "Holiday 2025" },
-    "file": { "name": "ipp_upload_IMG_0042.jpg", "size": 3145728, "type": "image/jpeg" },
-    "asset": { "id": "4b2e…", "status": "created" }
+    "file": { "name": "ipp_upload_jane-smith,IMG_0042.jpg", "size": 3145728, "type": "image/jpeg" },
+    "asset": { "id": "4b2e…", "status": "created" },
+    "uploader": "jane-smith"
   }
 }
 ```
@@ -126,6 +143,8 @@ token in the URL never reaches the log.
   album ID or the shared link ID.
 - `asset.status` is `created`, or `duplicate` when the owner already had the same file. Immich adds a duplicate to the
   share too.
+- `uploader` is the visitor's name as it appears in the filename, or `""` when the visitor gave none or
+  [`askName`](#askname) is off.
 - The body never contains the share key, the custom URL or a password.
 
 ntfy reads the two fields through its inline templates:

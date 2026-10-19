@@ -30,6 +30,15 @@ describe('buildNotification', () => {
     expect(payload.message).toBe('ipp_upload_IMG_0042.jpg (3.0 MB) was uploaded to Holiday 2025.')
   })
 
+  it('names the uploader in the message and the data, and leaves both plain without one', () => {
+    const named = buildNotification(share(), { ...file, name: 'ipp_upload_jane-smith,IMG_0042.jpg' }, asset, 'jane-smith')
+    expect(named.message).toBe('ipp_upload_jane-smith,IMG_0042.jpg (3.0 MB) was uploaded to Holiday 2025 by jane-smith.')
+    expect(named.data.uploader).toBe('jane-smith')
+    const anonymous = buildNotification(share(), file, asset)
+    expect(anonymous.message).toBe('ipp_upload_IMG_0042.jpg (3.0 MB) was uploaded to Holiday 2025.')
+    expect(anonymous.data.uploader).toBe('')
+  })
+
   it('never carries the share key, slug or password', () => {
     const payload = JSON.stringify(buildNotification(share({ key: 'secret-key', slug: 'secret-slug', password: 'hunter2' }), file, asset))
     expect(payload).not.toContain('secret-key')

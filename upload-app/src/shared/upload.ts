@@ -86,6 +86,8 @@ export interface UploadPageConfig {
   maxFileSize: number
   /** Share title, for the drop overlay and the completion message. */
   title: string
+  /** Whether the page has a name field, sent with each file as `uploader`. */
+  askName: boolean
 }
 
 /** Success body of `POST <share>/upload`. */

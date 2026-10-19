@@ -28,7 +28,7 @@ import {
   title,
   unlockHandler
 } from '@ipp/core'
-import { galleryUrl, maxFileSize, uploadNotice } from './config'
+import { askName, galleryUrl, maxFileSize, uploadNotice } from './config'
 import { uploadAllowed } from './gate'
 import { createUploadReceiver } from './receive'
 import { getShare } from './share'
@@ -141,7 +141,8 @@ router.get('/:shareType(share|s)/:key', decodeCookie, asyncHandler(async (req, r
     config: {
       uploadUrl: `${req.baseUrl}/${req.params.shareType}/${encodeURIComponent(key)}/upload`,
       maxFileSize: maxFileSize(),
-      title: title(resolved.link)
+      title: title(resolved.link),
+      askName: askName()
     },
     basePath: req.baseUrl,
     galleryLink: gallery && `${gallery}/${req.params.shareType}/${encodeURIComponent(key)}`,

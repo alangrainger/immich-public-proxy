@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { byteBudget, filenamePrefix, maxFileSize, notifyConfig, uploadNotice } from '../src/config'
+import { askName, byteBudget, filenamePrefix, maxFileSize, notifyConfig, uploadNotice } from '../src/config'
 import { resetConfig, setConfig } from './helpers'
 
 afterEach(resetConfig)
@@ -13,6 +13,14 @@ describe('upload options', () => {
     expect(filenamePrefix()).toBe('ipp_upload_')
     expect(notifyConfig()).toBeUndefined()
     expect(uploadNotice()).toBe('Uploaded photos may not appear in the gallery immediately.')
+    expect(askName()).toBe(true)
+  })
+
+  it('turns the name field off only on an explicit false', () => {
+    setConfig({ ipp: { upload: { askName: false } } })
+    expect(askName()).toBe(false)
+    setConfig({ ipp: { upload: { askName: 0 } } })
+    expect(askName()).toBe(true)
   })
 
   it('shows the owner\'s notice, and hides one that is not a string', () => {

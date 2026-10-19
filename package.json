@@ -10,7 +10,8 @@
     "build": "npm run build --workspaces",
     "test": "npm test --workspaces && vitest run --root docs",
     "lint": "eslint shared app upload-app --ext .ts,.tsx",
-    "dev": "npm run dev --workspace=app",
+    "predev": "tsc -b shared",
+    "dev": "concurrently -n core,ipp,upload -c magenta,blue,green \"tsc -b -w --preserveWatchOutput shared\" \"npm run dev:app --workspace=app\" \"npm run dev:app --workspace=upload-app\"",
     "bump": "npm version --no-git-tag-version --workspaces"
   }
 }

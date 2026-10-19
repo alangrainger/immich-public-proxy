@@ -17,6 +17,8 @@ export interface UploadNotification {
     share: { type: 'album' | 'individual', id: string, title: string }
     file: { name: string, size: number, type: string }
     asset: { id: string, status: 'created' | 'duplicate' }
+    /** The visitor's name as stored in the filename, or empty when none was given. */
+    uploader: string
   }
 }
 
@@ -28,13 +30,15 @@ export interface UploadNotification {
 export function buildNotification (
   share: SharedLink,
   file: { name: string, size: number, type: string },
-  asset: { id: string, status: 'created' | 'duplicate' }
+  asset: { id: string, status: 'created' | 'duplicate' },
+  uploader = ''
 ): UploadNotification {
   const isAlbum = share.type === AlbumType.album
   const shareTitle = title(share)
+  const sender = uploader ? ` by ${uploader}` : ''
   return {
     title: 'Photo sent to ' + shareTitle,
-    message: `${file.name} (${formatSize(file.size)}) was uploaded to ${shareTitle}.`,
+    message: `${file.name} (${formatSize(file.size)}) was uploaded to ${shareTitle}${sender}.`,
     data: {
       event: 'upload',
       time: new Date().toISOString(),
@@ -45,7 +49,8 @@ export function buildNotification (
         title: shareTitle
       },
       file,
-      asset
+      asset,
+      uploader
     }
   }
 }

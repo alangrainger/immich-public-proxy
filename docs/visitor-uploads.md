@@ -47,6 +47,10 @@ What the owner sees in Immich:
 - Each file name starts with `ipp_upload_`, so visitor uploads are easy to find in search or to
   [tag with a workflow](/tag-and-review-uploads#tag-uploaded-photos). The prefix can be changed or
   [turned off](/config/upload-service#filenameprefix).
+- The upload page asks for the visitor's name, optionally. A name given is stored in the filename after the prefix,
+  as `ipp_upload_jane-smith,IMG_0042.jpg`, so you can see who sent what and
+  [find each visitor's uploads](/tag-and-review-uploads#find-each-visitors-uploads). The field can be
+  [turned off](/config/upload-service#askname).
 - The owner removes unwanted files in Immich, like any other photo.
 
 Other visitors see the new photos in the gallery within a few minutes. See
@@ -344,7 +348,8 @@ they reach the gallery, use a [review workflow](/tag-and-review-uploads#review-u
 ### Can visitors see who uploaded what, or remove photos
 
 No. The upload page shows nothing from the share, only the visitor's own uploads in progress, and nothing can be
-deleted or edited from it. The owner manages uploads in Immich.
+deleted or edited from it. The owner manages uploads in Immich. The name a visitor types is stored in the filename
+for the owner, and is not shown to other visitors.
 
 ### Why is uploading a separate container
 

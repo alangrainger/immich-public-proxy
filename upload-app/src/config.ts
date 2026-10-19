@@ -32,6 +32,11 @@ export function filenamePrefix (): string {
   return typeof configured === 'string' ? configured : ''
 }
 
+/** Whether the upload page asks the visitor's name, from `ipp.upload.askName`. */
+export function askName (): boolean {
+  return getConfigOption('ipp.upload.askName', true) !== false
+}
+
 /** Text shown under the placeholder on the upload page, from `ipp.upload.notice`. Empty hides it. */
 export function uploadNotice (): string {
   const configured = getConfigOption('ipp.upload.notice', 'Uploaded photos may not appear in the gallery immediately.')

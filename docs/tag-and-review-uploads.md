@@ -22,7 +22,37 @@ IPP talks to Immich with the visitor's share key and nothing else. Immich lets a
 store a file into the share. Every tag endpoint needs an API key with tag permissions. The upload service holds no
 API key, and giving one to a service that faces the public would let that service change your library.
 
-There are some other options under discussion in [GitHub discussion #302](https://github.com/alangrainger/immich-public-proxy/discussions/302). Feedback is welcome.
+A sidecar file could carry a tag without an API key, but Immich reads a sidecar's keywords in place of the
+photo's own, so a visitor's existing keywords would be lost. The filename keeps the photo's metadata untouched.
+
+## Find each visitor's uploads
+
+The upload page asks each visitor for their name (see [`upload.askName`](/config/upload-service#askname)). A name
+given is stored in the filename between the prefix and the original name, with a comma after it, as
+`ipp_upload_jane-smith,IMG_0042.jpg`. So in Immich:
+
+- Search for `ipp_upload_jane-smith,` to see everything Jane sent.
+- Add a workflow per visitor to tag or sort their uploads: **Filter by filename**, match type `startsWith`, pattern
+  `ipp_upload_jane-smith,`, then **Add Tags** with a tag such as `Uploaded/Jane Smith`.
+
+The comma matters: without it, `ipp_upload_jane` would also match `jane-smith` and `janet`. The name is whatever the
+visitor typed, made lower case with hyphens for spaces and punctuation. A visitor who leaves the field empty is stored
+with the prefix alone and no comma. A visitor can type any name, so treat it as a label, not proof.
+
+### Why a comma
+
+The filename is `<prefix><fields><original>`, where each field is followed by a comma. The separator had to be one
+that a visitor's own filename never keeps, so that a stem with no comma has no fields, and otherwise the last comma
+ends them. An underscore cannot do that: `ipp_upload_photo_1.jpg` would read as a visitor called `photo`. A tilde
+was ruled out because Android names an edited photo `IMG_1234~2.jpg`. A comma is typeable, legal on every file
+system, never written by a camera or a phone, and only rarely by a person. When a visitor's filename does contain
+one, it is removed.
+
+The fields are positional so that more can be added later, such as an event code the owner hands out. A new field
+goes on the end, an empty one is written empty, and a file with no fields at all has no comma. So a future
+`ipp_upload_jane-smith,34,IMG_0042.jpg` and `ipp_upload_,34,IMG_0042.jpg` would sit beside today's names, and a
+script that splits on the comma reads all of them: the last piece is the original filename, the rest are the fields
+in order.
 
 ## Review uploads before they appear
 

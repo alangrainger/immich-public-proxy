@@ -2,8 +2,8 @@ import { pipeline } from 'stream'
 import { Request, Response } from 'express-serve-static-core'
 import dayjs from 'dayjs'
 import { abortOnClose, KeyType, log, respondToInvalidRequest, SharedLink } from '@ipp/core'
-import { byteBudget, filenamePrefix, maxFileSize, rateLimit } from './config'
-import { uploadFilename } from './filename'
+import { askName, byteBudget, filenamePrefix, maxFileSize, rateLimit } from './config'
+import { uploaderSlug, uploadFilename } from './filename'
 import { forwardUpload } from './forward'
 import { authoriseUpload } from './gate'
 import { createIdleTimeoutStream, IdleTimeoutError } from './idleTimeoutStream'
@@ -66,6 +66,7 @@ export function createUploadReceiver () {
   const budget = createWindowBudget({ limit: byteBudget(), windowMs: 60 * 60_000 })
   const maxBytes = maxFileSize()
   const prefix = filenamePrefix()
+  const withName = askName()
 
   return async function receiveUpload (req: Request, res: Response, link: SharedLink, keyType: KeyType): Promise<void> {
     const key = req.params.key
@@ -90,7 +91,9 @@ export function createUploadReceiver () {
       return
     }
 
-    const filename = uploadFilename(req.query.filename, prefix)
+    // The name is the visitor's claim, kept only as part of the filename
+    const uploader = withName ? uploaderSlug(req.query.uploader) : ''
+    const filename = uploadFilename(req.query.filename, prefix, uploader)
     if (!filename) {
       refuse(res, 400, 'Missing or unusable filename')
       return
@@ -146,7 +149,8 @@ export function createUploadReceiver () {
     sendNotification(buildNotification(
       link,
       { name: filename, size: result.bytes, type: mimeType },
-      { id: result.id, status: result.status }
+      { id: result.id, status: result.status },
+      uploader
     ))
   }
 }

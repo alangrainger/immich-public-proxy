@@ -29,6 +29,7 @@ const MAX_RETRY_WAIT_MS = 60_000
 const config = JSON.parse(document.getElementById('upload-init')?.textContent || '{}') as UploadPageConfig
 const run = createLimiter(CONCURRENT_UPLOADS)
 
+const nameEl = document.getElementById('upload-name') as HTMLInputElement | null
 const panelEl = document.getElementById('upload-panel') as HTMLElement
 const progressEl = document.getElementById('upload-progress') as HTMLElement
 const countsEl = document.getElementById('upload-counts') as HTMLElement
@@ -217,6 +218,9 @@ function attempt (row: UploadRow, attemptNumber: number): Promise<Attempt> {
   return new Promise(resolve => {
     const timestamp = new Date(row.file.lastModified || Date.now()).toISOString()
     const query = new URLSearchParams({ filename: row.file.name, fileCreatedAt: timestamp, fileModifiedAt: timestamp })
+    // Read when the file is sent, so a name typed after choosing the files still counts
+    const uploader = nameEl?.value.trim()
+    if (uploader) query.set('uploader', uploader)
     const xhr = new XMLHttpRequest()
     row.xhr = xhr
     const started = Date.now()
@@ -358,6 +362,24 @@ function setupDragAndDrop () {
     e.preventDefault()
     hide()
     queueFiles(Array.from(e.dataTransfer?.files || []))
+  })
+}
+
+/*
+  Remember the visitor's name across shares. One origin serves every share on
+  an install, so the name typed for one gallery is offered for the next. The
+  storage may be unavailable, as in a private window, and the field then works
+  for this visit only.
+*/
+const NAME_KEY = 'ipp-uploader-name'
+if (nameEl) {
+  try {
+    nameEl.value = localStorage.getItem(NAME_KEY) || ''
+  } catch { }
+  nameEl.addEventListener('change', () => {
+    try {
+      localStorage.setItem(NAME_KEY, nameEl.value.trim())
+    } catch { }
   })
 }
 
