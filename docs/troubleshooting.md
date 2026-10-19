@@ -32,7 +32,7 @@ See [Request size limits](/visitor-uploads#request-size-limits).
 
 ## The "Add photos" button does not appear
 
-The upload service runs and its `/healthcheck` answers `ok`, but a share with **Allow public user to upload** turned
+The upload service runs and its `/healthcheck` answers `upload-ok`, but a share with **Allow public user to upload** turned
 on shows no button in the gallery. View the gallery page's source and look for `id="upload-link"`:
 
 - **The page source has no `upload-link`, and the script URL is `/share/static/3.x.x/...`.** IPP is still 3.x, which
@@ -42,7 +42,7 @@ on shows no button in the gallery. View the gallery page's source and look for `
   upload option is off in Immich, or [`uploadUrl`](/config/ipp-options#uploadurl) is set to an empty string or
   something other than a path or an absolute URL. A changed `config.json` or `CONFIG` needs a restart.
 - **`upload-link` is there with a `hidden` attribute.** IPP assumed the service at `/upload` on its own hostname and
-  the browser's check of `/upload/healthcheck` there did not answer `ok`. Open that URL on the **gallery** hostname,
+  the browser's check of `/upload/healthcheck` there did not answer `upload-ok`. Open that URL on the **gallery** hostname,
   for example `https://photos.example.com/upload/healthcheck`. An empty page means the reverse proxy sent the
   request to IPP rather than to the upload service, so add or fix the `/upload` route. If the upload service has its
   own hostname, set [`uploadUrl`](/config/ipp-options#uploadurl) to it in IPP's config; a setting elsewhere in the

@@ -37,14 +37,21 @@ export function abortOnClose (res: Response): AbortSignal {
   return controller.signal
 }
 
-/** `GET /healthcheck`: `ok` while Immich answers, else 503. */
-export async function healthcheck (_req: Request, res: Response): Promise<void> {
-  if (await accessible()) {
-    res.send('ok')
-  } else {
-    res.status(503).send()
+/**
+ * A `GET /healthcheck` handler: `body` while Immich answers, else 503.
+ */
+export function healthcheckHandler (body: string) {
+  return async (_req: Request, res: Response): Promise<void> => {
+    if (await accessible()) {
+      res.send(body)
+    } else {
+      res.status(503).send()
+    }
   }
 }
+
+/** IPP's `GET /healthcheck`: `ok` while Immich answers, else 503. */
+export const healthcheck = healthcheckHandler('ok')
 
 /**
  * Wrap an async route handler so a rejected promise is passed to Express's

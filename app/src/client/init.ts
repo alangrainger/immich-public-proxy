@@ -23,17 +23,18 @@ function readInitParams (): InitParams {
  * Show the "Add photos" button once the upload service answers. The button
  * is rendered hidden when the service is assumed to be at `/upload` on this
  * hostname rather than configured, so an install without the upload
- * container never shows a dead button. The upload service answers `ok`;
- * IPP itself answers the same path with an empty 204 when nothing is routed
- * there. The header may exist only for this button, in which case it is
- * hidden too.
+ * container never shows a dead button. The upload service answers
+ * `upload-ok`, or `ok` from a 4.0.0 upload container, still accepted so the
+ * two containers can be pulled in either order; IPP itself answers the same
+ * path with an empty 204 when nothing is routed there. The header may exist
+ * only for this button, in which case it is hidden too.
  */
 function revealUploadLink () {
   const link = document.getElementById('upload-link')
   const url = link?.dataset.healthcheck
   if (!link || !url) return
   fetch(url, { cache: 'no-store' }).then(async res => {
-    if (res.status !== 200 || (await res.text()).trim() !== 'ok') return
+    if (res.status !== 200 || !['upload-ok', 'ok'].includes((await res.text()).trim())) return
     link.hidden = false
     document.getElementById('header')?.removeAttribute('hidden')
   }).catch(() => {})

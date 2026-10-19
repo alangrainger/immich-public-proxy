@@ -142,7 +142,7 @@ With it off, a slug link gets a 404 and only the key form works.
 
 Where the optional upload service (the `immich-public-proxy-upload` container) is served. A share whose "Allow public user to upload" option is on in Immich then shows an "Add photos" button in the gallery header, which opens that share's page on the upload service. To set up the service, see [Let visitors send photos back](/visitor-uploads).
 
-- **A path**, such as the default `/upload`, means the service is on IPP's own hostname under that path. Before showing the button, the gallery page checks that the upload service answers `ok` at `<path>/healthcheck`, so an install without the upload container never shows a dead button. When nothing is routed there, IPP answers that path itself with an empty 204.
+- **A path**, such as the default `/upload`, means the service is on IPP's own hostname under that path. Before showing the button, the gallery page checks that the upload service answers `upload-ok` at `<path>/healthcheck`, so an install without the upload container never shows a dead button. When nothing is routed there, IPP answers that path itself with an empty 204.
 - **An absolute URL**, such as `https://upload.example.com`, means the service has a hostname of its own. It is trusted without a check. The URL may include a path, such as `https://photos.example.com/upload`, which points at the same place as the default but without the check.
 - **An empty string** never shows the button.
 

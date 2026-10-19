@@ -234,9 +234,12 @@ keys, and the upload service reads only those and [two shared options](/config/u
 ### Check the route
 
 Open `/healthcheck` on the upload URL: `https://photos.example.com/upload/healthcheck` or
-`https://upload.example.com/healthcheck`. It answers `ok` when the upload service can reach Immich, and a 503 when
-it cannot. With the upload service on a path on the IPP hostname, IPP shows the **Add photos** button only while
-this answers `ok`. With its own hostname, IPP shows the button whenever `uploadUrl` is set.
+`https://upload.example.com/healthcheck`. It answers `upload-ok` when the upload service can reach Immich, and a
+503 when it cannot. With the upload service on a path on the IPP hostname, IPP shows the **Add photos** button only
+while this answers `upload-ok`. With its own hostname, IPP shows the button whenever `uploadUrl` is set.
+
+A plain `ok` at `https://upload.example.com/healthcheck` means the hostname reached IPP, not the upload 
+service: IPP answers `ok` on its own `/healthcheck`. Point the upload hostname at the upload container's port.
 
 An empty page at `https://photos.example.com/upload/healthcheck` means the request reached IPP, not the upload
 service: IPP answers its own hostname's `/upload/healthcheck` with nothing when the route is missing. Check the
