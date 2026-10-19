@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { askName, byteBudget, filenamePrefix, maxFileSize, notifyConfig, uploadNotice } from '../src/config'
+import { askName, byteBudget, fieldSeparator, filenamePrefix, maxFileSize, notifyConfig, uploadNotice } from '../src/config'
 import { resetConfig, setConfig } from './helpers'
 
 afterEach(resetConfig)
@@ -14,6 +14,16 @@ describe('upload options', () => {
     expect(notifyConfig()).toBeUndefined()
     expect(uploadNotice()).toBe('Uploaded photos may not appear in the gallery immediately.')
     expect(askName()).toBe(true)
+    expect(fieldSeparator()).toBe(',')
+  })
+
+  it('takes a usable field separator, and falls back for one that could be part of a field', () => {
+    setConfig({ ipp: { upload: { fieldSeparator: '^' } } })
+    expect(fieldSeparator()).toBe('^')
+    for (const bad of ['', '-', 'a', '.', ' ', '/', 7, null]) {
+      setConfig({ ipp: { upload: { fieldSeparator: bad } } })
+      expect(fieldSeparator()).toBe(',')
+    }
   })
 
   it('turns the name field off only on an explicit false', () => {

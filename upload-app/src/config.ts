@@ -1,4 +1,5 @@
 import { getConfigOption, getNumericConfigOption } from '@ipp/core'
+import { DEFAULT_FIELD_SEPARATOR, isUsableSeparator } from './filename'
 
 const MB = 1024 * 1024
 
@@ -35,6 +36,16 @@ export function filenamePrefix (): string {
 /** Whether the upload page asks the visitor's name, from `ipp.upload.askName`. */
 export function askName (): boolean {
   return getConfigOption('ipp.upload.askName', true) !== false
+}
+
+/**
+ * The string that ends each visitor field in a stored filename, from
+ * `ipp.upload.fieldSeparator`. The default when the configured value could be
+ * part of a field or a filename, see `isUsableSeparator`.
+ */
+export function fieldSeparator (): string {
+  const configured = getConfigOption('ipp.upload.fieldSeparator', DEFAULT_FIELD_SEPARATOR)
+  return isUsableSeparator(configured) ? configured : DEFAULT_FIELD_SEPARATOR
 }
 
 /** Text shown under the placeholder on the upload page, from `ipp.upload.notice`. Empty hides it. */

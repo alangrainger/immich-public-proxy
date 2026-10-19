@@ -103,16 +103,41 @@ reason for the delay is explained in [When do uploads appear](/visitor-uploads#w
 **Type:** `bool` · **Default:** `true`
 
 Whether the upload page has an optional "Your name" field. The name goes into each stored filename between the prefix
-and the original name, followed by a comma, so `IMG_0042.jpg` from Jane Smith is stored as
-`ipp_upload_jane-smith,IMG_0042.jpg`. A file sent without a name is stored as `ipp_upload_IMG_0042.jpg`, with no
-comma. The visitor's browser remembers the name for the next share on the same install. With `false`, the field is
-not shown and a name sent anyway is ignored.
+and the original name, followed by the [`fieldSeparator`](#fieldseparator), so `IMG_0042.jpg` from Jane Smith is
+stored as `ipp_upload_jane-smith,IMG_0042.jpg`. A file sent without a name is stored as `ipp_upload_IMG_0042.jpg`,
+with no separator. The visitor's browser remembers the name for the next share on the same install. With `false`, the
+field is not shown and a name sent anyway is ignored.
 
 The name is stored as a slug: lower case, letters and digits in any script, and a hyphen for anything else, at most 32
-characters. A comma in the visitor's own filename is removed, so the comma always marks the end of the name. A
-filename that already carries the prefix gets neither the prefix nor the name again. The name is the visitor's own
-claim; IPP cannot check it. For what to do with it, see
+characters. A filename that already carries the prefix gets neither the prefix nor the name again. The name is the
+visitor's own claim; IPP cannot check it. For what to do with it, see
 [Find each visitor's uploads](/tag-and-review-uploads#find-each-visitors-uploads).
+
+### `fieldSeparator`
+
+**Type:** `string` · **Default:** `","`
+
+The characters that end each visitor field in a stored filename, between the field and the original name, as in
+`ipp_upload_jane-smith,IMG_0042.jpg`. The visitor's name is the only field today. The separator is removed from the
+visitor's own filename, so it always marks the end of a field. A file sent with no fields has no separator at all.
+
+A comma reads naturally, but some people name their photos with one, as in `Venice, Italy.jpg`, and that comma is
+lost. If your visitors do, set `"^"`: it is never written by a camera or a phone, and almost never by a person.
+
+```json
+{
+  "ipp": {
+    "upload": {
+      "fieldSeparator": "^"
+    }
+  }
+}
+```
+
+Any punctuation that is legal in a filename works, with one or more characters. A letter, digit, hyphen, dot, space
+or a character that is illegal in a filename (`/ ? < > \ : * | "`) is not accepted, and the default is used instead.
+Changing it later leaves the files already stored with the old one. How the filename is read back is explained in
+[The separator](/tag-and-review-uploads#the-separator).
 
 ### `notifyUrl`
 

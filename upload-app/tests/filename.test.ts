@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { uploaderSlug, uploadFilename } from '../src/filename'
+import { isUsableSeparator, uploaderSlug, uploadFilename } from '../src/filename'
 
 describe('uploadFilename', () => {
   it('keeps an ordinary filename', () => {
@@ -56,9 +56,17 @@ describe('uploadFilename', () => {
     expect(uploadFilename('IMG_0042.jpg', 'ipp_upload_', '')).toBe('ipp_upload_IMG_0042.jpg')
   })
 
-  it('removes commas from the visitor filename, so a comma only ever ends a field', () => {
+  it('removes the separator from the visitor filename, so it only ever ends a field', () => {
     expect(uploadFilename('Paris, France.jpg', 'ipp_upload_')).toBe('ipp_upload_Paris France.jpg')
     expect(uploadFilename('a,b,c.jpg', 'ipp_upload_', 'jane-smith')).toBe('ipp_upload_jane-smith,abc.jpg')
+    // Any other punctuation is an ordinary character and stays
+    expect(uploadFilename('best^photo.jpg', 'ipp_upload_', 'jane-smith')).toBe('ipp_upload_jane-smith,best^photo.jpg')
+  })
+
+  it('uses the configured separator, and removes that one instead', () => {
+    expect(uploadFilename('IMG_0042.jpg', 'ipp_upload_', 'jane-smith', '^')).toBe('ipp_upload_jane-smith^IMG_0042.jpg')
+    expect(uploadFilename('Paris, France^2.jpg', 'ipp_upload_', 'jane-smith', '^')).toBe('ipp_upload_jane-smith^Paris, France2.jpg')
+    expect(uploadFilename('IMG_0042.jpg', 'ipp_upload_', 'jane-smith', '~~')).toBe('ipp_upload_jane-smith~~IMG_0042.jpg')
   })
 
   it('stays within 254 characters with the extension intact', () => {
@@ -80,8 +88,9 @@ describe('uploaderSlug', () => {
     expect(uploaderSlug('山田 太郎')).toBe('山田-太郎')
   })
 
-  it('never keeps a comma or an underscore', () => {
+  it('never keeps a separator, punctuation or an underscore', () => {
     expect(uploaderSlug('Smith, Jane')).toBe('smith-jane')
+    expect(uploaderSlug('jane^smith')).toBe('jane-smith')
     expect(uploaderSlug('jane_smith')).toBe('jane-smith')
   })
 
@@ -99,5 +108,19 @@ describe('uploaderSlug', () => {
   it('is at most 32 characters, with no hyphen left at the end', () => {
     expect(uploaderSlug('a'.repeat(40))).toBe('a'.repeat(32))
     expect(uploaderSlug('a'.repeat(31) + ' b')).toBe('a'.repeat(31))
+  })
+})
+
+describe('isUsableSeparator', () => {
+  it('accepts punctuation that sanitize keeps', () => {
+    for (const separator of ['^', ',', '~', '#', '+', '^^', '~,']) expect(isUsableSeparator(separator)).toBe(true)
+  })
+
+  it('rejects anything that could be part of a name or a filename, or is not a string', () => {
+    for (const separator of ['', 'a', '1', '-', '.', ' ', 'x^', '^ ', '/', ':', '*', '"', '\u0000', 'ñ', '٣']) {
+      expect(isUsableSeparator(separator)).toBe(false)
+    }
+    expect(isUsableSeparator(undefined)).toBe(false)
+    expect(isUsableSeparator(1)).toBe(false)
   })
 })

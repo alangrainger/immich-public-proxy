@@ -9,6 +9,7 @@
       "filenamePrefix": "ipp_upload_",
       "notice": "Uploaded photos may not appear in the gallery immediately.",
       "askName": true,
+      "fieldSeparator": ",",
       "notifyUrl": "",
       "notifyHeaders": {},
       "notifyTimeout": 10000

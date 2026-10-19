@@ -39,20 +39,21 @@ The comma matters: without it, `ipp_upload_jane` would also match `jane-smith` a
 visitor typed, made lower case with hyphens for spaces and punctuation. A visitor who leaves the field empty is stored
 with the prefix alone and no comma. A visitor can type any name, so treat it as a label, not proof.
 
-### Why a comma
+### The separator
 
-The filename is `<prefix><fields><original>`, where each field is followed by a comma. The separator had to be one
-that a visitor's own filename never keeps, so that a stem with no comma has no fields, and otherwise the last comma
+The filename is `<prefix><fields><original>`, where each field is followed by the separator. The separator has to be
+one that a visitor's own filename never keeps, so that a stem without it has no fields, and otherwise the last one
 ends them. An underscore cannot do that: `ipp_upload_photo_1.jpg` would read as a visitor called `photo`. A tilde
-was ruled out because Android names an edited photo `IMG_1234~2.jpg`. A comma is typeable, legal on every file
-system, never written by a camera or a phone, and only rarely by a person. When a visitor's filename does contain
-one, it is removed.
+was ruled out because Android names an edited photo `IMG_1234~2.jpg`. The default comma is typeable, legal on every
+file system, never written by a camera or a phone, and reads naturally. When a visitor's filename does contain one,
+as in `Venice, Italy.jpg`, it is removed. If your visitors name their photos that way, set
+[`upload.fieldSeparator`](/config/upload-service#fieldseparator) to `^`, which almost nobody types in a filename.
 
 The fields are positional so that more can be added later, such as an event code the owner hands out. A new field
-goes on the end, an empty one is written empty, and a file with no fields at all has no comma. So a future
+goes on the end, an empty one is written empty, and a file with no fields at all has no separator. So a future
 `ipp_upload_jane-smith,34,IMG_0042.jpg` and `ipp_upload_,34,IMG_0042.jpg` would sit beside today's names, and a
-script that splits on the comma reads all of them: the last piece is the original filename, the rest are the fields
-in order.
+script that splits on the separator reads all of them: the last piece is the original filename, the rest are the
+fields in order.
 
 ## Review uploads before they appear
 

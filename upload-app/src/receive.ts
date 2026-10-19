@@ -2,7 +2,7 @@ import { pipeline } from 'stream'
 import { Request, Response } from 'express-serve-static-core'
 import dayjs from 'dayjs'
 import { abortOnClose, KeyType, log, respondToInvalidRequest, SharedLink } from '@ipp/core'
-import { askName, byteBudget, filenamePrefix, maxFileSize, rateLimit } from './config'
+import { askName, byteBudget, fieldSeparator, filenamePrefix, maxFileSize, rateLimit } from './config'
 import { uploaderSlug, uploadFilename } from './filename'
 import { forwardUpload } from './forward'
 import { authoriseUpload } from './gate'
@@ -67,6 +67,7 @@ export function createUploadReceiver () {
   const maxBytes = maxFileSize()
   const prefix = filenamePrefix()
   const withName = askName()
+  const separator = fieldSeparator()
 
   return async function receiveUpload (req: Request, res: Response, link: SharedLink, keyType: KeyType): Promise<void> {
     const key = req.params.key
@@ -93,7 +94,7 @@ export function createUploadReceiver () {
 
     // The name is the visitor's claim, kept only as part of the filename
     const uploader = withName ? uploaderSlug(req.query.uploader) : ''
-    const filename = uploadFilename(req.query.filename, prefix, uploader)
+    const filename = uploadFilename(req.query.filename, prefix, uploader, separator)
     if (!filename) {
       refuse(res, 400, 'Missing or unusable filename')
       return
