@@ -1,7 +1,5 @@
 ---
 prefix: ipp.upload
-# The keys sit at ### under Options, so the right-hand menu needs the third level
-outline: [2, 3]
 ---
 
 # Upload service
@@ -12,7 +10,8 @@ and videos back to a share. The setup is in [Let visitors send photos back](/vis
 The service reads config the same way as IPP: a `config.json` mounted at `/app/config.json`, the file named by
 `IPP_CONFIG`, or the `CONFIG` environment variable. Its own options are under `ipp.upload.*`. IPP never reads those,
 and the service reads none of IPP's options except the two under [Shared options](#shared-options), so one
-`config.json` can be mounted into both containers.
+`config.json` can be mounted into both containers. The [environment variables](/config/environment-variables) mean
+the same as for IPP, and `PUBLIC_BASE_URL` is IPP's public URL, not the service's own.
 
 ## Example
 
@@ -29,26 +28,7 @@ Accept files up to 2 GB, and send a notification to a Gotify server for each sto
 }
 ```
 
-## Environment variables
-
-`IMMICH_URL`, `PUBLIC_BASE_URL`, `IPP_PORT`, `IPP_CONFIG` and `CONFIG` mean the same as for IPP; see
-[Environment variables](/config/environment-variables). `IMMICH_URL` is required, and the `environment` block from the
-IPP container can be copied across as is.
-
-### `PUBLIC_BASE_URL`
-
-**Optional**
-
-The public URL of IPP, for example `https://photos.example.com`, the same value as on the IPP container. When set,
-the upload page has a back button to the share's gallery.
-
-The service has no setting for its own public URL. It serves its pages both under `/upload` and at the root, so the
-reverse proxy decides where it lives: a path on the IPP hostname (`photos.example.com/upload`) or a hostname of its
-own (`upload.example.com`). See [Route it through your reverse proxy](/visitor-uploads#route-it-through-your-reverse-proxy).
-
-## Options
-
-### `maxFileSize`
+## `maxFileSize`
 
 **Type:** `int` · **Default:** `500`
 
@@ -58,7 +38,7 @@ declared size on arrival and counts the bytes as they stream. The smallest value
 A reverse proxy or CDN in front of the service can have a lower limit of its own. See
 [Request size limits](/visitor-uploads#request-size-limits).
 
-### `rateLimit`
+## `rateLimit`
 
 **Type:** `int` · **Default:** `60`
 
@@ -70,7 +50,7 @@ size or type, does not count.
 The address is the one that connects to the service. Behind a reverse proxy every visitor has the proxy's address, so
 the limit covers each share as a whole.
 
-### `byteBudget`
+## `byteBudget`
 
 **Type:** `int` · **Default:** `10240`
 
@@ -81,7 +61,7 @@ turns the budget off.
 An upload that delivers less than 8 KB/s over a minute is dropped and its reservation released, so a stalled
 connection cannot hold the budget. The page retries a dropped upload.
 
-### `filenamePrefix`
+## `filenamePrefix`
 
 **Type:** `string` · **Default:** `"ipp_upload_"`
 
@@ -89,7 +69,7 @@ Added to the start of every stored filename: `IMG_0042.jpg` is stored as `ipp_up
 what an Immich workflow can match on; see [Tag uploaded photos](/tag-and-review-uploads#tag-uploaded-photos). Set it to `""`
 to store the visitor's filename unchanged.
 
-### `notice`
+## `notice`
 
 **Type:** `string` · **Default:** `"Uploaded photos may not appear in the gallery immediately."`
 
@@ -100,7 +80,7 @@ Set it to `""` to hide it.
 The text is shown exactly as written, without HTML or links, so you can translate it into your gallery's language. The
 reason for the delay is explained in [When do uploads appear](/visitor-uploads#when-do-uploads-appear).
 
-### `askName`
+## `askName`
 
 **Type:** `bool` · **Default:** `true`
 
@@ -115,7 +95,7 @@ characters. A filename that already carries the prefix gets neither the prefix n
 visitor's own claim; IPP cannot check it. For what to do with it, see
 [Find each visitor's uploads](/tag-and-review-uploads#find-each-visitor-s-uploads).
 
-### `fieldSeparator`
+## `fieldSeparator`
 
 **Type:** `string` · **Default:** `","`
 
@@ -142,7 +122,7 @@ dot, space, a character that is illegal in a filename (`/ ? < > \ : * | "`) or a
 Changing it later leaves the files already stored with the old one. How the filename is read back is explained in
 [The separator](/tag-and-review-uploads#the-separator).
 
-### `notifyUrl`
+## `notifyUrl`
 
 **Type:** `string` · **Default:** `""`
 
@@ -181,7 +161,7 @@ ntfy reads the two fields through its inline templates:
 https://ntfy.sh/your-topic?tpl=yes&t={{.title}}&m={{.message}}
 ```
 
-### `notifyHeaders`
+## `notifyHeaders`
 
 **Type:** `object` · **Default:** `{}`
 
@@ -198,7 +178,7 @@ Extra headers sent with each notification, for example an `Authorization` header
 }
 ```
 
-### `notifyTimeout`
+## `notifyTimeout`
 
 **Type:** `int` · **Default:** `10000`
 

@@ -51,4 +51,5 @@ The JSON config as an inline string. When set, no config file is read at all. Se
 `APP_VERSION` and `NODE_ENV` are set by the Docker image and are not meant to be changed.
 
 The optional upload service reads the same variables, with the same meanings, so the `environment` block can be
-copied across. See [Upload service](/config/upload-service#environment-variables).
+copied across. `PUBLIC_BASE_URL` stays IPP's public URL, which gives the upload page a back button to the gallery.
+See [Add the upload service](/visitor-uploads#add-the-upload-service).
