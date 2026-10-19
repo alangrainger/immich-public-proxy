@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { byteBudget, filenamePrefix, maxFileSize, notifyConfig } from '../src/config'
+import { byteBudget, filenamePrefix, maxFileSize, notifyConfig, uploadNotice } from '../src/config'
 import { resetConfig, setConfig } from './helpers'
 
 afterEach(resetConfig)
@@ -12,6 +12,14 @@ describe('upload options', () => {
     expect(byteBudget()).toBe(10240 * MB)
     expect(filenamePrefix()).toBe('ipp_upload_')
     expect(notifyConfig()).toBeUndefined()
+    expect(uploadNotice()).toBe('Uploaded photos may not appear in the gallery immediately.')
+  })
+
+  it('shows the owner\'s notice, and hides one that is not a string', () => {
+    setConfig({ ipp: { upload: { notice: 'Les photos apparaissent plus tard.' } } })
+    expect(uploadNotice()).toBe('Les photos apparaissent plus tard.')
+    setConfig({ ipp: { upload: { notice: false } } })
+    expect(uploadNotice()).toBe('')
   })
 
   it('never lets maxFileSize reach zero, which would refuse every file', () => {

@@ -32,6 +32,12 @@ export function filenamePrefix (): string {
   return typeof configured === 'string' ? configured : ''
 }
 
+/** Text shown under the placeholder on the upload page, from `ipp.upload.notice`. Empty hides it. */
+export function uploadNotice (): string {
+  const configured = getConfigOption('ipp.upload.notice', 'Uploaded photos may not appear in the gallery immediately.')
+  return typeof configured === 'string' ? configured : ''
+}
+
 /** Notification webhook settings from `ipp.upload.notify*`, or undefined when no URL is set. */
 export function notifyConfig (): { url: string, headers: Record<string, string>, timeoutMs: number } | undefined {
   const url = getConfigOption('ipp.upload.notifyUrl', '')

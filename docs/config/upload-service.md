@@ -87,6 +87,17 @@ Added to the start of every stored filename: `IMG_0042.jpg` is stored as `ipp_up
 what an Immich workflow can match on; see [Tag uploaded photos](/tag-and-review-uploads#tag-uploaded-photos). Set it to `""`
 to store the visitor's filename unchanged.
 
+### `notice`
+
+**Type:** `string` · **Default:** `"Uploaded photos may not appear in the gallery immediately."`
+
+A short line of text shown below the upload area, letting visitors know their photos won't show up in the gallery
+straight away. It's visible the whole time the page is open, so visitors read it before they upload as well as after.
+Set it to `""` to hide it.
+
+The text is shown exactly as written, without HTML or links, so you can translate it into your gallery's language. The
+reason for the delay is explained in [When do uploads appear](/visitor-uploads#when-do-uploads-appear).
+
 ### `notifyUrl`
 
 **Type:** `string` · **Default:** `""`

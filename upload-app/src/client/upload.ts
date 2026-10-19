@@ -32,7 +32,6 @@ const run = createLimiter(CONCURRENT_UPLOADS)
 const panelEl = document.getElementById('upload-panel') as HTMLElement
 const progressEl = document.getElementById('upload-progress') as HTMLElement
 const countsEl = document.getElementById('upload-counts') as HTMLElement
-const noteEl = document.getElementById('upload-note') as HTMLElement
 const listEl = document.getElementById('upload-list') as HTMLElement
 const dropEl = document.getElementById('upload-drop') as HTMLElement
 
@@ -72,7 +71,6 @@ function updateSummary () {
   uploaded.textContent = String(stats.uploaded)
   errors.textContent = String(stats.errors)
   duplicates.textContent = String(stats.duplicates)
-  noteEl.hidden = stats.remaining > 0 || stats.uploaded === 0
 }
 
 function setState (row: UploadRow, state: RowState) {

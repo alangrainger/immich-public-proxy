@@ -9,6 +9,8 @@ export interface UploadPageProps {
   basePath: string
   /** This share's gallery on IPP, when `PUBLIC_BASE_URL` is set. */
   galleryLink?: string
+  /** Plain text shown under the placeholder. Empty hides it. */
+  notice: string
 }
 
 function Icon ({ path, class: className }: { path: string, class?: string }) {
@@ -24,7 +26,7 @@ function Icon ({ path, class: className }: { path: string, class?: string }) {
  * gallery's header, a placeholder to click or drop on, and an upload panel
  * the client fills.
  */
-export function UploadPage ({ config, basePath, galleryLink }: UploadPageProps) {
+export function UploadPage ({ config, basePath, galleryLink, notice }: UploadPageProps) {
   const staticPath = `${basePath}/share/static/${ASSET_VERSION}`
   return (
     <html lang="en">
@@ -55,11 +57,11 @@ export function UploadPage ({ config, basePath, galleryLink }: UploadPageProps) 
             <span class="upload-placeholder-title">Add photos</span>
             <span class="upload-placeholder-text">Choose photos and videos<span class="upload-drop-hint">, or drop them here</span></span>
           </button>
+          {notice && <p class="upload-notice">{notice}</p>}
           <input id="upload-input" type="file" multiple accept={UPLOAD_ACCEPT} hidden/>
           <section id="upload-panel" hidden aria-live="polite" aria-label="Uploads">
             <p id="upload-progress"></p>
             <p id="upload-counts"></p>
-            <p id="upload-note" hidden>New photos appear in the gallery once Immich has processed them.</p>
             <ul id="upload-list"></ul>
           </section>
         </main>

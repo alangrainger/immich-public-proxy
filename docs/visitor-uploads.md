@@ -319,7 +319,9 @@ The owner sees them in Immich at once. Other visitors see them in the gallery on
 3. The visitor's browser has fetched the gallery page again. It keeps the page for
    [`gallery.cacheTime`](/config/gallery#cachetime), 5 minutes by default.
 
-So a new photo can take up to about 7 minutes to show for a visitor who already had the gallery open.
+So a new photo can take up to about 7 minutes to show for a visitor who already had the gallery open. The upload page
+includes a short notice to let visitors know about the delay; you can change the wording or hide it with the
+[`notice`](/config/upload-service#notice) option.
 
 ### What happens when a visitor sends a photo the owner already has
 
