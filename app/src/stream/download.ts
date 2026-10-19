@@ -3,7 +3,7 @@ import { assetFetchUrl, authHeadersForAsset } from '../immich'
 import { Response } from 'express-serve-static-core'
 import archiver, { Archiver } from 'archiver'
 import { resolveDownloadEndpoint, ImageEndpoint } from '../gallery/sizing'
-import { AssetPosition, attachmentDisposition, enrichFromHeaders, findPositionInShare, getFilename, servedMimeFrom } from '../gallery/filename'
+import { AssetPosition, attachmentDisposition, enrichFromHeaders, getFilename, servedMimeFrom, sharePositions } from '../gallery/filename'
 
 /** Attempts to get response headers from Immich for one asset before giving up. */
 const MAX_ATTEMPTS = 3
@@ -77,10 +77,12 @@ export async function downloadAssets (res: Response, share: SharedLink, assets: 
   // Headers and piping are deferred until the first asset has arrived, so a
   // failure before then can still be answered with a normal error response.
   let piped = false
+  // A multi-select download keeps each asset's position in the whole share
+  const positions = sharePositions(share)
 
   for (const asset of assets) {
     if (controller.signal.aborted) break
-    const fetched = await fetchOne(share, asset, controller.signal)
+    const fetched = await fetchOne(share, asset, positions.get(asset.id), controller.signal)
     if (fetched === null) break // aborted while waiting on Immich
     if ('failure' in fetched) {
       if (!piped) {
@@ -196,7 +198,7 @@ function teardownArchive (archive: Archiver, res: Response) {
  * Returns the fetched asset on success, a wrapped Failure on error, or null
  * if the download was aborted before we got an answer.
  */
-async function fetchOne (share: SharedLink, asset: Asset, signal: AbortSignal): Promise<FetchOutcome> {
+async function fetchOne (share: SharedLink, asset: Asset, position: AssetPosition | undefined, signal: AbortSignal): Promise<FetchOutcome> {
   if (signal.aborted) return null
 
   const endpoint = resolveDownloadEndpoint(asset, share.allowDownload !== false)
@@ -213,8 +215,6 @@ async function fetchOne (share: SharedLink, asset: Asset, signal: AbortSignal): 
   // so recover them from the headers we already fetched - no extra calls.
   const namedAsset = asset.originalFileName ? asset : enrichFromHeaders(asset, fetched.response)
 
-  // A multi-select download keeps each asset's position in the whole share
-  const position = findPositionInShare(share, asset.id)
   return { response: fetched.response, asset: namedAsset, endpoint, servedMime: servedMimeFrom(endpoint.subpath, fetched.response), url, position }
 }
 

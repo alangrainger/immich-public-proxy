@@ -38,10 +38,12 @@ export function abortOnClose (res: Response): AbortSignal {
 }
 
 /**
- * A `GET /healthcheck` handler: `body` while Immich answers, else 503.
+ * A `GET /healthcheck` handler: `body` while Immich answers, else 503. Never
+ * cached, so a browser or CDN can't answer for a service that has gone.
  */
 export function healthcheckHandler (body: string) {
   return async (_req: Request, res: Response): Promise<void> => {
+    addNoStoreHeaders(res)
     if (await accessible()) {
       res.send(body)
     } else {

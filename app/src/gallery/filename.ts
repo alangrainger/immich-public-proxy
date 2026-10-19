@@ -5,7 +5,7 @@ import { resolveImageEndpoint } from './sizing'
 
 /**
  * Where an asset sits in its share, for the position-based download names of
- * `downloadedFilename: 2`. Built with `positionInShare` / `findPositionInShare`.
+ * `downloadedFilename: 2`. Built with `positionInShare`, `sharePositions` or `findPositionInShare`.
  */
 export interface AssetPosition {
   /** The share's key. Only its hash reaches a filename, never the key itself. */
@@ -25,13 +25,28 @@ export function positionInShare (share: SharedLink, index: number): AssetPositio
 }
 
 /**
- * Look up an asset's position in its share by id. A motion photo's clip takes
- * the position of the still it belongs to. Undefined when the id is not in
- * the share, which `getFilename` treats as "no position".
+ * Every asset's position in its share, by id, for a caller that looks up many.
+ * A motion photo's clip takes the position of the still it belongs to. The
+ * first asset to claim an id keeps it.
+ */
+export function sharePositions (share: SharedLink): Map<string, AssetPosition> {
+  const positions = new Map<string, AssetPosition>()
+  share.assets.forEach((asset, index) => {
+    const position = positionInShare(share, index)
+    for (const id of [asset.id, asset.livePhotoVideoId]) {
+      if (id && !positions.has(id)) positions.set(id, position)
+    }
+  })
+  return positions
+}
+
+/**
+ * Look up one asset's position in its share by id, as `sharePositions` does.
+ * Undefined when the id is not in the share, which `getFilename` treats as
+ * "no position".
  */
 export function findPositionInShare (share: SharedLink, assetId: string): AssetPosition | undefined {
-  const index = share.assets.findIndex(a => a.id === assetId || a.livePhotoVideoId === assetId)
-  return index === -1 ? undefined : positionInShare(share, index)
+  return sharePositions(share).get(assetId)
 }
 
 /** `ipp.downloadedFilename` when the operator's config omits it: share hash plus position */

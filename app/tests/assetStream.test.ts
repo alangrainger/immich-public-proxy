@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { Asset, AssetType, KeyType, loadConfig } from '@ipp/core'
+import { Asset, AssetType, KeyType, loadConfig, SharedLink } from '@ipp/core'
 import { Writable } from 'stream'
 import type { Request, Response } from 'express-serve-static-core'
 import { assetBuffer } from '../src/stream/asset'
@@ -26,6 +26,11 @@ const asset: Asset = {
   isTrashed: false,
   originalFileName: 'a1.jpg',
   originalMimeType: 'image/jpeg'
+}
+
+/** A share holding just `item`, which every streamed asset belongs to. */
+function shareOf (item: Asset): SharedLink {
+  return { key: 'testkey', keyType: KeyType.key, type: 'INDIVIDUAL', assets: [item] }
 }
 
 function makeRequest (method = 'GET'): IncomingShareRequest {
@@ -117,16 +122,24 @@ function newSource (): Source {
 
 describe('assetBuffer streaming', () => {
   it('delivers the whole body and forwards upstream headers', async () => {
+    setConfig({ ipp: { downloadedFilename: 0 } })
     const source = newSource()
     vi.stubGlobal('fetch', pullFetch(4 * CHUNK, source))
     const res = new FakeRes()
-    await assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.original)
+    await assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.original, shareOf(asset))
     expect(res.received).toBe(4 * CHUNK)
     expect(res.writableFinished).toBe(true)
     expect(res.headers['content-type']).toBe('image/jpeg')
     expect(res.headers['content-length']).toBe(String(4 * CHUNK))
     expect(res.headers['content-disposition']).toContain('a1.jpg')
     expect(res.headers['x-accel-buffering']).toBe('no')
+  })
+
+  it('names a download by its position in the share by default', async () => {
+    vi.stubGlobal('fetch', pullFetch(CHUNK, newSource()))
+    const res = new FakeRes()
+    await assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.original, shareOf(asset))
+    expect(res.headers['content-disposition']).toMatch(/''[0-9a-f]{8}_001\.jpg$/)
   })
 
   it('applies backpressure so upstream is read no faster than the visitor drains it', async () => {
@@ -142,7 +155,7 @@ describe('assetBuffer streaming', () => {
       maxOutstanding = Math.max(maxOutstanding, source.pulled - res.received)
       origWrite(chunk, enc, cb)
     }
-    await assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.original)
+    await assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.original, shareOf(asset))
     expect(res.received).toBe(total)
     expect(maxOutstanding).toBeLessThan(1024 * 1024)
   }, 20_000)
@@ -160,7 +173,7 @@ describe('assetBuffer streaming', () => {
         setImmediate(() => res.destroy(new Error('client aborted')))
       }
     }
-    await assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.original)
+    await assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.original, shareOf(asset))
     expect(source.cancelled || source.signals[0].aborted).toBe(true)
     // Upstream must stop shortly after the disconnect, not run to infinity
     expect(source.pulled).toBeLessThan(1024 * 1024)
@@ -171,7 +184,7 @@ describe('assetBuffer streaming', () => {
     vi.stubGlobal('fetch', pullFetch(Infinity, source, 200))
     const res = new FakeRes()
     setTimeout(() => res.destroy(new Error('client aborted')), 20)
-    await expect(assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.original)).resolves.toBeUndefined()
+    await expect(assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.original, shareOf(asset))).resolves.toBeUndefined()
     expect(source.signals[0].aborted).toBe(true)
     expect(source.pulled).toBe(0)
     expect(res.received).toBe(0)
@@ -182,7 +195,7 @@ describe('assetBuffer streaming', () => {
     vi.stubGlobal('fetch', pullFetch(Infinity, source, 50))
     const res = new FakeRes()
     res.destroy()
-    await assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.original)
+    await assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.original, shareOf(asset))
     expect(source.signals[0].aborted).toBe(true)
     expect(source.pulled).toBe(0)
   })
@@ -191,7 +204,7 @@ describe('assetBuffer streaming', () => {
     const source = newSource()
     vi.stubGlobal('fetch', pullFetch(4 * CHUNK, source))
     const res = new FakeRes()
-    await assetBuffer(makeRequest('HEAD'), asResponse(res), asset, ImageSize.original)
+    await assetBuffer(makeRequest('HEAD'), asResponse(res), asset, ImageSize.original, shareOf(asset))
     expect(res.writableEnded).toBe(true)
     expect(res.received).toBe(0)
     expect(source.cancelled).toBe(true)
@@ -199,7 +212,7 @@ describe('assetBuffer streaming', () => {
   })
 
   it('names a WebP preview download .webp', async () => {
-    setConfig({ ipp: { maxDownloadQuality: 'preview' } })
+    setConfig({ ipp: { maxDownloadQuality: 'preview', downloadedFilename: 0 } })
     vi.stubGlobal('fetch', vi.fn(async () => new globalThis.Response(
       new ReadableStream({
         start (controller) { controller.enqueue(new Uint8Array(1024)); controller.close() }
@@ -207,7 +220,7 @@ describe('assetBuffer streaming', () => {
       { status: 200, headers: { 'content-type': 'image/webp', 'content-length': '1024' } }
     )))
     const res = new FakeRes()
-    await assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.original)
+    await assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.original, shareOf(asset))
     expect(res.headers['content-disposition']).toContain('a1.webp')
     expect(res.headers['content-type']).toBe('image/webp')
   })
@@ -227,15 +240,16 @@ describe('assetBuffer streaming', () => {
       setConfig({ ipp: { downloadedFilename: 0 } })
       vi.stubGlobal('fetch', svgFetch({ 'content-disposition': 'attachment; filename="drawing.svg"' }))
       const res = new FakeRes()
-      await assetBuffer(makeRequest(), asResponse(res), albumAsset, ImageSize.original)
+      await assetBuffer(makeRequest(), asResponse(res), albumAsset, ImageSize.original, shareOf(albumAsset))
       expect(res.headers['content-disposition']).toBe("attachment; filename*=UTF-8''drawing.svg")
       expect(res.headers['x-content-type-options']).toBe('nosniff')
     })
 
     it('falls back to the asset id when Immich sends no filename', async () => {
+      setConfig({ ipp: { downloadedFilename: 0 } })
       vi.stubGlobal('fetch', svgFetch({}))
       const res = new FakeRes()
-      await assetBuffer(makeRequest(), asResponse(res), albumAsset, ImageSize.original)
+      await assetBuffer(makeRequest(), asResponse(res), albumAsset, ImageSize.original, shareOf(albumAsset))
       expect(res.headers['content-disposition']).toBe("attachment; filename*=UTF-8''a2.svg")
     })
   })
@@ -243,7 +257,7 @@ describe('assetBuffer streaming', () => {
   it('serves display sizes inline, still with nosniff', async () => {
     vi.stubGlobal('fetch', pullFetch(CHUNK, newSource()))
     const res = new FakeRes()
-    await assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.preview)
+    await assetBuffer(makeRequest(), asResponse(res), asset, ImageSize.preview, shareOf(asset))
     expect(res.headers['content-disposition']).toBeUndefined()
     expect(res.headers['x-content-type-options']).toBe('nosniff')
   })

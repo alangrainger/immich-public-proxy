@@ -19,7 +19,7 @@ import { pipeline } from 'stream/promises'
  * or locked assets are handled implicitly: Immich's own endpoints refuse
  * to serve them, and the upstream failure surfaces as a client 404.
  */
-export async function assetBuffer (req: IncomingShareRequest, res: Response, asset: Asset, size?: ImageSize | string, share?: SharedLink, forceVideoPlayback = false) {
+export async function assetBuffer (req: IncomingShareRequest, res: Response, asset: Asset, size: ImageSize | string | undefined, share: SharedLink, forceVideoPlayback = false) {
   // A cancelled download must not leave Immich streaming #288
   const upstream = abortOnClose(res)
 
@@ -31,7 +31,7 @@ export async function assetBuffer (req: IncomingShareRequest, res: Response, ass
   let servedSize: ImageSize | undefined
 
   const requested = validateImageSize(size)
-  const useVideoPlayback = forceVideoPlayback || (isVideoAsset(asset) && requested === ImageSize.original && share?.allowDownload === false)
+  const useVideoPlayback = forceVideoPlayback || (isVideoAsset(asset) && requested === ImageSize.original && share.allowDownload === false)
 
   if (useVideoPlayback) {
     subpath = '/video/playback'
@@ -60,7 +60,7 @@ export async function assetBuffer (req: IncomingShareRequest, res: Response, ass
       if (detail?.originalMimeType) asset = { ...asset, originalMimeType: detail.originalMimeType }
     }
     const endpoint = requested === ImageSize.original
-      ? resolveDownloadEndpoint(asset, share?.allowDownload !== false)
+      ? resolveDownloadEndpoint(asset, share.allowDownload !== false)
       : resolveImageEndpoint(requested, asset)
     subpath = endpoint.subpath
     sizeQueryParam = endpoint.sizeQueryParam
@@ -95,7 +95,7 @@ export async function assetBuffer (req: IncomingShareRequest, res: Response, ass
     // Always an attachment, so an SVG can't render inline. Album assets have
     // no originalFileName; Immich's own Content-Disposition carries it.
     const named = asset.originalFileName ? asset : enrichFromHeaders(asset, data)
-    const position = share && findPositionInShare(share, asset.id)
+    const position = findPositionInShare(share, asset.id)
     res.setHeader('Content-Disposition', attachmentDisposition(getFilename(named, servedSize, servedMimeFrom(subpath, data), position)))
   }
   headerList.forEach(header => {

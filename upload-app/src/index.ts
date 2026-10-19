@@ -79,10 +79,7 @@ function bodyDeadline (ms: number): RequestHandler {
   IPP answers `ok`, so the owner can tell which service a route reached.
 */
 const healthcheck = healthcheckHandler('upload-ok')
-app.get(['/healthcheck', '/share/healthcheck'], (_req, res, next) => {
-  addNoStoreHeaders(res)
-  next()
-}, asyncHandler(healthcheck))
+app.get(['/healthcheck', '/share/healthcheck'], asyncHandler(healthcheck))
 
 const router = Router()
 

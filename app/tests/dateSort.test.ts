@@ -3,9 +3,9 @@ import { Asset, AssetType, KeyType, loadConfig } from '@ipp/core'
 import { dateSortComparator, displayOrder } from '../src/gallery/order'
 
 /*
-  The date-grouping sort must follow the album's own order while
-  keeping undated assets last in BOTH directions. displayOrder applies it,
-  after the album's own sort, when `gallery.groupByDate` is on.
+  The date sort must follow the album's own order while keeping undated
+  assets last in BOTH directions. displayOrder sorts once: by local time when
+  `gallery.groupByDate` is on, else by capture time in the album's order.
 */
 
 afterEach(() => {
@@ -82,6 +82,12 @@ describe('displayOrder', () => {
   it('sorts an album by capture time in its own direction', () => {
     expect(ids(displayOrder(album(), 'asc'))).toEqual(['c', 'a', 'b'])
     expect(ids(displayOrder(album(), 'desc'))).toEqual(['b', 'a', 'c'])
+  })
+
+  it('puts undated assets last in an album sort', () => {
+    const withUndated = () => [dated('a', '2024-02-01T10:00:00.000Z'), { ...asset(), id: 'u' }, dated('c', '2024-01-01T10:00:00.000Z')]
+    expect(ids(displayOrder(withUndated(), 'asc'))).toEqual(['c', 'a', 'u'])
+    expect(ids(displayOrder(withUndated(), 'desc'))).toEqual(['a', 'c', 'u'])
   })
 
   it('sorts by local time when date grouping is on, so buckets stay contiguous', () => {

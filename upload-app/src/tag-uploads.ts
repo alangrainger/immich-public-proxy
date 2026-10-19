@@ -49,23 +49,23 @@ export interface TagOptions {
   print: (line: string) => void
 }
 
-/** What `tagUploads` found and did. */
-export interface TagSummary {
-  /** Asset IDs per visitor name. */
-  named: Map<string, string[]>
-  anonymous: number
-  unreadable: number
-  /** Assets that got a tag they did not have. Always 0 in a dry run. */
-  tagged: number
-}
-
 /** The fields of an Immich `AssetResponseDto` that the script reads. */
-interface Asset {
+export interface Asset {
   id: string
   ownerId: string
   originalFileName: string
   visibility: string
   isTrashed: boolean
+}
+
+/** What `tagUploads` found and did. */
+export interface TagSummary {
+  /** Uploads per visitor name. */
+  named: Map<string, Asset[]>
+  anonymous: number
+  unreadable: number
+  /** Assets that got a tag they did not have. Always 0 in a dry run. */
+  tagged: number
 }
 
 /** A failed Immich call, with a message fit for the owner. */
@@ -136,7 +136,6 @@ function files (count: number): string {
 export async function tagUploads (options: TagOptions): Promise<TagSummary> {
   const { apiKey, apply, parent, prefix, separator, print } = options
   const summary: TagSummary = { named: new Map(), anonymous: 0, unreadable: 0, tagged: 0 }
-  const fileNames = new Map<string, string[]>()
 
   const uploads = await findUploads(apiKey, prefix)
   print('Found ' + files(uploads.length) + ' starting with "' + prefix + '".')
@@ -148,8 +147,9 @@ export async function tagUploads (options: TagOptions): Promise<TagSummary> {
       summary.unreadable++
       print('Skipped ' + asset.originalFileName + ': ' + stored.reason + '.')
     } else {
-      summary.named.set(stored.uploader, [...(summary.named.get(stored.uploader) || []), asset.id])
-      fileNames.set(stored.uploader, [...(fileNames.get(stored.uploader) || []), asset.originalFileName])
+      const named = summary.named.get(stored.uploader)
+      if (named) named.push(asset)
+      else summary.named.set(stored.uploader, [asset])
     }
   }
 
@@ -164,13 +164,14 @@ export async function tagUploads (options: TagOptions): Promise<TagSummary> {
 
   print('')
   for (const name of names) {
-    const ids = summary.named.get(name) || []
+    const sent = summary.named.get(name) || []
     const tag = parent + '/' + name
     if (!apply) {
-      print(tag + ': ' + files(ids.length))
-      for (const fileName of (fileNames.get(name) || []).sort()) print('  ' + fileName)
+      print(tag + ': ' + files(sent.length))
+      for (const fileName of sent.map(asset => asset.originalFileName).sort()) print('  ' + fileName)
       continue
     }
+    const ids = sent.map(asset => asset.id)
     const tagId = tagIds.get(tag)
     if (!tagId) throw new ImmichError('Immich did not return the tag ' + tag)
     let added = 0

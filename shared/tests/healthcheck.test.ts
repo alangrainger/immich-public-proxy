@@ -10,8 +10,9 @@ import * as client from '../src/immich/client'
 */
 
 function response () {
-  const res = { body: undefined as string | undefined, code: 200 }
+  const res = { body: undefined as string | undefined, code: 200, headers: {} as Record<string, string> }
   return Object.assign(res, {
+    set (name: string, value: string) { res.headers[name] = value; return res },
     send (body?: string) { res.body = body; return res },
     status (code: number) { res.code = code; return res }
   })
@@ -34,6 +35,15 @@ describe('healthcheckHandler', () => {
     await healthcheckHandler('upload-ok')({} as never, res as never)
     expect(res.code).toBe(503)
     expect(res.body).toBeUndefined()
+  })
+
+  it('is never cached, up or down', async () => {
+    for (const up of [true, false]) {
+      vi.spyOn(client, 'accessible').mockResolvedValue(up)
+      const res = response()
+      await healthcheckHandler('upload-ok')({} as never, res as never)
+      expect(res.headers['Cache-Control']).toContain('no-store')
+    }
   })
 
   it("is IPP's own healthcheck with `ok`", async () => {
