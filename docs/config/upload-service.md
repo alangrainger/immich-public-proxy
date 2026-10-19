@@ -111,7 +111,7 @@ field is not shown and a name sent anyway is ignored.
 The name is stored as a slug: lower case, letters and digits in any script, and a hyphen for anything else, at most 32
 characters. A filename that already carries the prefix gets neither the prefix nor the name again. The name is the
 visitor's own claim; IPP cannot check it. For what to do with it, see
-[Find each visitor's uploads](/tag-and-review-uploads#find-each-visitors-uploads).
+[Find each visitor's uploads](/tag-and-review-uploads#find-each-visitor-s-uploads).
 
 ### `fieldSeparator`
 

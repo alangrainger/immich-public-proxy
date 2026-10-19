@@ -52,6 +52,11 @@ export function uploaderSlug (raw: unknown): string {
     .replace(/-+$/, '')
 }
 
+/** The prefix as it appears in a stored filename: sanitised and trimmed. */
+export function storedPrefix (prefix: string): string {
+  return sanitize(prefix).trim()
+}
+
 /** The header for these fields, in order, or empty when none has a value. */
 function fieldHeader (fields: string[], separator: string): string {
   if (!fields.some(Boolean)) return ''
@@ -78,10 +83,45 @@ export function uploadFilename (raw: unknown, prefix: string, uploader = '', sep
   // An empty stem is a dotfile; a leading dot is a traversal remnant.
   if (!stem || stem.startsWith('.')) return undefined
 
-  const cleanPrefix = sanitize(prefix).trim()
+  const cleanPrefix = storedPrefix(prefix)
   // Don't stack the prefix, or the name, on a file that already carries the prefix
   const hasPrefix = cleanPrefix !== '' && stem.startsWith(cleanPrefix)
   const wanted = hasPrefix ? '' : cleanPrefix + fieldHeader([uploader], separator)
   const room = MAX_FILENAME_LENGTH - wanted.length - extension.length
   return wanted + stem.slice(0, Math.max(1, room)) + extension
+}
+
+/** What a stored filename says about who sent it, from `readUploadFilename`. */
+export type StoredUpload =
+  | { kind: 'named', uploader: string }
+  | { kind: 'anonymous' }
+  | { kind: 'unreadable', reason: string }
+
+/**
+ * Read the visitor fields back from a name that `uploadFilename` stored.
+ * Undefined when the name does not start with `prefix`. The original filename
+ * never keeps the separator, so the last separator ends the fields and the
+ * first field is the uploader. A name that `uploadFilename` could not have
+ * written is unreadable rather than guessed at: 4.0.0 kept commas in the
+ * visitor's filename, so `ipp_upload_Venice, Italy.jpg` is not a visitor
+ * called `Venice`.
+ */
+export function readUploadFilename (name: string, prefix: string, separator: string): StoredUpload | undefined {
+  if (!prefix || !name.startsWith(prefix)) return undefined
+  const rest = name.slice(prefix.length)
+  if (!rest.includes(separator)) return { kind: 'anonymous' }
+
+  const fields = rest.split(separator)
+  const original = fields.pop() || ''
+  // `uploadFilename` trims the original, so a leading space means the
+  // separator was part of the visitor's own filename
+  if (original === '' || original.trimStart() !== original) {
+    return { kind: 'unreadable', reason: 'the text after the separator is not a filename IPP wrote' }
+  }
+  const uploader = fields[0]
+  if (uploader === '') return { kind: 'anonymous' }
+  if (uploaderSlug(uploader) !== uploader) {
+    return { kind: 'unreadable', reason: '"' + uploader + '" is not a name IPP wrote' }
+  }
+  return { kind: 'named', uploader }
 }

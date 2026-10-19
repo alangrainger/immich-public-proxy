@@ -34,6 +34,8 @@ given is stored in the filename between the prefix and the original name, with a
 - Search for `ipp_upload_jane-smith,` to see everything Jane sent.
 - Add a workflow per visitor to tag or sort their uploads: **Filter by filename**, match type `startsWith`, pattern
   `ipp_upload_jane-smith,`, then **Add Tags** with a tag such as `Uploaded/Jane Smith`.
+- Tag every visitor's uploads at once, including past ones, with the
+  [bulk-tag script](#tag-every-visitor-s-uploads-at-once).
 
 The comma matters: without it, `ipp_upload_jane` would also match `jane-smith` and `janet`. The name is whatever the
 visitor typed, made lower case with hyphens for spaces and punctuation. A visitor who leaves the field empty is stored
@@ -54,6 +56,52 @@ goes on the end, an empty one is written empty, and a file with no fields at all
 `ipp_upload_jane-smith,34,IMG_0042.jpg` and `ipp_upload_,34,IMG_0042.jpg` would sit beside today's names, and a
 script that splits on the separator reads all of them: the last piece is the original filename, the rest are the
 fields in order.
+
+## Tag every visitor's uploads at once
+
+A workflow acts only on new uploads, and you need one for each visitor. The upload image includes a script that tags
+every upload with a visitor name, old and new, as `Uploaded/<name>`: `ipp_upload_jane-smith,IMG_0042.jpg` gets the
+tag `Uploaded/jane-smith`.
+
+1. In Immich, sign in as the user who owns the shares. The script sees only that user's photos.
+2. Open **Account Settings**, then **API Keys**, and create a **New API Key** with the permissions `asset.read`,
+   `user.read`, `tag.create` and `tag.asset`.
+3. Run the script in the upload container. Without `--apply` it changes nothing, and lists each file under the tag
+   it would get:
+
+   ```bash
+   docker exec -e IMMICH_API_KEY=your-api-key ipp-upload node dist/tag-uploads.js
+   ```
+
+4. Check the list, then run it again with `--apply` to add the tags:
+
+   ```bash
+   docker exec -e IMMICH_API_KEY=your-api-key ipp-upload node dist/tag-uploads.js --apply
+   ```
+
+5. Delete the API key in Immich if you don't plan to run the script again.
+
+The API key reaches only that one command. The upload service itself still holds no key, as described in
+[Why IPP marks the filename](#why-ipp-marks-the-filename-instead-of-tagging).
+
+The script reads [`upload.filenamePrefix`](/config/upload-service#filenameprefix) and
+[`upload.fieldSeparator`](/config/upload-service#fieldseparator) from the container's config. A second run adds only
+the tags that are missing, so you can run it again after each event. Files without a visitor name, trashed files and
+files of other users are left alone.
+
+| Option                | Default                 | Effect                                                                                    |
+|-----------------------|-------------------------|-------------------------------------------------------------------------------------------|
+| `--apply`             | off                     | Add the tags. Without it, the script only reports.                                        |
+| `--parent <tag>`      | `Uploaded`              | The parent tag. `--parent "Guests/Wedding"` gives `Guests/Wedding/jane-smith`.            |
+| `--prefix <text>`     | `upload.filenamePrefix` | The prefix to look for, when the files were stored with a different one.                  |
+| `--separator <chars>` | `upload.fieldSeparator` | The separator to read, when the files were stored with a different one. Quote it: `'^'`. |
+
+The script does not run when `upload.filenamePrefix` is `""`, because visitor uploads then look like any other photo.
+
+Uploads from IPP 4.0.0 kept any comma in the visitor's filename, so `ipp_upload_Venice, Italy.jpg` looks as if it
+has a visitor field. The script skips a file when the text before the separator is not a name IPP writes, or the
+text after it starts with a space, and lists each file it skips. A 4.0.0 file named `ipp_upload_venice,italy.jpg`
+still reads as a visitor called `venice`, so check the dry-run list before you use `--apply`.
 
 ## Review uploads before they appear
 

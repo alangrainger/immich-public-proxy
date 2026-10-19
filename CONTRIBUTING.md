@@ -88,10 +88,11 @@ upload-app/               immich-public-proxy-upload - one page per share; strea
     share.ts              Share lookup through core, cached 60 s
     gate.ts               The upload permit: the share's Immich toggle and the slug-link gate
     receive.ts            Validates one upload request: rate limit, length, filename, type, byte budget
-    forward.ts            The only Immich write call: multipart POST /assets under the share key
+    forward.ts            The service's only Immich write call: multipart POST /assets under the share key
     limits.ts             Fixed-window budgets for the rate limit and the byte budget
-    filename.ts           Stored filename: sanitised, prefixed, extension kept
+    filename.ts           Stored filename: sanitised, prefixed, extension kept; and reading the visitor fields back
     notify.ts             Optional JSON webhook per stored file
+    tag-uploads.ts        Owner-run CLI that tags uploads by visitor name with the owner's API key; the service never loads it
     idleTimeoutStream.ts  Drops a request body that stalls
     view/upload.tsx       The upload page, in the look of Immich's upload UI
     client/upload.ts      The page client: queue, XHR uploads with retry, the upload panel

@@ -49,7 +49,7 @@ What the owner sees in Immich:
   [turned off](/config/upload-service#filenameprefix).
 - The upload page asks for the visitor's name, optionally. A name given is stored in the filename after the prefix,
   as `ipp_upload_jane-smith,IMG_0042.jpg`, so you can see who sent what and
-  [find each visitor's uploads](/tag-and-review-uploads#find-each-visitors-uploads). The field can be
+  [find each visitor's uploads](/tag-and-review-uploads#find-each-visitor-s-uploads). The field can be
   [turned off](/config/upload-service#askname).
 - The owner removes unwanted files in Immich, like any other photo.
 
