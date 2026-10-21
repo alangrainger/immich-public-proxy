@@ -1,4 +1,4 @@
-import { Asset, ExifInfo, getConfigOption } from '@ipp/core'
+import { Asset, AssetType, ExifInfo, getConfigOption } from '@ipp/core'
 import { GalleryExif } from '../shared/types'
 
 type Group = 'exif' | 'location'
@@ -155,4 +155,15 @@ function applyRules (group: Group, out: GalleryExif, info: ExifInfo, asset: Asse
 
 function fieldFlag (group: Group, flag: string): boolean {
   return !!getConfigOption(`ipp.showMetadata.${group}.${flag}`, false)
+}
+
+/**
+ * Whether the lightbox should offer the 360 viewer for this asset: an image
+ * Immich classified as an equirectangular panorama, with `ipp.lightbox.panorama`
+ * on. Not gated by `showMetadata`: it exposes no EXIF, only which viewer to use.
+ */
+export function isPanorama (asset: Asset): boolean {
+  return !!getConfigOption('ipp.lightbox.panorama', true) &&
+    asset.type === AssetType.image &&
+    asset.exifInfo?.projectionType?.toUpperCase() === 'EQUIRECTANGULAR'
 }
