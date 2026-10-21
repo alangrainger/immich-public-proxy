@@ -38,6 +38,7 @@ function applyMeta (item: GalleryItem, meta: AssetMetadata): void {
   if (meta.exif) item.exif = meta.exif
   if (meta.description) item.description = meta.description
   if (meta.downloadFilename) item.downloadFilename = meta.downloadFilename
+  if (meta.panorama) item.panorama = true
   item.needsDetail = false
 }
 
