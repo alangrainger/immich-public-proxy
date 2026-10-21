@@ -34,11 +34,12 @@ export interface Planet {
 }
 
 /**
+ * `urls` are tried in order until one loads (full size, then the preview).
  * Returns null when the browser has no WebGL2. `speed` is read every frame and
  * is in degrees per second (negative turns the other way); `idleMs` is how long
  * the view waits after the last touch before it resumes spinning.
  */
-export function createPlanet (canvas: HTMLCanvasElement, url: string, speed: () => number, idleMs: number): Planet | null {
+export function createPlanet (canvas: HTMLCanvasElement, urls: string[], speed: () => number, idleMs: number): Planet | null {
   const gl = canvas.getContext('webgl2')
   if (!gl) return null
 
@@ -88,7 +89,12 @@ export function createPlanet (canvas: HTMLCanvasElement, url: string, speed: () 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
     ready = true
   }
-  image.src = url
+  const sources = [...urls]
+  image.onerror = () => {
+    const next = sources.shift()
+    if (next) image.src = next
+  }
+  image.src = sources.shift() as string
 
   const frame = (now: number) => {
     if (!visible) return

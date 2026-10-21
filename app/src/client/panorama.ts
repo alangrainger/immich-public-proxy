@@ -11,6 +11,7 @@ import type { GalleryItem } from '../shared/types.js'
 
 interface PannellumViewer {
   destroy: () => void
+  stopOrientation: () => void
   resize: () => void
   startAutoRotate: (speed: number, pitch?: number) => void
   stopAutoRotate: () => void
@@ -21,6 +22,7 @@ interface PannellumViewer {
 
 interface PswpInstance {
   currIndex: number
+  element: HTMLElement
   next: () => void
   prev: () => void
   on: (event: string, cb: () => void) => void
@@ -80,10 +82,19 @@ function toolButton (text: string, label: string): HTMLButtonElement {
   return button
 }
 
+// stopOrientation first: destroy() leaves the gyroscope's window listener behind
+function destroyViewer (viewer: PannellumViewer | null): void {
+  viewer?.stopOrientation()
+  viewer?.destroy()
+}
+
 function open (pswp: PswpInstance, item: GalleryItem): void {
   if (openView) return
 
+  const previousFocus = document.activeElement
   const root = element('div', 'ipp-panorama')
+  root.setAttribute('role', 'dialog')
+  root.setAttribute('aria-label', '360 view')
   const view = element('div', 'ipp-panorama__view')
   const canvas = element('canvas', 'ipp-panorama__planet')
   const tools = element('div', 'ipp-panorama__tools')
@@ -106,7 +117,12 @@ function open (pswp: PswpInstance, item: GalleryItem): void {
   }
   tools.append(hide, close)
   root.append(view, canvas, tools)
-  document.body.appendChild(root)
+  // Inside PhotoSwipe's dialog, so its focus trap lets the controls take focus and the lightbox's fullscreen includes it
+  pswp.element.appendChild(root)
+  const focusClose = () => { if (root.isConnected) close.focus() }
+  focusClose()
+  // PhotoSwipe puts focus back on its own element when its opening animation ends
+  pswp.on('openingAnimationEnd', focusClose)
 
   const speed = () => SPIN_LEVELS[spinLevel][1]
   const labelSpin = () => { spin.textContent = 'Spin: ' + SPIN_LEVELS[spinLevel][0] }
@@ -118,6 +134,7 @@ function open (pswp: PswpInstance, item: GalleryItem): void {
   let pointerDown = false
   let lastInput = Date.now()
   let timer = 0
+  let closed = false
 
   const url = item.fullUrl || item.previewUrl
   const start = (panorama: string) => {
@@ -128,27 +145,30 @@ function open (pswp: PswpInstance, item: GalleryItem): void {
       hfov: 100,
       minHfov: 30,
       maxHfov: 120,
-      orientationOnByDefault: false
+      orientationOnByDefault: false,
+      showFullscreenCtrl: false
     }
     if (panorama !== item.previewUrl) config.preview = item.previewUrl
     if (speed()) config.autoRotate = speed()
     pano = pannellumGlobal().viewer(view, config)
     // The full-size image can be refused (e.g. share download off); the preview always loads
     pano.on('error', () => {
-      if (panorama === item.previewUrl) return
-      pano?.destroy()
+      if (closed || panorama === item.previewUrl) return
+      destroyViewer(pano)
       start(item.previewUrl)
     })
   }
 
   const finish = (dismiss: boolean) => {
     if (openView?.close !== finish) return
+    closed = true
     window.clearInterval(timer)
     window.removeEventListener('keydown', onKey, true)
     planet?.destroy()
-    pano?.destroy()
+    destroyViewer(pano)
     root.remove()
     openView = null
+    if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus()
     if (dismiss) dismissed = item
   }
   const step = (go: () => void) => {
@@ -157,6 +177,15 @@ function open (pswp: PswpInstance, item: GalleryItem): void {
   }
   // Capture phase, so PhotoSwipe's own Escape and arrow handling does not also fire
   const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Tab') {
+      const controls = [...root.querySelectorAll<HTMLElement>('button, a[href]')].filter(el => el.offsetParent)
+      const edge = e.shiftKey ? controls[0] : controls[controls.length - 1]
+      if (controls.length && document.activeElement === edge) {
+        e.preventDefault()
+        controls[e.shiftKey ? controls.length - 1 : 0].focus()
+      }
+      return
+    }
     if (e.key !== 'Escape' && e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
     e.preventDefault()
     e.stopImmediatePropagation()
@@ -192,7 +221,7 @@ function open (pswp: PswpInstance, item: GalleryItem): void {
   }
   planetButton.onclick = () => {
     if (!planetShown && !planet) {
-      planet = createPlanet(canvas, url, speed, IDLE_MS)
+      planet = createPlanet(canvas, url === item.previewUrl ? [url] : [url, item.previewUrl], speed, IDLE_MS)
       if (!planet) {
         planetButton.hidden = true
         return

@@ -187,11 +187,11 @@ html.pswp-no-arrows .pswp__button--arrow {
   display: none;
 }
 
-/* 360 viewer (panorama.ts): covers the lightbox, above PhotoSwipe's z-index */
+/* 360 viewer (panorama.ts): fills the PhotoSwipe element, over its toolbar */
 .ipp-panorama {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 100001;
+  z-index: 100;
   background: #000;
 }
 .ipp-panorama__view,
