@@ -54,6 +54,8 @@
       "mobileArrows": false,
       "showDownload": true,
       "autoPlayVideos": false,
+      "panorama": true,
+      "panoramaAutoOpen": true,
       "options": {}
     },
     "customInvalidResponse": false,

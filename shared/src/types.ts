@@ -37,6 +37,8 @@ export interface ExifInfo {
   country?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  // Immich's panorama detection, e.g. 'EQUIRECTANGULAR' for a 360 photo
+  projectionType?: string | null;
 }
 
 export enum AlbumType {
