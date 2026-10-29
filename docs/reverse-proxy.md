@@ -9,7 +9,7 @@ whichever you use.
 - **Terminate TLS** and forward every request to the IPP container on port 3000. The gallery uses relative URLs, so
   no path rewriting is needed, and IPP serves from the root of its hostname or from `/share` and `/s` on a domain it
   shares with Immich.
-- **Match `PUBLIC_BASE_URL`.** Set [`PUBLIC_BASE_URL`](/config/environment-variables#public_base_url) on the IPP
+- **Match `PUBLIC_BASE_URL`.** Set [`PUBLIC_BASE_URL`](/config/environment-variables#public-base-url) on the IPP
   container to the public `https://` address the proxy serves it on. IPP uses it for the `og:image` tag that messaging
   apps read for link previews. Without it, IPP builds that URL from the request it receives, which behind a
   TLS-terminating proxy is plain `http://`. If you must leave it unset, make sure the proxy forwards the original

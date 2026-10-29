@@ -69,7 +69,11 @@ The file is read once at startup, so recreate the container after changing it. S
 [Troubleshooting](/troubleshooting#ipp-logs-unable-to-reach-immich-and-immich-has-a-certificate-from-your-own-ca)
 for the symptoms and the alternatives.
 
+## Set by the image
+
 `APP_VERSION` and `NODE_ENV` are set by the Docker image and are not meant to be changed.
+
+## The upload service
 
 The optional upload service reads the same variables, with the same meanings, so the `environment` block can be
 copied across. `PUBLIC_BASE_URL` stays IPP's public URL, which gives the upload page a back button to the gallery.
