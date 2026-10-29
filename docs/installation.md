@@ -9,7 +9,9 @@
    file.
 
 2. Update the value for `IMMICH_URL` in your docker-compose file to point to your local URL for Immich. **This should
-   not be a public URL.** Most likely this will be a local IP and port; whatever your Immich container runs on.
+   not be a public URL.** Most likely this will be a local IP and port; whatever your Immich container runs on. If it
+   is an `https://` address with a certificate from your own CA, also set
+   [`NODE_EXTRA_CA_CERTS`](/config/environment-variables#node-extra-ca-certs).
 
 3. Update or remove the value for `PUBLIC_BASE_URL`. This should be the public base URL for IPP, without a trailing
    slash (example `https://photos.example.com`). If you remove this value, it will dynamically generate it based on

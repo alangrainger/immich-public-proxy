@@ -166,3 +166,38 @@ your resolver to return an empty `NOERROR` (NODATA) rather than `NXDOMAIN` for t
 
 See issues [#203](https://github.com/alangrainger/immich-public-proxy/issues/203) and
 [#263](https://github.com/alangrainger/immich-public-proxy/issues/263) for the full investigation.
+
+## IPP logs "Unable to reach Immich" and Immich has a certificate from your own CA
+
+`IMMICH_URL` is an `https://` address, its certificate is signed by a CA you run (an internal PKI, step-ca, a
+router's CA, an mkcert root), and IPP logs "Unable to reach Immich" at startup. The `node -e` command from that log
+message fails with a certificate error such as `UNABLE_TO_VERIFY_LEAF_SIGNATURE` or `SELF_SIGNED_CERT_IN_CHAIN`.
+
+Node ships its own list of trusted root CAs and does not read the host's trust store, so a certificate from your CA is
+rejected inside the container even when `curl` on the host accepts it. The fix is Node's standard mechanism for this:
+point [`NODE_EXTRA_CA_CERTS`](/config/environment-variables#node-extra-ca-certs) at a PEM file holding your CA
+certificate, and mount that file into the container.
+
+```yaml
+services:
+  immich-public-proxy:
+    image: alangrainger/immich-public-proxy:latest
+    # ...your existing config...
+    environment:
+      IMMICH_URL: https://immich.example.com
+      NODE_EXTRA_CA_CERTS: /certs/ca.crt
+    volumes:
+      - ./ca.crt:/certs/ca.crt:ro
+```
+
+The file can hold several certificates if your chain has an intermediate. It is read once at startup, so recreate the
+container after changing it, and it must be readable by the `node` user the container runs as; a CA certificate is
+public, so `chmod 644` is fine. If you run the [upload service](/visitor-uploads), it talks to Immich too and needs
+the same two lines.
+
+The simpler alternative is to not use TLS between the two containers at all: point `IMMICH_URL` at Immich's plain
+`http://` address, such as the Docker service name `http://immich_server:2283`, which needs no certificate. Do not
+set `NODE_TLS_REJECT_UNAUTHORIZED=0`: it turns off certificate checking for every connection instead of trusting your
+CA.
+
+See [discussion #312](https://github.com/alangrainger/immich-public-proxy/discussions/312).

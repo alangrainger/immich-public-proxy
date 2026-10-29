@@ -13,7 +13,8 @@ Use the local address, not your public one: IPP is the only thing that needs to 
 ignored.
 
 From inside a container, `localhost` does not reach Immich. If IPP logs "Unable to reach Immich" at startup, see
-[Troubleshooting](/troubleshooting).
+[Troubleshooting](/troubleshooting). If the address is `https://` with a certificate from your own CA, see
+[`NODE_EXTRA_CA_CERTS`](#node-extra-ca-certs).
 
 ## `PUBLIC_BASE_URL`
 
@@ -47,6 +48,26 @@ described in the [Configuration overview](/config/#mount-a-file).
 
 The JSON config as an inline string. When set, no config file is read at all. See
 [Inline via env var](/config/#inline-via-env-var) for an example.
+
+## `NODE_EXTRA_CA_CERTS`
+
+**Optional**
+
+A standard Node.js variable rather than an IPP one: the path, inside the container, to a PEM file holding one or more
+CA certificates that Node should trust in addition to its built-in roots. Set it when `IMMICH_URL` is an `https://`
+address whose certificate is signed by a CA you run, and mount the CA file into the container:
+
+```yaml
+    environment:
+      IMMICH_URL: https://immich.example.com
+      NODE_EXTRA_CA_CERTS: /certs/ca.crt
+    volumes:
+      - ./ca.crt:/certs/ca.crt:ro
+```
+
+The file is read once at startup, so recreate the container after changing it. See
+[Troubleshooting](/troubleshooting#ipp-logs-unable-to-reach-immich-and-immich-has-a-certificate-from-your-own-ca)
+for the symptoms and the alternatives.
 
 `APP_VERSION` and `NODE_ENV` are set by the Docker image and are not meant to be changed.
 
