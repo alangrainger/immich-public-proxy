@@ -78,6 +78,14 @@ export function storeUnlock (req: Request, key: string, password: string) {
 }
 
 /**
+ * Give `toKey` the same unlock as `fromKey`. Copying the encrypted entry
+ * keeps its expiry, so a second key can't outlive the unlock it came from.
+ */
+export function copyUnlock (req: Request, fromKey: string, toKey: string) {
+  if (req.session?.[fromKey]) req.session[toKey] = req.session[fromKey]
+}
+
+/**
  * Receive an unlock request from the password page (`POST <basePath>/share/unlock`).
  * Only a share-shaped key and a string password are stored; anything else is
  * ignored, so a stray object never reaches the cookie or the Immich login.
