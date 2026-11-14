@@ -10,6 +10,7 @@ import {
   authHeaders,
   buildUrl,
   cachedPromise,
+  copyUnlock,
   fetchSharedLink,
   getConfigOption,
   getNumericConfigOption,
@@ -20,7 +21,6 @@ import {
   renderPage,
   request,
   respondToInvalidRequest,
-  storeUnlock,
   TtlLruCache
 } from '@ipp/core'
 import { ImageSize, IncomingShareRequest, TimelineBucket, TimelineBucketAssets } from './types'
@@ -120,9 +120,7 @@ export async function handleShareRequest (req: IncomingShareRequest, res: Respon
   const link = sharedLinkRes.link
 
   // If this was a password-protected slug link, we need to also store session information for the ID-based key
-  if (req.password && req.req.session && !req.req.session[link.key]) {
-    storeUnlock(req.req, link.key, req.password)
-  }
+  if (req.password) copyUnlock(req.req, req.key, link.key)
 
   // Everything is ok - output the shared link data
 
