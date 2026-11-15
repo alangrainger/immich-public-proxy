@@ -24,8 +24,8 @@ Something in front of the upload service refused the file before it arrived. The
 different message that names the size.
 
 - **Cloudflare** refuses requests over 100 MB on the Free and Pro plans, Cloudflare Tunnel included. Set
-  [`upload.maxFileSize`](/config/upload-service#maxfilesize) to `100` so the upload page turns away larger files
-  before sending them, with a message that says the limit.
+  [`upload.chunkSize`](/config/upload-service#chunksize) below `100`, for example `50`, so larger files are sent in
+  chunks under that limit.
 - **nginx** allows 1 MB by default. Set `client_max_body_size` to at least `upload.maxFileSize`.
 
 See [Request size limits](/visitor-uploads#request-size-limits).

@@ -60,6 +60,7 @@ export const LABELS: Record<string, string> = {
   'ipp.upload.maxFileSize': 'Max file size (MB)',
   'ipp.upload.rateLimit': 'Rate limit (files per minute)',
   'ipp.upload.byteBudget': 'Byte budget (MB per hour)',
+  'ipp.upload.chunkSize': 'Chunk size (MB)',
   'ipp.upload.notifyTimeout': 'Notify timeout (ms)'
 }
 

@@ -61,8 +61,10 @@ The chunks are not stored: the service opens one upload to Immich when the file 
 it, so Immich still receives the file as one upload. A chunk that is cut off is continued from the last byte that
 arrived. The size, type, rate limit and byte budget checks apply once per file, as for a file sent whole.
 
-An upload that receives nothing for 5 minutes, or for as long as one chunk takes at 0.5 Mbit/s if that is longer, is
-cancelled and its byte budget released. A restart of the service interrupts the uploads in progress; the page shows
+Each chunk's worth of new bytes must arrive within 5 minutes, or within as long as one chunk takes at 0.5 Mbit/s if
+that is longer. Immich gets the same time to answer after the last byte. An upload that misses either is cancelled and
+its byte budget released. Each share can have 20 chunked uploads in progress at once; the page waits a minute and
+retries a file that would be the 21st. A restart of the service interrupts the uploads in progress; the page shows
 them as failed with a retry button.
 
 ## `rateLimit`

@@ -26,6 +26,7 @@ const ATTEMPTS = 3
 const RETRY_BASE_MS = 2000
 // A Retry-After longer than this is shown as a failure rather than waited out
 const MAX_RETRY_WAIT_MS = 60_000
+const TRY_LATER = 'Could not be sent. Try again later.'
 
 const config = JSON.parse(document.getElementById('upload-init')?.textContent || '{}') as UploadPageConfig
 const run = createLimiter(CONCURRENT_UPLOADS)
@@ -192,10 +193,22 @@ type Attempt =
   | { outcome: 'retry', waitMs: number }
   | { outcome: 'cancelled' }
 
+/**
+ * The JSON body of a reply, or undefined when it is not a JSON object. A proxy
+ * in front of the service, or `customInvalidResponse`, can answer with anything.
+ */
+function parseReply<T> (xhr: XMLHttpRequest): Partial<T> | undefined {
+  try {
+    const reply: unknown = JSON.parse(xhr.responseText)
+    return reply && typeof reply === 'object' ? reply as Partial<T> : undefined
+  } catch {
+    return undefined
+  }
+}
+
 /** The visitor-facing reason for a refused upload. */
 function failureMessage (xhr: XMLHttpRequest): string {
-  let reply: Partial<UploadErrorResponse> | undefined
-  try { reply = JSON.parse(xhr.responseText) } catch { }
+  const reply = parseReply<UploadErrorResponse>(xhr)
   if (reply?.error) return reply.error
   // Not our JSON, so a proxy in front of the upload service answered
   if (xhr.status === 413) return 'Too large for this server'
@@ -214,7 +227,7 @@ function failure (xhr: XMLHttpRequest): Attempt {
   return { outcome: 'failed', status: xhr.status, message: failureMessage(xhr), retryable }
 }
 
-/** Show a row's progress through its file, with the speed since `start` was called. */
+/** A progress callback for a row, with the speed measured from this call. */
 function trackProgress (row: UploadRow): (loaded: number) => void {
   const started = Date.now()
   return loaded => {
@@ -286,7 +299,7 @@ async function withRetries (row: UploadRow, send: (attemptNumber: number) => Pro
       return
     }
     if (attemptNumber >= ATTEMPTS || result.waitMs > MAX_RETRY_WAIT_MS) {
-      finish(row, 'error', 'Could not be sent. Try again later.', true)
+      finish(row, 'error', TRY_LATER, true)
       return
     }
     setState(row, 'pending')
@@ -307,8 +320,7 @@ function fileQuery (row: UploadRow): URLSearchParams {
 
 /** Record the server's answer to a file's last request. */
 function finishSent (row: UploadRow, xhr: XMLHttpRequest) {
-  let reply: Partial<UploadResponse> | undefined
-  try { reply = JSON.parse(xhr.responseText) } catch { }
+  const reply = parseReply<UploadResponse>(xhr)
   finish(row, reply?.status === 'duplicate' ? 'duplicate' : 'done')
 }
 
@@ -325,18 +337,18 @@ async function sendFile (row: UploadRow) {
   if (xhr) finishSent(row, xhr)
 }
 
-/**
- * Send a file larger than `chunkSize` in chunks, for a reverse proxy that
- * caps each request. Each chunk is retried on its own, from the offset the
- * server reports, so a dropped connection does not start the file over.
- */
+/** Send a file larger than `chunkSize` in chunks, for a reverse proxy that caps each request. */
 async function sendInChunks (row: UploadRow) {
   const query = fileQuery(row)
   query.set('size', String(row.file.size))
   showProgress(row, '0%', 0)
   const started = await withRetries(row, attemptNumber => request(row, 'POST', config.uploadUrl + '/start?' + query.toString(), null, attemptNumber))
   if (!started) return
-  const { id, chunkSize } = JSON.parse(started.responseText) as ChunkedStartResponse
+  const { id, chunkSize } = parseReply<ChunkedStartResponse>(started) ?? {}
+  if (typeof id !== 'string' || typeof chunkSize !== 'number' || !(chunkSize > 0)) {
+    finish(row, 'error', TRY_LATER, true)
+    return
+  }
   const uploadUrl = config.uploadUrl + '/' + encodeURIComponent(id)
   const progress = trackProgress(row)
   let finished = false
@@ -351,13 +363,17 @@ async function sendInChunks (row: UploadRow) {
         return reply
       })
       if (!xhr) return
-      const reply = JSON.parse(xhr.responseText) as Partial<ChunkedOffsetResponse & UploadResponse>
-      if (reply.status) {
+      const reply = parseReply<ChunkedOffsetResponse & UploadResponse>(xhr)
+      if (reply?.status) {
         finished = true
         finishSent(row, xhr)
         return
       }
-      offset = reply.offset ?? from
+      if (typeof reply?.offset !== 'number') {
+        finish(row, 'error', TRY_LATER, true)
+        return
+      }
+      offset = reply.offset
       progress(offset)
     }
   } finally {

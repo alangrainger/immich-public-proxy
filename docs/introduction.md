@@ -64,7 +64,8 @@ Visitors to a share can send photos back to it, but only through a second contai
 The IPP container has no code that accepts a file or writes to Immich. If you do not run the upload service, no part
 of IPP can write to Immich.
 
-The upload service follows the same rules as IPP in every other way. It needs no API key and keeps no state. It
+The upload service follows the same rules as IPP in every other way. It needs no API key and stores nothing on disk.
+The only state it keeps is the chunked uploads in progress, in memory, which a restart loses. It
 uploads with the visitor's share key, so Immich itself checks the share's "Allow public user to upload" option on
 every file. It never shows anything from your library, and it streams each file to Immich without storing it.
 
