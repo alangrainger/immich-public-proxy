@@ -17,6 +17,14 @@ export function maxFileSize (): number {
   return Math.max(1, getNumericConfigOption('ipp.upload.maxFileSize', 500)) * MB
 }
 
+/**
+ * Size of each chunk a large file is sent in, in bytes, from
+ * `ipp.upload.chunkSize` (MB). `0` sends every file as one request.
+ */
+export function chunkSize (): number {
+  return Math.floor(Math.max(0, getNumericConfigOption('ipp.upload.chunkSize', 0)) * MB)
+}
+
 /** Files per minute per visitor address and share, from `ipp.upload.rateLimit`. `0` is no limit. */
 export function rateLimit (): number {
   return getNumericConfigOption('ipp.upload.rateLimit', 60)

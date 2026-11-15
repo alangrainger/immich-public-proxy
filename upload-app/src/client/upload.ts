@@ -1,5 +1,6 @@
 // The upload page: the placeholder button and dropping files on the page
-// feed one queue. Each file is its own request, so one failure is one file.
+// feed one queue. Each file is its own request, or its own run of requests
+// when it is sent in chunks, so one failure is one file.
 // The panel follows Immich's own upload panel: summary lines, then one row
 // per file with a status icon, a progress bar while sending, and the error.
 //
@@ -8,7 +9,7 @@
 
 import { createLimiter } from '../shared/limiter.js'
 import { fileType, formatSize, isUploadableName, isUploadableType } from '../shared/upload.js'
-import type { UploadErrorResponse, UploadPageConfig, UploadResponse } from '../shared/upload.js'
+import type { ChunkedOffsetResponse, ChunkedStartResponse, UploadErrorResponse, UploadPageConfig, UploadResponse } from '../shared/upload.js'
 import {
   ICON_ALERT_CIRCLE,
   ICON_CHECK_CIRCLE,
@@ -186,8 +187,8 @@ function addRow (file: File, type: string): UploadRow {
 }
 
 type Attempt =
-  | { outcome: 'sent', duplicate: boolean }
-  | { outcome: 'failed', message: string, retryable: boolean }
+  | { outcome: 'ok', xhr: XMLHttpRequest }
+  | { outcome: 'failed', status: number, message: string, retryable: boolean }
   | { outcome: 'retry', waitMs: number }
   | { outcome: 'cancelled' }
 
@@ -210,37 +211,41 @@ function failureMessage (xhr: XMLHttpRequest): string {
  */
 function failure (xhr: XMLHttpRequest): Attempt {
   const retryable = xhr.status >= 500 || xhr.getResponseHeader('Retry-After') !== null
-  return { outcome: 'failed', message: failureMessage(xhr), retryable }
+  return { outcome: 'failed', status: xhr.status, message: failureMessage(xhr), retryable }
 }
 
-/** One request for one file. XHR rather than fetch, because only XHR reports upload progress. */
-function attempt (row: UploadRow, attemptNumber: number): Promise<Attempt> {
+/** Show a row's progress through its file, with the speed since `start` was called. */
+function trackProgress (row: UploadRow): (loaded: number) => void {
+  const started = Date.now()
+  return loaded => {
+    const total = row.file.size
+    const percent = total > 0 ? Math.round((loaded / total) * 100) : 0
+    const seconds = (Date.now() - started) / 1000
+    const speed = seconds > 0 ? loaded / seconds : 0
+    const eta = speed > 0 ? Math.ceil((total - loaded) / speed) : 0
+    showProgress(row, `${percent}% - ${formatSize(Math.round(speed))}/s - ${eta}s`, percent)
+  }
+}
+
+/** One request for a row. XHR rather than fetch, because only XHR reports upload progress. */
+function request (row: UploadRow, method: string, url: string, body: Blob | null, attemptNumber: number, onProgress?: (loaded: number) => void): Promise<Attempt> {
   return new Promise(resolve => {
-    const timestamp = new Date(row.file.lastModified || Date.now()).toISOString()
-    const query = new URLSearchParams({ filename: row.file.name, fileCreatedAt: timestamp, fileModifiedAt: timestamp })
-    // Read when the file is sent, so a name typed after choosing the files still counts
-    const uploader = nameEl?.value.trim()
-    if (uploader) query.set('uploader', uploader)
     const xhr = new XMLHttpRequest()
     row.xhr = xhr
-    const started = Date.now()
-    xhr.open('POST', config.uploadUrl + '?' + query.toString())
-    xhr.setRequestHeader('Content-Type', row.type)
-    xhr.upload.addEventListener('progress', e => {
-      if (!e.lengthComputable) return
-      const percent = Math.round((e.loaded / e.total) * 100)
-      const seconds = (Date.now() - started) / 1000
-      const speed = seconds > 0 ? e.loaded / seconds : 0
-      const eta = speed > 0 ? Math.ceil((e.total - e.loaded) / speed) : 0
-      showProgress(row, `${percent}% - ${formatSize(Math.round(speed))}/s - ${eta}s`, percent)
-    })
+    xhr.open(method, url)
+    // A chunk is part of the file; the type is declared once, for the whole file
+    xhr.setRequestHeader('Content-Type', method === 'PUT' ? 'application/octet-stream' : row.type)
+    if (onProgress) {
+      xhr.upload.addEventListener('progress', e => {
+        if (e.lengthComputable) onProgress(e.loaded)
+      })
+    }
 
     const backoff = { outcome: 'retry', waitMs: RETRY_BASE_MS * 2 ** (attemptNumber - 1) } as const
     xhr.addEventListener('load', () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        let reply: Partial<UploadResponse> | undefined
-        try { reply = JSON.parse(xhr.responseText) } catch { }
-        resolve({ outcome: 'sent', duplicate: reply?.status === 'duplicate' })
+      // A 409 to a chunk carries the offset to carry on from
+      if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 409) {
+        resolve({ outcome: 'ok', xhr })
       } else if (xhr.status === 429) {
         const seconds = Number(xhr.getResponseHeader('Retry-After'))
         resolve(Number.isFinite(seconds) && seconds > 0 ? { outcome: 'retry', waitMs: seconds * 1000 } : backoff)
@@ -251,7 +256,7 @@ function attempt (row: UploadRow, attemptNumber: number): Promise<Attempt> {
     // A refusal that closes the connection mid-body often arrives as a network error
     xhr.addEventListener('error', () => resolve(backoff))
     xhr.addEventListener('abort', () => resolve({ outcome: 'cancelled' }))
-    xhr.send(row.file)
+    xhr.send(body)
   })
 }
 
@@ -266,17 +271,16 @@ function waitToRetry (row: UploadRow, ms: number): Promise<void> {
   })
 }
 
-/** Send one file, retrying a rate limit or a network error, and record the result on its row. */
-async function sendFile (row: UploadRow) {
+/**
+ * Make one request, retrying a rate limit or a network error. Resolves with
+ * the answer, or undefined once the row is cancelled or its failure recorded.
+ */
+async function withRetries (row: UploadRow, send: (attemptNumber: number) => Promise<Attempt>): Promise<XMLHttpRequest | undefined> {
   for (let attemptNumber = 1; !row.cancelled; attemptNumber++) {
     setState(row, 'started')
-    showProgress(row, '0%', 0)
-    const result = await attempt(row, attemptNumber)
+    const result = await send(attemptNumber)
     if (result.outcome === 'cancelled') return
-    if (result.outcome === 'sent') {
-      finish(row, result.duplicate ? 'duplicate' : 'done')
-      return
-    }
+    if (result.outcome === 'ok') return result.xhr
     if (result.outcome === 'failed') {
       finish(row, 'error', result.message, result.retryable)
       return
@@ -288,6 +292,77 @@ async function sendFile (row: UploadRow) {
     setState(row, 'pending')
     showProgress(row, 'Waiting to retry', 0)
     await waitToRetry(row, result.waitMs)
+  }
+}
+
+/** The file's name and timestamps, as the query string of the request that sends it. */
+function fileQuery (row: UploadRow): URLSearchParams {
+  const timestamp = new Date(row.file.lastModified || Date.now()).toISOString()
+  const query = new URLSearchParams({ filename: row.file.name, fileCreatedAt: timestamp, fileModifiedAt: timestamp })
+  // Read when the file is sent, so a name typed after choosing the files still counts
+  const uploader = nameEl?.value.trim()
+  if (uploader) query.set('uploader', uploader)
+  return query
+}
+
+/** Record the server's answer to a file's last request. */
+function finishSent (row: UploadRow, xhr: XMLHttpRequest) {
+  let reply: Partial<UploadResponse> | undefined
+  try { reply = JSON.parse(xhr.responseText) } catch { }
+  finish(row, reply?.status === 'duplicate' ? 'duplicate' : 'done')
+}
+
+/** Send one file and record the result on its row. */
+async function sendFile (row: UploadRow) {
+  if (config.chunkSize > 0 && row.file.size > config.chunkSize) {
+    await sendInChunks(row)
+    return
+  }
+  const xhr = await withRetries(row, attemptNumber => {
+    showProgress(row, '0%', 0)
+    return request(row, 'POST', config.uploadUrl + '?' + fileQuery(row).toString(), row.file, attemptNumber, trackProgress(row))
+  })
+  if (xhr) finishSent(row, xhr)
+}
+
+/**
+ * Send a file larger than `chunkSize` in chunks, for a reverse proxy that
+ * caps each request. Each chunk is retried on its own, from the offset the
+ * server reports, so a dropped connection does not start the file over.
+ */
+async function sendInChunks (row: UploadRow) {
+  const query = fileQuery(row)
+  query.set('size', String(row.file.size))
+  showProgress(row, '0%', 0)
+  const started = await withRetries(row, attemptNumber => request(row, 'POST', config.uploadUrl + '/start?' + query.toString(), null, attemptNumber))
+  if (!started) return
+  const { id, chunkSize } = JSON.parse(started.responseText) as ChunkedStartResponse
+  const uploadUrl = config.uploadUrl + '/' + encodeURIComponent(id)
+  const progress = trackProgress(row)
+  let finished = false
+  try {
+    for (let offset = 0; ;) {
+      const from = offset
+      const chunk = row.file.slice(from, from + chunkSize)
+      const xhr = await withRetries(row, async attemptNumber => {
+        const reply = await request(row, 'PUT', uploadUrl + '?offset=' + from, chunk, attemptNumber, loaded => progress(from + loaded))
+        // The server no longer has the upload: it restarted, or the upload sat idle too long
+        if (reply.outcome === 'failed' && reply.status === 404) return { ...reply, message: 'Upload was interrupted. Try again.', retryable: true }
+        return reply
+      })
+      if (!xhr) return
+      const reply = JSON.parse(xhr.responseText) as Partial<ChunkedOffsetResponse & UploadResponse>
+      if (reply.status) {
+        finished = true
+        finishSent(row, xhr)
+        return
+      }
+      offset = reply.offset ?? from
+      progress(offset)
+    }
+  } finally {
+    // Frees the share's byte budget now rather than when the server gives up on the upload
+    if (!finished) fetch(uploadUrl, { method: 'DELETE' }).catch(() => {})
   }
 }
 
