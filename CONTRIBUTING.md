@@ -89,6 +89,7 @@ upload-app/               immich-public-proxy-upload - one page per share; strea
     gate.ts               The upload permit: the share's Immich toggle and the slug-link gate
     receive.ts            Validates one upload request: rate limit, length, filename, type, byte budget
     forward.ts            The service's only Immich write call: multipart POST /assets under the share key
+    chunked.ts            A large file in chunks: uploads in progress, each feeding one open POST /assets
     limits.ts             Fixed-window budgets for the rate limit and the byte budget
     filename.ts           Stored filename: sanitised, prefixed, extension kept; and reading the visitor fields back
     notify.ts             Optional JSON webhook per stored file

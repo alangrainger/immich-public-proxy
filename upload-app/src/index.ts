@@ -2,7 +2,7 @@
 
 import 'dotenv/config'
 import express, { RequestHandler, Router } from 'express'
-import { Request } from 'express-serve-static-core'
+import { Request, Response } from 'express-serve-static-core'
 import { resolve } from 'path'
 import dayjs from 'dayjs'
 import { h } from 'preact'
@@ -28,9 +28,10 @@ import {
   title,
   unlockHandler
 } from '@ipp/core'
-import { askName, galleryUrl, maxFileSize, uploadNotice } from './config'
+import { askName, chunkSize, galleryUrl, maxFileSize, uploadNotice } from './config'
+import { createChunkedReceiver, createChunkedUploads } from './chunked'
 import { uploadAllowed } from './gate'
-import { createUploadReceiver } from './receive'
+import { createUploadAdmission, createUploadReceiver } from './receive'
 import { getShare } from './share'
 import { ASSET_VERSION } from './version'
 import { UploadPage } from './view/upload'
@@ -42,7 +43,10 @@ import { UploadPage } from './view/upload'
 */
 loadConfig({ defaultPath: resolve(__dirname, '../config.json') })
 
-const receiveUpload = createUploadReceiver()
+const admit = createUploadAdmission()
+const receiveUpload = createUploadReceiver(admit)
+const chunkBytes = chunkSize()
+const chunked = chunkBytes > 0 && createChunkedReceiver(admit, createChunkedUploads({ chunkSize: chunkBytes }), chunkBytes)
 const inProduction = process.env.NODE_ENV === 'production'
 
 const app = express()
@@ -118,6 +122,18 @@ async function resolveShare (req: Request): Promise<ShareResolution> {
   return { ok: true, link: share.link, keyType }
 }
 
+/** Route handlers for an upload request: run `handler` once the share resolves, else answer with the 404 policy. */
+function forUpload (handler: (req: Request, res: Response, link: SharedLink, keyType: KeyType) => unknown): RequestHandler[] {
+  return [decodeCookie, asyncHandler(async (req, res) => {
+    const resolved = await resolveShare(req)
+    if (!resolved.ok) {
+      respondToInvalidRequest(res, 404, resolved.reason)
+      return
+    }
+    await handler(req, res, resolved.link, resolved.keyType)
+  })]
+}
+
 /*
   [ROUTE] Upload page, or the password page for a locked share
 */
@@ -138,6 +154,7 @@ router.get('/:shareType(share|s)/:key', decodeCookie, asyncHandler(async (req, r
     config: {
       uploadUrl: `${req.baseUrl}/${req.params.shareType}/${encodeURIComponent(key)}/upload`,
       maxFileSize: maxFileSize(),
+      chunkSize: chunkBytes,
       title: title(resolved.link),
       askName: askName()
     },
@@ -155,14 +172,16 @@ router.post('/share/unlock', bodyDeadline(10_000), express.json({ limit: '10kb' 
 /*
   [ROUTE] One file from a visitor, streamed to Immich
 */
-router.post('/:shareType(share|s)/:key/upload', decodeCookie, asyncHandler(async (req, res) => {
-  const resolved = await resolveShare(req)
-  if (!resolved.ok) {
-    respondToInvalidRequest(res, 404, resolved.reason)
-    return
-  }
-  await receiveUpload(req, res, resolved.link, resolved.keyType)
-}))
+router.post('/:shareType(share|s)/:key/upload', forUpload(receiveUpload))
+
+/*
+  [ROUTES] A large file in chunks, when `ipp.upload.chunkSize` is set; see `chunked.ts`
+*/
+if (chunked) {
+  router.post('/:shareType(share|s)/:key/upload/start', forUpload(chunked.start))
+  router.put('/:shareType(share|s)/:key/upload/:id', forUpload(chunked.chunk))
+  router.delete('/:shareType(share|s)/:key/upload/:id', forUpload(chunked.cancel))
+}
 
 /*
   The same routes under `/upload` and at the root, so either reverse proxy

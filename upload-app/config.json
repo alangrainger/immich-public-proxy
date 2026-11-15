@@ -4,6 +4,7 @@
     "customInvalidResponse": false,
     "upload": {
       "maxFileSize": 500,
+      "chunkSize": 0,
       "rateLimit": 60,
       "byteBudget": 10240,
       "filenamePrefix": "ipp_upload_",

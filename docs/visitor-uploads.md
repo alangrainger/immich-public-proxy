@@ -287,14 +287,15 @@ but anything in front of it can impose a lower limit. A file over that limit fai
 - **nginx** allows 1 MB by default. Set `client_max_body_size` to at least `maxFileSize`, and
   `proxy_request_buffering off` so nginx streams each file through instead of storing it first. Both are in the
   examples above.
-- **Cloudflare** refuses requests over 100 MB on the Free and Pro plans, Cloudflare Tunnel included, so larger videos
-  cannot pass through it. Set `maxFileSize` to `100` so the page tells visitors before the upload starts:
+- **Cloudflare** refuses requests over 100 MB on the Free and Pro plans, Cloudflare Tunnel included. Set
+  [`upload.chunkSize`](/config/upload-service#chunksize) below `100`, for example `50`, so larger files are sent in
+  chunks under that limit:
 
 ```json
 {
   "ipp": {
     "upload": {
-      "maxFileSize": 100
+      "chunkSize": 50
     }
   }
 }

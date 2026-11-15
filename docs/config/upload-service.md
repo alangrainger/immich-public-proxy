@@ -38,6 +38,33 @@ declared size on arrival and counts the bytes as they stream. The smallest value
 A reverse proxy or CDN in front of the service can have a lower limit of its own. See
 [Request size limits](/visitor-uploads#request-size-limits).
 
+## `chunkSize`
+
+**Type:** `int` · **Default:** `0`
+
+Send files larger than this in chunks of this many MB, for a reverse proxy or CDN that limits the size of each request.
+`0` sends every file as one request. Behind Cloudflare, which refuses requests over 100 MB, keep it below `100`,
+for example `50`. Smaller chunks lose less when a visitor's connection drops; larger ones take fewer requests:
+
+```json
+{
+  "ipp": {
+    "upload": {
+      "maxFileSize": 2048,
+      "chunkSize": 50
+    }
+  }
+}
+```
+
+The chunks are not stored: the service opens one upload to Immich when the file starts and streams each chunk into
+it, so Immich still receives the file as one upload. A chunk that is cut off is continued from the last byte that
+arrived. The size, type, rate limit and byte budget checks apply once per file, as for a file sent whole.
+
+An upload that receives nothing for 5 minutes, or for as long as one chunk takes at 0.5 Mbit/s if that is longer, is
+cancelled and its byte budget released. A restart of the service interrupts the uploads in progress; the page shows
+them as failed with a retry button.
+
 ## `rateLimit`
 
 **Type:** `int` · **Default:** `60`

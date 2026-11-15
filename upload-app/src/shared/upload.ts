@@ -84,6 +84,8 @@ export interface UploadPageConfig {
   uploadUrl: string
   /** Largest single file the server accepts, in bytes. */
   maxFileSize: number
+  /** Files larger than this are sent in chunks of this many bytes; 0 sends every file whole. */
+  chunkSize: number
   /** Share title, for the drop overlay and the completion message. */
   title: string
   /** Whether the page has a name field, sent with each file as `uploader`. */
@@ -98,4 +100,15 @@ export interface UploadResponse {
 /** Failure body of `POST <share>/upload`. */
 export interface UploadErrorResponse {
   error: string
+}
+
+/** Success body of `POST <share>/upload/start`: the upload's id and the largest chunk it takes. */
+export interface ChunkedStartResponse {
+  id: string
+  chunkSize: number
+}
+
+/** Body of `PUT <share>/upload/<id>` for a chunk that is not the last, and of a 409: the offset to send next. */
+export interface ChunkedOffsetResponse {
+  offset: number
 }

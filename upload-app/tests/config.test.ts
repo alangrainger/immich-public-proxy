@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { askName, byteBudget, fieldSeparator, filenamePrefix, maxFileSize, notifyConfig, uploadNotice } from '../src/config'
+import { askName, byteBudget, chunkSize, fieldSeparator, filenamePrefix, maxFileSize, notifyConfig, uploadNotice } from '../src/config'
 import { resetConfig, setConfig } from './helpers'
 
 afterEach(resetConfig)
@@ -10,6 +10,7 @@ describe('upload options', () => {
   it('has the documented defaults', () => {
     expect(maxFileSize()).toBe(500 * MB)
     expect(byteBudget()).toBe(10240 * MB)
+    expect(chunkSize()).toBe(0)
     expect(filenamePrefix()).toBe('ipp_upload_')
     expect(notifyConfig()).toBeUndefined()
     expect(uploadNotice()).toBe('Uploaded photos may not appear in the gallery immediately.')
@@ -24,6 +25,13 @@ describe('upload options', () => {
       setConfig({ ipp: { upload: { fieldSeparator: bad } } })
       expect(fieldSeparator()).toBe(',')
     }
+  })
+
+  it('reads the chunk size in MB, and a negative one as off', () => {
+    setConfig({ ipp: { upload: { chunkSize: 50 } } })
+    expect(chunkSize()).toBe(50 * MB)
+    setConfig({ ipp: { upload: { chunkSize: -1 } } })
+    expect(chunkSize()).toBe(0)
   })
 
   it('turns the name field off only on an explicit false', () => {
