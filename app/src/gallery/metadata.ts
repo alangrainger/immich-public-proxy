@@ -1,6 +1,6 @@
 import { Asset, getConfigOption, SharedLink } from '@ipp/core'
 import { AssetMetadata } from '../shared/types'
-import { pickExif } from './exif'
+import { isPanorama, pickExif } from './exif'
 import { downloadFilename, findPositionInShare } from './filename'
 
 /**
@@ -27,6 +27,7 @@ export function buildAssetMetadata (asset: Asset, share: SharedLink): AssetMetad
   return {
     exif: shareMetadataAllowed ? pickExif(asset) : undefined,
     description,
+    panorama: isPanorama(asset) || undefined,
     downloadFilename: downloadFilename(asset, findPositionInShare(share, asset.id))
   }
 }

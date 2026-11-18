@@ -48,6 +48,9 @@ export interface GalleryItem {
   // Playback URL for a motion photo's clip, when the asset has one and
   // ipp.motionPhotos is enabled. Drives the tile badge + lightbox toggle.
   motionUrl?: string
+  // True for a 360 photo (equirectangular panorama): the lightbox offers the
+  // 360 viewer, which loads `fullUrl` when set, else `previewUrl`.
+  panorama?: boolean
   // Immich uses "description" but this is our caption
   description?: string
   downloadFilename: string
@@ -75,6 +78,7 @@ export interface AssetMetadata {
   exif?: GalleryExif
   description?: string
   downloadFilename?: string
+  panorama?: boolean
 }
 
 export interface LightboxConfig {
@@ -82,6 +86,7 @@ export interface LightboxConfig {
   showDownload: boolean
   mobileArrows: boolean
   autoPlayVideos: boolean
+  panoramaAutoOpen: boolean
   options?: Record<string, unknown>
 }
 

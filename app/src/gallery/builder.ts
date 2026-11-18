@@ -12,7 +12,7 @@ import { Gallery, GalleryItem, GalleryProps } from '../view/gallery'
 import { downloadFilename, positionInShare } from './filename'
 import { groupByDateMode } from './order'
 import { requiresOriginal } from './sizing'
-import { displayDimensions, metadataGroupActive, pickExif } from './exif'
+import { displayDimensions, isPanorama, metadataGroupActive, pickExif } from './exif'
 
 /**
  * Render a gallery page for a given SharedLink.
@@ -94,6 +94,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       downloadUrl,
       videoData,
       motionUrl,
+      panorama: isPanorama(asset) || undefined,
       description: itemDescription || undefined,
       downloadFilename: downloadFilename(asset, positionInShare(share, index)),
       width,
@@ -141,6 +142,7 @@ export async function gallery (res: Response, share: SharedLink, openItem?: numb
       showArrows: !!getConfigOption('ipp.lightbox.showArrows', true),
       mobileArrows: !!getConfigOption('ipp.lightbox.mobileArrows', false),
       autoPlayVideos: !!getConfigOption('ipp.lightbox.autoPlayVideos', false),
+      panoramaAutoOpen: !!getConfigOption('ipp.lightbox.panoramaAutoOpen', true),
       options: lightboxOptions
     },
     metadataConfig: {

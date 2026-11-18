@@ -16,6 +16,7 @@ import {
   registerFullscreenButton,
   registerMotionButton
 } from './lightbox-ui.js'
+import { registerPanorama } from './panorama.js'
 import { registerSidebar } from './sidebar.js'
 import { registerLazyDetail } from './metadata.js'
 
@@ -241,6 +242,8 @@ export function initLightbox () {
   registerFullscreenButton(state.lightbox)
   // No config gate: the server omits `motionUrl` when motion photos are off.
   registerMotionButton(state.lightbox)
+  // No config gate: the server omits `panorama` when ipp.lightbox.panorama is off.
+  registerPanorama(state.lightbox)
   if (state.metadataConfig.descriptionInCaption) registerCaption(state.lightbox)
   if (state.metadataConfig.sidebarHasContent) registerSidebar(state.lightbox)
   // Lazy album items load their exif / description / filename on open; this
